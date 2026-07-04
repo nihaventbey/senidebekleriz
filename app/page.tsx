@@ -19,6 +19,7 @@ import {
 import { AdBanner } from "@/components/ads/ad-banner";
 import { getAllCities } from "@/lib/data/cities";
 import { getAllCategories } from "@/lib/data/categories";
+import { SearchBar } from "@/components/layout/search-bar";
 
 const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   Landmark,
@@ -52,7 +53,10 @@ export default async function HomePage() {
             Seni de Bekleriz ile Türkiye'nin en güzel şehirlerini, tarihi
             mekanlarını, lezzet duraklarını ve gizli köşelerini keşfet.
           </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <div className="mx-auto mt-8 max-w-md">
+            <SearchBar className="h-12 w-full text-base" />
+          </div>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button size="lg" className="group" asChild>
               <Link href="/sehirler">
                 <MapPin className="mr-2 h-4 w-4" />

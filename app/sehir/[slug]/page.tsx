@@ -10,6 +10,7 @@ import { getPlacesByCity } from "@/lib/data/places";
 import { CityMap } from "@/components/maps/city-map-wrapper";
 import { JsonLd } from "@/components/seo/json-ld";
 import { PlaceImageComponent } from "@/components/place/place-image";
+import { PlacesLoadMore } from "@/components/place/places-load-more";
 
 export async function generateStaticParams() {
   const cities = await getAllCities();
@@ -43,7 +44,9 @@ export default async function CityPage({
     notFound();
   }
 
-  const places = await getPlacesByCity(slug);
+  const allPlaces = await getPlacesByCity(slug);
+  const firstPage = allPlaces.slice(0, 20);
+  const hasMore = allPlaces.length > 20;
 
   const cityJsonLd = {
     "@context": "https://schema.org",
@@ -84,12 +87,12 @@ export default async function CityPage({
 
       <div className="container mx-auto px-4 py-10">
         {/* Harita */}
-        {places.length > 0 && (
+        {allPlaces.length > 0 && (
           <section className="mb-10">
             <h2 className="mb-4 text-xl font-bold tracking-tight">
               Harita Üzerinde
             </h2>
-            <CityMap places={places} center={[city.lat, city.lng]} zoom={11} />
+            <CityMap places={allPlaces} center={[city.lat, city.lng]} zoom={11} />
           </section>
         )}
 
@@ -109,19 +112,19 @@ export default async function CityPage({
               {city.name}'da Gezilecek Yerler
             </h2>
             <span className="text-sm text-muted-foreground">
-              {places.length} mekan
+              {allPlaces.length} mekan
             </span>
           </div>
 
-          {places.length === 0 ? (
+          {allPlaces.length === 0 ? (
             <p className="py-12 text-center text-muted-foreground">
               Henüz bu şehir için mekan eklenmemiş.
             </p>
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {places.map((place, index) => (
-                <div key={place.slug}>
-                  <Link href={`/mekan/${place.slug}`}>
+            <>
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {firstPage.map((place) => (
+                  <Link key={place.slug} href={`/mekan/${place.slug}`}>
                     <Card className="card-hover h-full border-border/60 overflow-hidden">
                       <div className="relative h-40 w-full bg-muted">
                         <PlaceImageComponent
@@ -148,23 +151,18 @@ export default async function CityPage({
                       </CardContent>
                     </Card>
                   </Link>
+                ))}
+              </div>
 
-                  {(index + 1) % 6 === 0 && (
-                    <div className="mt-5">
-                      <AdBanner
-                        slot="city-list-inline"
-                        className="min-h-[250px] w-full"
-                        style={{
-                          display: "block",
-                          minHeight: "250px",
-                          width: "100%",
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+              {hasMore && (
+                <PlacesLoadMore
+                  citySlug={slug}
+                  cityName={city.name}
+                  initialCount={20}
+                  totalCount={allPlaces.length}
+                />
+              )}
+            </>
           )}
         </section>
 

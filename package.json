@@ -10,6 +10,7 @@
     "fetch:istanbul": "tsx scripts/fetch-istanbul.ts",
     "seed": "tsx scripts/seed-supabase.ts",
     "fetch-places": "tsx scripts/fetch-places.ts",
+    "enrich": "tsx scripts/enrich-wikipedia.ts",
     "check:supabase": "tsx scripts/check-supabase.ts",
     "build:deploy": "node scripts/prepare-deploy.js"
   },
