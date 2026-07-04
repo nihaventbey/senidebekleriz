@@ -1,65 +1,144 @@
-import Image from "next/image";
+import type { ComponentType } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { MapPin, Compass, Landmark, Utensils, TreePine, Camera } from "lucide-react";
+import { AdBanner } from "@/components/ads/ad-banner";
+import { getAllCities } from "@/lib/data/cities";
+import { getAllCategories } from "@/lib/data/categories";
 
-export default function Home() {
+const iconMap: Record<string, ComponentType<{ className?: string }>> = {
+  Landmark,
+  Camera,
+  TreePine,
+  Utensils,
+};
+
+export default async function HomePage() {
+  const cities = await getAllCities();
+  const categoryList = await getAllCategories();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="flex flex-col gap-16 pb-16">
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-muted/40 py-20 md:py-28">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="mx-auto max-w-3xl text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
+            Türkiye&apos;yi Şehir Şehir Keşfet
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
+            Seni de Bekleriz ile Türkiye&apos;nin en güzel şehirlerini, tarihi
+            mekanlarını, lezzet duraklarını ve gizli köşelerini keşfet.
           </p>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button size="lg" asChild>
+              <Link href="/sehirler">
+                <MapPin className="mr-2 h-4 w-4" />
+                Şehirleri Keşfet
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link href="/kategoriler">
+                <Compass className="mr-2 h-4 w-4" />
+                Kategorilere Göz At
+              </Link>
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      {/* Ad Placeholder - Header Hero altı */}
+      <section className="container mx-auto px-4">
+        <AdBanner
+          slot="home-hero-bottom"
+          className="min-h-[90px] w-full"
+          style={{ display: "block", minHeight: "90px", width: "100%" }}
+        />
+      </section>
+
+      {/* Popüler Şehirler */}
+      <section className="container mx-auto px-4">
+        <div className="mb-8 flex items-end justify-between">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Popüler Şehirler</h2>
+            <p className="mt-2 text-muted-foreground">
+              Şu an için İstanbul, İzmir ve Ankara&apos;yı keşfetmeye hazırız.
+            </p>
+          </div>
+          <Button variant="outline" asChild className="hidden sm:flex">
+            <Link href="/sehirler">Tüm Şehirler</Link>
+          </Button>
         </div>
-      </main>
+
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {cities.map((city) => (
+            <Link key={city.slug} href={`/sehir/${city.slug}`}>
+              <Card className="h-full transition-shadow hover:shadow-lg">
+                <CardHeader className="pb-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                    <MapPin className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="mt-4 text-xl">{city.name}</CardTitle>
+                  <CardDescription>{city.region}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    {city.description}
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Kategoriler */}
+      <section className="container mx-auto px-4">
+        <h2 className="mb-8 text-3xl font-bold tracking-tight">
+          Neye Göre Keşfetmek İstersin?
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {categoryList.map((category) => {
+            const Icon = iconMap[category.icon] || Landmark;
+            return (
+              <Link key={category.slug} href={`/kategori/${category.slug}`}>
+                <Card className="flex flex-col items-center p-6 text-center transition-shadow hover:shadow-md">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary">
+                    <Icon className="h-6 w-6 text-secondary-foreground" />
+                  </div>
+                  <h3 className="mt-4 font-semibold">{category.name}</h3>
+                </Card>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="container mx-auto px-4">
+        <div className="rounded-2xl bg-primary px-6 py-12 text-center text-primary-foreground md:py-16">
+          <h2 className="text-3xl font-bold tracking-tight">
+            Gezilecek Yerleri Sen de Kaydet
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl text-primary-foreground/90">
+            Üye ol, favori mekanlarını kaydet ve kendi gezi listelerini oluştur.
+          </p>
+          <Button
+            size="lg"
+            variant="secondary"
+            className="mt-8"
+            asChild
+          >
+            <Link href="/kayit">Hemen Başla</Link>
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }

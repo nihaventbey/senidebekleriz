@@ -1,0 +1,6 @@
+User-Agent: *
+Allow: /
+Disallow: /yonetim
+Disallow: /yonetim/
+
+Sitemap: https://senidebekleriz.com/sitemap.xml

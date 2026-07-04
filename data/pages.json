@@ -1,0 +1,30 @@
+[
+  {
+    "slug": "hakkimizda",
+    "title": "Hakkımızda",
+    "meta_title": "Hakkımızda | Seni de Bekleriz",
+    "meta_description": "Seni de Bekleriz, Türkiye'nin şehirlerini ve gezilecek yerlerini keşfetmenizi sağlayan bir gezi rehberi platformudur.",
+    "content": "<p>Seni de Bekleriz, Türkiye'nin şehirlerini ve gezilecek yerlerini keşfetmenizi sağlayan bir gezi rehberi platformudur.</p><p>Amacımız, seyahat severlere şehir şehir mekan önerileri sunmak, yapay zeka ve açık kaynak veri kaynaklarını kullanarak güncel ve kullanışlı bilgiler sağlamaktır.</p><p>Platformumuzda Google AdSense reklamları bulunmaktadır. Gelirler, içerik kalitesini artırmak ve yeni şehirler eklemek için kullanılmaktadır.</p>"
+  },
+  {
+    "slug": "iletisim",
+    "title": "İletişim",
+    "meta_title": "İletişim | Seni de Bekleriz",
+    "meta_description": "Seni de Bekleriz ile iletişime geçin. Öneri, iş birliği ve reklam talepleriniz için bize ulaşabilirsiniz.",
+    "content": "<p>Bizimle iletişime geçmek için aşağıdaki kanalları kullanabilirsiniz:</p><ul><li>E-posta: iletisim@senidebekleriz.com</li><li>Konu: Öneri, iş birliği ve reklam talepleri</li></ul><p>Geri dönüşleriniz bizim için değerlidir.</p>"
+  },
+  {
+    "slug": "kullanim-kosullari",
+    "title": "Kullanım Koşulları",
+    "meta_title": "Kullanım Koşulları | Seni de Bekleriz",
+    "meta_description": "Seni de Bekleriz web sitesini kullanırken geçerli olan kullanım koşulları.",
+    "content": "<p>Seni de Bekleriz web sitesini kullanarak aşağıdaki koşulları kabul etmiş sayılırsınız:</p><ul><li>Site içeriği bilgilendirme amaçlıdır.</li><li>Mekan bilgileri açık kaynak veri kaynaklarından derlenmektedir.</li><li>Reklam içerikleri üçüncü taraflar tarafından sağlanmaktadır.</li></ul>"
+  },
+  {
+    "slug": "gizlilik-politikasi",
+    "title": "Gizlilik Politikası",
+    "meta_title": "Gizlilik Politikası | Seni de Bekleriz",
+    "meta_description": "Seni de Bekleriz web sitesinde kişisel verilerinizin nasıl işlendiğini öğrenin.",
+    "content": "<p>Seni de Bekleriz olarak kullanıcılarımızın gizliliğine önem veriyoruz.</p><p>Siteyi kullanımınız sırasında Google AdSense ve analiz araçları aracılığıyla çerezler kullanılabilir. Bu çerezler, size daha iyi bir deneyim sunmak ve reklam performansını ölçmek için kullanılır.</p><p>Kişisel verileriniz, yasal yükümlülükler dışında üçüncü taraflarla paylaşılmaz.</p>"
+  }
+]

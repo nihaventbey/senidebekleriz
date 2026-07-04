@@ -1,0 +1,1397 @@
+[
+  {
+    "wikidata_id": "Q85972958",
+    "name": "Mehmet Akif Ersoy Şiir Müzesi",
+    "slug": "mehmet-akif-ersoy-siir-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.133703391,
+    "lng": 29.092796039,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q6064605",
+    "name": "Müjdat Gezen Sanat Merkezi",
+    "slug": "mujdat-gezen-sanat-merkezi",
+    "category": "tarihi-yer",
+    "description": "Kadıköy'de mimari yapı",
+    "address": null,
+    "lat": 40.987946649,
+    "lng": 29.043522411,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q811979",
+      "typeLabel": "mimari yapı"
+    }
+  },
+  {
+    "wikidata_id": "Q117012211",
+    "name": "Santralistanbul Enerji Müzesi",
+    "slug": "santralistanbul-enerji-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul, Eyüpsultan'da bir enerji müzesi",
+    "address": null,
+    "lat": 41.066439475,
+    "lng": 28.946595012,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949064",
+    "name": "İstanbul Üniversitesi Beyazıt Kulesi Anıt Müzesi",
+    "slug": "istanbul-universitesi-beyazit-kulesi-anit-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.012776527,
+    "lng": 28.964848645,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949619",
+    "name": "Bağcılar Çanakkale Zafer Müzesi",
+    "slug": "bagcilar-canakkale-zafer-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.040413228,
+    "lng": 28.816487885,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q20082476",
+    "name": "Halı Müzesi",
+    "slug": "hali-muzesi",
+    "category": "muzeler",
+    "description": "Fatih'te müze",
+    "address": null,
+    "lat": 41.008583,
+    "lng": 28.981096,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949478",
+    "name": "Türker İnanoğlu Vakfı Sinema Tiyatro Müzesi",
+    "slug": "turker-inanoglu-vakfi-sinema-tiyatro-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.093463897,
+    "lng": 29.094265851,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949102",
+    "name": "Tekfur Sarayı Çini Müzesi",
+    "slug": "tekfur-sarayi-cini-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.033792676,
+    "lng": 28.94047736,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q123700141",
+    "name": "Tercüman Binası",
+    "slug": "tercuman-binasi",
+    "category": "tarihi-yer",
+    "description": "Türkiye'de mimari yapı",
+    "address": null,
+    "lat": 41.0146,
+    "lng": 28.90991,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q811979",
+      "typeLabel": "mimari yapı"
+    }
+  },
+  {
+    "wikidata_id": "Q133825177",
+    "name": "Türk İnşaat ve Sanat Eserleri Müzesi",
+    "slug": "turk-insaat-ve-sanat-eserleri-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'un Fatih ilçesinde müze",
+    "address": null,
+    "lat": 41.015293166,
+    "lng": 28.952138704,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132681982",
+    "name": "Darüşşafaka Müzesi",
+    "slug": "darussafaka-muzesi",
+    "category": "muzeler",
+    "description": "Sarıyer'de müze",
+    "address": null,
+    "lat": 41.125866,
+    "lng": 29.02791,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949412",
+    "name": "İSKİ Su Medeniyetleri Müzesi",
+    "slug": "iski-su-medeniyetleri-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.300965933,
+    "lng": 28.673597418,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q7077254",
+    "name": "Odalar Camii",
+    "slug": "odalar-camii",
+    "category": "tarihi-yer",
+    "description": "Fatih'te cami",
+    "address": null,
+    "lat": 41.029071,
+    "lng": 28.939828,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q811979",
+      "typeLabel": "mimari yapı"
+    }
+  },
+  {
+    "wikidata_id": "Q6940880",
+    "name": "Aydınlatma ve Isıtma Araçları Müzesi",
+    "slug": "aydinlatma-ve-isitma-araclari-muzesi",
+    "category": "muzeler",
+    "description": "Beykoz'da müze",
+    "address": null,
+    "lat": 41.09053,
+    "lng": 29.140788,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949605",
+    "name": "Beta Yeni Han 1554 Kahve Müzesi",
+    "slug": "beta-yeni-han-1554-kahve-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.016705102,
+    "lng": 28.970135217,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949083",
+    "name": "Haluk Perk Müzesi",
+    "slug": "haluk-perk-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 40.98187306,
+    "lng": 28.729592404,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949430",
+    "name": "Marmara Üniversitesi Cumhuriyet Müzesi ve Sanat Galerisi",
+    "slug": "marmara-universitesi-cumhuriyet-muzesi-ve-sanat-galerisi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.005098438,
+    "lng": 28.974582301,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q130443078",
+    "name": "Beşiktaş Kedi Müzesi",
+    "slug": "besiktas-kedi-muzesi",
+    "category": "muzeler",
+    "description": "Beşiktaş'ta bir müze",
+    "address": null,
+    "lat": 41.043551121,
+    "lng": 29.012993383,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q123652871",
+    "name": "İstanbul Robot Müzesi",
+    "slug": "istanbul-robot-muzesi",
+    "category": "muzeler",
+    "description": null,
+    "address": null,
+    "lat": 40.9823605,
+    "lng": 28.7287372,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q6016009",
+    "name": "TÜYAP Büyükçekmece Fuar ve Kongre Merkezi",
+    "slug": "tuyap-buyukcekmece-fuar-ve-kongre-merkezi",
+    "category": "tarihi-yer",
+    "description": "Fuar ve Kongre Merkezi",
+    "address": null,
+    "lat": 41.026388888,
+    "lng": 28.624166666,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q811979",
+      "typeLabel": "mimari yapı"
+    }
+  },
+  {
+    "wikidata_id": "Q132949525",
+    "name": "Çikolata Müzesi",
+    "slug": "cikolata-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.05908,
+    "lng": 28.663707526,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q116046933",
+    "name": "Mermer Kule",
+    "slug": "mermer-kule",
+    "category": "tarihi-yer",
+    "description": "Konstantinopolis'te Bizans dönemi surlarının bir bölümü",
+    "address": null,
+    "lat": 40.988628,
+    "lng": 28.920822,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q570116",
+      "typeLabel": "görülecek yer"
+    }
+  },
+  {
+    "wikidata_id": "Q132949178",
+    "name": "Turhan Müzesi",
+    "slug": "turhan-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.066598638,
+    "lng": 28.325319397,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q16850295",
+    "name": "İstanbul İslam, Bilim ve Teknoloji Müzesi",
+    "slug": "istanbul-islam-bilim-ve-teknoloji-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.0138,
+    "lng": 28.9796,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949591",
+    "name": "Başalan İstanbul Kamera Müzesi",
+    "slug": "basalan-istanbul-kamera-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.030127093,
+    "lng": 28.951045688,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q133093317",
+    "name": "Galata Mevlevihanesi Müzesi",
+    "slug": "galata-mevlevihanesi-muzesi",
+    "category": "muzeler",
+    "description": null,
+    "address": null,
+    "lat": 41.028,
+    "lng": 28.9751,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949448",
+    "name": "Osmanlı Bankası Müzesi",
+    "slug": "osmanli-bankasi-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.02409,
+    "lng": 28.972977,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132681982",
+    "name": "Darüşşafaka Müzesi",
+    "slug": "darussafaka-muzesi-2",
+    "category": "muzeler",
+    "description": "Sarıyer'de müze",
+    "address": null,
+    "lat": 41.12659919,
+    "lng": 29.025878074,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q6087315",
+    "name": "Türkiye Gazeteciler Cemiyeti Basın Müzesi",
+    "slug": "turkiye-gazeteciler-cemiyeti-basin-muzesi",
+    "category": "muzeler",
+    "description": "Fatih'te müze",
+    "address": null,
+    "lat": 41.00844,
+    "lng": 28.97211,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q123249842",
+    "name": "Türkiye İş Bankası Resim Heykel Müzesi",
+    "slug": "turkiye-is-bankasi-resim-heykel-muzesi",
+    "category": "muzeler",
+    "description": "resim heykel müzesi",
+    "address": null,
+    "lat": 41.0315399,
+    "lng": 28.9757328,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q36174895",
+    "name": "Istanbul Modern Museum Cinema",
+    "slug": "istanbul-modern-museum-cinema",
+    "category": "muzeler",
+    "description": "İstanbul Sinema",
+    "address": null,
+    "lat": 41.028395,
+    "lng": 28.984961,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132888623",
+    "name": "Şehir Müzesi",
+    "slug": "sehir-muzesi",
+    "category": "muzeler",
+    "description": "müze",
+    "address": null,
+    "lat": 41.049631788,
+    "lng": 29.011161899,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q6090202",
+    "name": "Panorama 1453 Tarih Müzesi",
+    "slug": "panorama-1453-tarih-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul-Topkapı'da bulunan müze",
+    "address": null,
+    "lat": 41.018182,
+    "lng": 28.920525,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132681901",
+    "name": "Akaretler Mustafa Kemal Müzesi",
+    "slug": "akaretler-mustafa-kemal-muzesi",
+    "category": "muzeler",
+    "description": "Beşiktaş'ta müze",
+    "address": null,
+    "lat": 41.0423012,
+    "lng": 29.0022907,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q112585751",
+    "name": "İstanbul Saray Koleksiyonları Müzesi",
+    "slug": "istanbul-saray-koleksiyonlari-muzesi",
+    "category": "muzeler",
+    "description": "Beşiktaş'ta müze",
+    "address": null,
+    "lat": 41.041251887,
+    "lng": 29.00406254,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949304",
+    "name": "Pera Palas Atatürk Müzesi",
+    "slug": "pera-palas-ataturk-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.031046069,
+    "lng": 28.973473003,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949494",
+    "name": "Hilye-i Şerif ve Tespih Müzesi",
+    "slug": "hilye-i-serif-ve-tespih-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.017163222,
+    "lng": 28.966288823,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q123683184",
+    "name": "Gökkuşağı Merdivenleri",
+    "slug": "gokkusagi-merdivenleri",
+    "category": "tarihi-yer",
+    "description": null,
+    "address": null,
+    "lat": 41.0291,
+    "lng": 28.9864,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q570116",
+      "typeLabel": "görülecek yer"
+    }
+  },
+  {
+    "wikidata_id": "Q6090478",
+    "name": "Galata Mevlevihanesi",
+    "slug": "galata-mevlevihanesi",
+    "category": "muzeler",
+    "description": "İstanbul'un Beyoğlu ilçesinde müze",
+    "address": null,
+    "lat": 41.02802778,
+    "lng": 28.975125,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q7784788",
+    "name": "Yavuz Sultan Selim Köprüsü",
+    "slug": "yavuz-sultan-selim-koprusu",
+    "category": "tarihi-yer",
+    "description": "İstanbul Boğazı'nda yer alan ve Asya'yı Avrupa'ya bağlayan üçüncü köprü",
+    "address": null,
+    "lat": 41.203055555,
+    "lng": 29.111666666,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q570116",
+      "typeLabel": "görülecek yer"
+    }
+  },
+  {
+    "wikidata_id": "Q4867763",
+    "name": "Sepetçiler Kasrı",
+    "slug": "sepetciler-kasri",
+    "category": "tarihi-yer",
+    "description": "İstanbul'un Fatih ilçesinde tarihi yapı",
+    "address": null,
+    "lat": 41.016334,
+    "lng": 28.981676,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q570116",
+      "typeLabel": "görülecek yer"
+    }
+  },
+  {
+    "wikidata_id": "Q132949127",
+    "name": "Demokrasi ve Özgürlükler Adası Müze Kompleksi",
+    "slug": "demokrasi-ve-ozgurlukler-adasi-muze-kompleksi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 40.864494772,
+    "lng": 28.994479293,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949633",
+    "name": "Vakıfbank B'iz Müzesi",
+    "slug": "vakifbank-b-iz-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 40.999279865,
+    "lng": 29.109815297,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q7319839",
+    "name": "Rezan Has Müzesi",
+    "slug": "rezan-has-muzesi",
+    "category": "muzeler",
+    "description": "Fatih'te müze",
+    "address": null,
+    "lat": 41.02401,
+    "lng": 28.95969,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132888280",
+    "name": "Florya Model Uçak Müzesi",
+    "slug": "florya-model-ucak-muzesi",
+    "category": "muzeler",
+    "description": "müze",
+    "address": null,
+    "lat": 40.97436281,
+    "lng": 28.804886345,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132950133",
+    "name": "Çamlıdere Belediyesi Müze Kompleksi",
+    "slug": "camlidere-belediyesi-muze-kompleksi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 40.490349378,
+    "lng": 32.475810911,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949560",
+    "name": "Zeyrek Çinili Hamam Müzesi",
+    "slug": "zeyrek-cinili-hamam-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.018264635,
+    "lng": 28.956442926,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949575",
+    "name": "İmzalı ve Birinci Baskı Kitaplar Müzesi",
+    "slug": "imzali-ve-birinci-baski-kitaplar-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 40.992329786,
+    "lng": 28.783181886,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949398",
+    "name": "Okçular Tekkesi",
+    "slug": "okcular-tekkesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.041289985,
+    "lng": 28.959865771,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q6057813",
+    "name": "Büyük Abud Efendi Hanı",
+    "slug": "buyuk-abud-efendi-hani",
+    "category": "tarihi-yer",
+    "description": "Fatih'te pasaj-işhanı",
+    "address": null,
+    "lat": 41.015583333,
+    "lng": 28.970527777,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q811979",
+      "typeLabel": "mimari yapı"
+    }
+  },
+  {
+    "wikidata_id": "Q132949509",
+    "name": "Ekslibris Müzesi",
+    "slug": "ekslibris-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.022397554,
+    "lng": 29.044124268,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949324",
+    "name": "Galatasaray Stadyum Müzesi",
+    "slug": "galatasaray-stadyum-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.103368646,
+    "lng": 28.990855426,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949541",
+    "name": "Diş Sağlığı Müzesi",
+    "slug": "dis-sagligi-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 41.011078258,
+    "lng": 28.941417454,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132949363",
+    "name": "Intercity Otomobil Müzesi",
+    "slug": "intercity-otomobil-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze",
+    "address": null,
+    "lat": 40.952664027,
+    "lng": 29.40553791,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q20949349",
+    "name": "Türkiye Adli Bilimler Enstitüsü",
+    "slug": "turkiye-adli-bilimler-enstitusu",
+    "category": "parklar",
+    "description": null,
+    "address": null,
+    "lat": 40.91368611,
+    "lng": 29.17675278,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q22698",
+      "typeLabel": "park"
+    }
+  },
+  {
+    "wikidata_id": "Q112584921",
+    "name": "Çatalca Mübadele Müzesi",
+    "slug": "catalca-mubadele-muzesi",
+    "category": "muzeler",
+    "description": "Çatalca'da bir müze",
+    "address": null,
+    "lat": 41.143786696,
+    "lng": 28.457227546,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q111987824",
+    "name": "Zeytinburnu Buz Adası",
+    "slug": "zeytinburnu-buz-adasi",
+    "category": "tarihi-yer",
+    "description": null,
+    "address": null,
+    "lat": 40.9960966,
+    "lng": 28.894618,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q570116",
+      "typeLabel": "görülecek yer"
+    }
+  },
+  {
+    "wikidata_id": "Q5185642",
+    "name": "Emirgân Korusu",
+    "slug": "emirg-n-korusu",
+    "category": "parklar",
+    "description": "İstanbul'un Sarıyer ilçesinde yer alan koru",
+    "address": null,
+    "lat": 41.108333333,
+    "lng": 29.0525,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q22698",
+      "typeLabel": "park"
+    }
+  },
+  {
+    "wikidata_id": "Q6022598",
+    "name": "Kâzım Karabekir Paşa Müzesi",
+    "slug": "k-zim-karabekir-pasa-muzesi",
+    "category": "muzeler",
+    "description": "Kadıköy'de müze",
+    "address": null,
+    "lat": 40.968249,
+    "lng": 29.078587,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q3329724",
+    "name": "Galatasaray Müzesi",
+    "slug": "galatasaray-muzesi",
+    "category": "muzeler",
+    "description": "Beyoğlu'nda müze",
+    "address": null,
+    "lat": 41.03376,
+    "lng": 28.97749,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q344564",
+    "name": "İş Kuleleri",
+    "slug": "is-kuleleri",
+    "category": "tarihi-yer",
+    "description": "mimari yapı",
+    "address": null,
+    "lat": 41.082898,
+    "lng": 29.011407,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q811979",
+      "typeLabel": "mimari yapı"
+    }
+  },
+  {
+    "wikidata_id": "Q3404565",
+    "name": "Rahmi M. Koç Müzesi",
+    "slug": "rahmi-m-koc-muzesi",
+    "category": "muzeler",
+    "description": "Müze",
+    "address": null,
+    "lat": 41.04227,
+    "lng": 28.94926,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q1573438",
+    "name": "Yıldız Camii",
+    "slug": "yildiz-camii",
+    "category": "tarihi-yer",
+    "description": "İstanbul'un Beşiktaş ilçesinde cami",
+    "address": null,
+    "lat": 41.04941111,
+    "lng": 29.00993611,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q570116",
+      "typeLabel": "görülecek yer"
+    }
+  },
+  {
+    "wikidata_id": "Q90801",
+    "name": "Rumeli Hisarı",
+    "slug": "rumeli-hisari",
+    "category": "tarihi-yer",
+    "description": "İstanbul Boğazı’nın Rumeli yakasında 15. yüzyılda inşa edilmiş Osmanlı kalesi",
+    "address": null,
+    "lat": 41.084722222,
+    "lng": 29.056111111,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q570116",
+      "typeLabel": "görülecek yer"
+    }
+  },
+  {
+    "wikidata_id": "Q736676",
+    "name": "Aya İrini",
+    "slug": "aya-irini",
+    "category": "tarihi-yer",
+    "description": "İstanbul'da eski kilise ve müze",
+    "address": null,
+    "lat": 41.00972,
+    "lng": 28.98111,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q570116",
+      "typeLabel": "görülecek yer"
+    }
+  },
+  {
+    "wikidata_id": "Q90801",
+    "name": "Rumeli Hisarı",
+    "slug": "rumeli-hisari-2",
+    "category": "muzeler",
+    "description": "İstanbul Boğazı’nın Rumeli yakasında 15. yüzyılda inşa edilmiş Osmanlı kalesi",
+    "address": null,
+    "lat": 41.084722222,
+    "lng": 29.056111111,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q344292",
+    "name": "İstanbul Erkek Lisesi",
+    "slug": "istanbul-erkek-lisesi",
+    "category": "tarihi-yer",
+    "description": "İstanbul, Türkiye'de bir lise",
+    "address": null,
+    "lat": 41.012134,
+    "lng": 28.973825,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q811979",
+      "typeLabel": "mimari yapı"
+    }
+  },
+  {
+    "wikidata_id": "Q107475211",
+    "name": "Müze Gazhane",
+    "slug": "muze-gazhane",
+    "category": "muzeler",
+    "description": "İstanbul'da bir müze ve etkinlik alanı",
+    "address": null,
+    "lat": 40.9975,
+    "lng": 29.043333333,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q647228",
+    "name": "Edirnekapı, Fatih",
+    "slug": "edirnekapi-fatih",
+    "category": "tarihi-yer",
+    "description": "Fatih, İstanbul, Türkiye'de semt",
+    "address": null,
+    "lat": 41.030242,
+    "lng": 28.935387,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q811979",
+      "typeLabel": "mimari yapı"
+    }
+  },
+  {
+    "wikidata_id": "Q132681892",
+    "name": "İstanbul Kent Müzesi",
+    "slug": "istanbul-kent-muzesi",
+    "category": "muzeler",
+    "description": "İstanbul'un Zeytinburnu ilçesinde müze",
+    "address": null,
+    "lat": 41.0182266,
+    "lng": 28.9187145,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q132681947",
+    "name": "My Museum Otomobil Müzesi",
+    "slug": "my-museum-otomobil-muzesi",
+    "category": "muzeler",
+    "description": "Ataşehir'de müze",
+    "address": null,
+    "lat": 40.991901,
+    "lng": 29.106928,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q99397898",
+    "name": "Eski Şark Eserleri Müzesi",
+    "slug": "eski-sark-eserleri-muzesi",
+    "category": "muzeler",
+    "description": "Fatih'te müze",
+    "address": null,
+    "lat": 41.0113182,
+    "lng": 28.9804363,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q952924",
+    "name": "Bozdoğan Kemeri",
+    "slug": "bozdogan-kemeri",
+    "category": "tarihi-yer",
+    "description": "İstanbul'un Fatih ilçesinde su kemeri",
+    "address": null,
+    "lat": 41.01599,
+    "lng": 28.95557,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q570116",
+      "typeLabel": "görülecek yer"
+    }
+  },
+  {
+    "wikidata_id": "Q369967",
+    "name": "Fatih Sultan Mehmet Köprüsü",
+    "slug": "fatih-sultan-mehmet-koprusu",
+    "category": "tarihi-yer",
+    "description": "İstanbul Boğazı'nda yer alan ve Asya'yı Avrupa'ya bağlayan ikinci köprü",
+    "address": null,
+    "lat": 41.091111111,
+    "lng": 29.061388888,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q570116",
+      "typeLabel": "görülecek yer"
+    }
+  },
+  {
+    "wikidata_id": "Q81523",
+    "name": "Galata Köprüsü",
+    "slug": "galata-koprusu",
+    "category": "tarihi-yer",
+    "description": "İstanbul'un Beyoğlu ilçesinde tarihi köprü",
+    "address": null,
+    "lat": 41.02,
+    "lng": 28.973055555,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q570116",
+      "typeLabel": "görülecek yer"
+    }
+  },
+  {
+    "wikidata_id": "Q12506",
+    "name": "Ayasofya",
+    "slug": "ayasofya",
+    "category": "tarihi-yer",
+    "description": "Bizans döneminde katedral olarak yapılan ve günümüzde cami olarak kullanılan tarihî yapı",
+    "address": null,
+    "lat": 41.008333333,
+    "lng": 28.98,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q570116",
+      "typeLabel": "görülecek yer"
+    }
+  },
+  {
+    "wikidata_id": "Q12506",
+    "name": "Ayasofya",
+    "slug": "ayasofya-2",
+    "category": "muzeler",
+    "description": "Bizans döneminde katedral olarak yapılan ve günümüzde cami olarak kullanılan tarihî yapı",
+    "address": null,
+    "lat": 41.008333333,
+    "lng": 28.98,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q1144576",
+    "name": "Küçük Ayasofya Camii",
+    "slug": "kucuk-ayasofya-camii",
+    "category": "tarihi-yer",
+    "description": "İstanbul'un Fatih ilçesinde kiliseden çevrilmiş cami",
+    "address": null,
+    "lat": 41.002778,
+    "lng": 28.971944,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q570116",
+      "typeLabel": "görülecek yer"
+    }
+  },
+  {
+    "wikidata_id": "Q3302981",
+    "name": "Hasköy",
+    "slug": "haskoy",
+    "category": "tarihi-yer",
+    "description": null,
+    "address": null,
+    "lat": 41.03972222,
+    "lng": 28.94972222,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q123705",
+      "typeLabel": "mahalle"
+    }
+  },
+  {
+    "wikidata_id": "Q4484",
+    "name": "15 Temmuz Şehitler Köprüsü",
+    "slug": "15-temmuz-sehitler-koprusu",
+    "category": "tarihi-yer",
+    "description": "İstanbul Boğazı'nda yer alan ve Asya'yı Avrupa'ya bağlayan birinci köprü",
+    "address": null,
+    "lat": 41.045555555,
+    "lng": 29.034027777,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q570116",
+      "typeLabel": "görülecek yer"
+    }
+  },
+  {
+    "wikidata_id": "Q3663028",
+    "name": "Feriye Sarayı",
+    "slug": "feriye-sarayi",
+    "category": "tarihi-yer",
+    "description": null,
+    "address": null,
+    "lat": 41.04555556,
+    "lng": 29.02027778,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q811979",
+      "typeLabel": "mimari yapı"
+    }
+  },
+  {
+    "wikidata_id": "Q179839",
+    "name": "Haliç",
+    "slug": "halic",
+    "category": "tarihi-yer",
+    "description": "Boğaziçi girişindeki Tarihî yarımada ve Beyoğlu platolarını birbirinden ayıran deniz girintisi",
+    "address": null,
+    "lat": 41.029166666,
+    "lng": 28.961111111,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q123705",
+      "typeLabel": "mahalle"
+    }
+  },
+  {
+    "wikidata_id": "Q956677",
+    "name": "Eyüp Sultan Camii",
+    "slug": "eyup-sultan-camii",
+    "category": "tarihi-yer",
+    "description": "İstanbul'un Eyüp ilçesinde tarihi cami",
+    "address": null,
+    "lat": 41.047947222,
+    "lng": 28.933786111,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q570116",
+      "typeLabel": "görülecek yer"
+    }
+  },
+  {
+    "wikidata_id": "Q1085952",
+    "name": "Miniatürk",
+    "slug": "miniaturk",
+    "category": "tarihi-yer",
+    "description": "İstanbul'da bir müze park",
+    "address": null,
+    "lat": 41.06,
+    "lng": 28.948611111,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q570116",
+      "typeLabel": "görülecek yer"
+    }
+  },
+  {
+    "wikidata_id": "Q4253400",
+    "name": "Laleli",
+    "slug": "laleli",
+    "category": "tarihi-yer",
+    "description": null,
+    "address": null,
+    "lat": 41.00972222,
+    "lng": 28.95611111,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q123705",
+      "typeLabel": "mahalle"
+    }
+  },
+  {
+    "wikidata_id": "Q3701681",
+    "name": "Atatürk Müzesi",
+    "slug": "ataturk-muzesi",
+    "category": "muzeler",
+    "description": "Şişli'de müze",
+    "address": null,
+    "lat": 41.056397,
+    "lng": 28.987212,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q1335287",
+    "name": "Emek Sineması",
+    "slug": "emek-sinemasi",
+    "category": "tarihi-yer",
+    "description": "İstanbul’da 1924-2013 yılları arasında faaliyet göstermiştir.Tarihi bir sinema salonudur",
+    "address": null,
+    "lat": 41.03491,
+    "lng": 28.979697,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q811979",
+      "typeLabel": "mimari yapı"
+    }
+  },
+  {
+    "wikidata_id": "Q3564223",
+    "name": "Zoğrafyon Rum Lisesi",
+    "slug": "zografyon-rum-lisesi",
+    "category": "tarihi-yer",
+    "description": "Beyoğlu'nda okul",
+    "address": null,
+    "lat": 41.0333,
+    "lng": 28.9797,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q811979",
+      "typeLabel": "mimari yapı"
+    }
+  },
+  {
+    "wikidata_id": "Q170495",
+    "name": "Topkapı Sarayı",
+    "slug": "topkapi-sarayi",
+    "category": "tarihi-yer",
+    "description": "İstanbul'un Fatih ilçesinde tarihi yapı",
+    "address": null,
+    "lat": 41.013,
+    "lng": 28.984,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q570116",
+      "typeLabel": "görülecek yer"
+    }
+  },
+  {
+    "wikidata_id": "Q97725306",
+    "name": "Dragos",
+    "slug": "dragos",
+    "category": "tarihi-yer",
+    "description": "Maltepe'de semt",
+    "address": null,
+    "lat": 40.9094,
+    "lng": 29.145283333,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q123705",
+      "typeLabel": "mahalle"
+    }
+  },
+  {
+    "wikidata_id": "Q132681871",
+    "name": "Zeytinburnu Mozaik Müzesi",
+    "slug": "zeytinburnu-mozaik-muzesi",
+    "category": "muzeler",
+    "description": "Zeytinburnu'nda müze",
+    "address": null,
+    "lat": 40.9870377,
+    "lng": 28.9081402,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q170495",
+    "name": "Topkapı Sarayı",
+    "slug": "topkapi-sarayi-2",
+    "category": "muzeler",
+    "description": "İstanbul'un Fatih ilçesinde tarihi yapı",
+    "address": null,
+    "lat": 41.013,
+    "lng": 28.984,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q33506",
+      "typeLabel": "müze"
+    }
+  },
+  {
+    "wikidata_id": "Q3081830",
+    "name": "Anemas zindanları",
+    "slug": "anemas-zindanlari",
+    "category": "tarihi-yer",
+    "description": "İstanbul, Türkiye'de Bizans yapısı",
+    "address": null,
+    "lat": 41.03848,
+    "lng": 28.94083,
+    "source": "wikidata",
+    "tags": {
+      "type": "http://www.wikidata.org/entity/Q811979",
+      "typeLabel": "mimari yapı"
+    }
+  }
+]

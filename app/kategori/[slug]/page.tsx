@@ -1,0 +1,102 @@
+import Link from "next/link";
+import { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { MapPin } from "lucide-react";
+import { getAllCategories, getCategoryBySlug } from "@/lib/data/categories";
+import { AdBanner } from "@/components/ads/ad-banner";
+import { getPlacesByCategory } from "@/lib/data/places";
+
+export async function generateStaticParams() {
+  const categories = await getAllCategories();
+  return categories.map((category) => ({ slug: category.slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const category = await getCategoryBySlug(slug);
+  if (!category) return {};
+
+  return {
+    title: `${category.name} Mekanları`,
+    description: `Türkiye'deki ${category.name.toLowerCase()} mekanlarını keşfedin.`,
+  };
+}
+
+export default async function CategoryPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const category = await getCategoryBySlug(slug);
+
+  if (!category) {
+    notFound();
+  }
+
+  const places = await getPlacesByCategory(slug);
+
+  return (
+    <div className="container mx-auto px-4 py-12">
+      <div className="mb-10">
+        <Badge variant="secondary" className="mb-3">
+          Kategori
+        </Badge>
+        <h1 className="text-4xl font-bold tracking-tight">{category.name}</h1>
+        <p className="mt-4 max-w-3xl text-lg text-muted-foreground">
+          {category.description}
+        </p>
+      </div>
+
+      {places.length === 0 ? (
+        <p className="text-muted-foreground">
+          Bu kategoride henüz mekan bulunmuyor.
+        </p>
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {places.map((place, index) => (
+            <div key={place.slug}>
+              <Link href={`/mekan/${place.slug}`}>
+                <Card className="h-full transition-shadow hover:shadow-lg">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">{place.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="line-clamp-3 text-sm text-muted-foreground">
+                      {place.description ||
+                        `${place.name}, ${place.cityName}'da görülmeye değer bir mekandır.`}
+                    </p>
+                    <div className="mt-4 flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin className="h-3 w-3" />
+                      {place.cityName}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              {(index + 1) % 6 === 0 && (
+                <div className="mt-6">
+                  <AdBanner
+                    slot="category-list-inline"
+                    className="min-h-[250px] w-full"
+                    style={{
+                      display: "block",
+                      minHeight: "250px",
+                      width: "100%",
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

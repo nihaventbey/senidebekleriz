@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Vercel için standalone gerekmez, otomatik algılar
 };
 
 export default nextConfig;

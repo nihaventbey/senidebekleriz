@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/yonetim/layout,_N_T_/yonetim/giris/layout,_N_T_/yonetim/giris/page,_N_T_/yonetim/giris"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/yonetim/giris/__PAGE__",
+    "/yonetim/giris",
+    "/yonetim",
+    "/_index",
+    "/_head"
+  ]
+}
