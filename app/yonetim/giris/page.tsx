@@ -19,7 +19,7 @@ export default function AdminLoginPage() {
           </p>
         </div>
 
-        <AuthForm mode="login" />
+        <AuthForm />
       </div>
     </div>
   );

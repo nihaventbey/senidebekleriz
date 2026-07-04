@@ -141,6 +141,36 @@ async function seedAdPlacements() {
   console.log("✅ Reklam pozisyonları eklendi");
 }
 
+async function seedAdminUser() {
+  const adminEmail = "admin@senidebekleriz.com";
+  const adminPassword = "SenideBekleriz2024!";
+
+  const { data: existingUsers } = await supabase.auth.admin.listUsers();
+  const adminExists = existingUsers?.users?.some(
+    (u) => u.email === adminEmail
+  );
+
+  if (adminExists) {
+    console.log("ℹ️  Admin kullanıcısı zaten mevcut");
+    return;
+  }
+
+  const { data, error } = await supabase.auth.admin.createUser({
+    email: adminEmail,
+    password: adminPassword,
+    email_confirm: true,
+    user_metadata: {
+      full_name: "Admin",
+      role: "admin",
+    },
+  });
+
+  if (error) throw new Error(`Admin user seed error: ${error.message}`);
+  console.log("✅ Admin kullanıcısı oluşturuldu:", data.user.email);
+  console.log("   E-posta:", adminEmail);
+  console.log("   Şifre:  ", adminPassword);
+}
+
 async function main() {
   console.log("Supabase veri aktarımı başlıyor...\n");
 
@@ -149,6 +179,7 @@ async function main() {
   await seedPlaces();
   await seedPages();
   await seedAdPlacements();
+  await seedAdminUser();
 
   console.log("\n🎉 Tüm veriler başarıyla aktarıldı!");
 }

@@ -62,7 +62,10 @@ export function Footer() {
         </div>
 
         <div className="mt-10 border-t pt-6 text-center text-sm text-muted-foreground">
-          © {currentYear} Seni de Bekleriz. Tüm hakları saklıdır.
+          <p>© {currentYear} Seni de Bekleriz. Tüm hakları saklıdır.</p>
+          <Link href="/yonetim/giris" className="mt-2 inline-block text-xs text-muted-foreground/50 hover:text-muted-foreground">
+            Yönetim
+          </Link>
         </div>
       </div>
     </footer>

@@ -1,19 +1,29 @@
 import { type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import { NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  return await updateSession(request);
+  const supabaseResponse = await updateSession(request);
+
+  const { pathname } = request.nextUrl;
+
+  if (pathname.startsWith("/yonetim")) {
+    const cookieHeader = request.headers.get("cookie") || "";
+    const hasSession =
+      cookieHeader.includes("sb-") && cookieHeader.includes("auth-token");
+
+    if (!hasSession && pathname !== "/yonetim/giris") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/yonetim/giris";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  return supabaseResponse;
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

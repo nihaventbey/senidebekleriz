@@ -135,7 +135,7 @@ export default async function HomePage() {
             className="mt-8"
             asChild
           >
-            <Link href="/kayit">Hemen Başla</Link>
+            <Link href="/sehirler">Hemen Keşfet</Link>
           </Button>
         </div>
       </section>
