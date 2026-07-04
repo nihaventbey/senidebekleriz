@@ -7,6 +7,7 @@ import { MapPin } from "lucide-react";
 import { getAllCategories, getCategoryBySlug } from "@/lib/data/categories";
 import { AdBanner } from "@/components/ads/ad-banner";
 import { getPlacesByCategory } from "@/lib/data/places";
+import { PlaceImageComponent } from "@/components/place/place-image";
 
 export async function generateStaticParams() {
   const categories = await getAllCategories();
@@ -72,7 +73,15 @@ export default async function CategoryPage({
           {places.map((place, index) => (
             <div key={place.slug}>
               <Link href={`/mekan/${place.slug}`}>
-                <Card className="h-full transition-shadow hover:shadow-lg">
+                <Card className="h-full overflow-hidden transition-shadow hover:shadow-lg">
+                  <div className="relative h-40 w-full bg-muted">
+                    <PlaceImageComponent
+                      wikidataId={place.wikidata_id}
+                      placeName={place.name}
+                      cityName={place.cityName}
+                      className="h-full w-full"
+                    />
+                  </div>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg">{place.name}</CardTitle>
                   </CardHeader>

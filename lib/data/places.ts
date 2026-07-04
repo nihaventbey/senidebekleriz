@@ -10,6 +10,12 @@ export type PlaceData = {
   lat: number;
   lng: number;
   source: string;
+  wikidata_id: string | null;
+  photos: string[];
+  phone: string | null;
+  website: string | null;
+  opening_hours: Record<string, unknown> | null;
+  rating: number | null;
   tags: {
     type: string;
     typeLabel: string;
@@ -50,6 +56,12 @@ export async function getPlacesByCity(citySlug: string): Promise<PlaceData[]> {
     lat: place.lat ? Number(place.lat) : 0,
     lng: place.lng ? Number(place.lng) : 0,
     source: place.source || "manual",
+    wikidata_id: place.wikidata_id || null,
+    photos: place.photos || [],
+    phone: place.phone || null,
+    website: place.website || null,
+    opening_hours: place.opening_hours || null,
+    rating: place.rating ? Number(place.rating) : null,
     tags: {
       type: "",
       typeLabel: "",
@@ -116,6 +128,12 @@ export async function getPlaceWithCityBySlug(
     lat: data.lat ? Number(data.lat) : 0,
     lng: data.lng ? Number(data.lng) : 0,
     source: data.source || "manual",
+    wikidata_id: data.wikidata_id || null,
+    photos: data.photos || [],
+    phone: data.phone || null,
+    website: data.website || null,
+    opening_hours: data.opening_hours || null,
+    rating: data.rating ? Number(data.rating) : null,
     tags: { type: "", typeLabel: "" },
     citySlug: city.slug,
     cityName: city.name,
@@ -162,6 +180,12 @@ export async function getPlacesByCategory(
       lat: number;
       lng: number;
       source: string;
+      wikidata_id: string | null;
+      photos: string[];
+      phone: string | null;
+      website: string | null;
+      opening_hours: Record<string, unknown> | null;
+      rating: number | null;
       cities: { slug: string; name: string } | { slug: string; name: string }[];
     } | null;
 
@@ -180,6 +204,12 @@ export async function getPlacesByCategory(
       lat: place.lat ? Number(place.lat) : 0,
       lng: place.lng ? Number(place.lng) : 0,
       source: place.source || "manual",
+      wikidata_id: place.wikidata_id || null,
+      photos: place.photos || [],
+      phone: place.phone || null,
+      website: place.website || null,
+      opening_hours: place.opening_hours || null,
+      rating: place.rating ? Number(place.rating) : null,
       tags: { type: "", typeLabel: "" },
       citySlug: city.slug,
       cityName: city.name,
@@ -187,4 +217,19 @@ export async function getPlacesByCategory(
   }
 
   return results.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function getPlaceCategories(
+  placeId: string
+): Promise<Array<{ name: string; slug: string; icon: string | null }>> {
+  const { data, error } = await supabaseAdmin
+    .from("place_categories")
+    .select("categories(name, slug, icon)")
+    .eq("place_id", placeId);
+
+  if (error || !data) return [];
+
+  return data
+    .map((row) => row.categories as unknown as { name: string; slug: string; icon: string | null } | null)
+    .filter(Boolean) as Array<{ name: string; slug: string; icon: string | null }>;
 }

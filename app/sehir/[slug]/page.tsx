@@ -9,6 +9,7 @@ import { AdBanner } from "@/components/ads/ad-banner";
 import { getPlacesByCity } from "@/lib/data/places";
 import { CityMap } from "@/components/maps/city-map-wrapper";
 import { JsonLd } from "@/components/seo/json-ld";
+import { PlaceImageComponent } from "@/components/place/place-image";
 
 export async function generateStaticParams() {
   const cities = await getAllCities();
@@ -121,12 +122,17 @@ export default async function CityPage({
               {places.map((place, index) => (
                 <div key={place.slug}>
                   <Link href={`/mekan/${place.slug}`}>
-                    <Card className="card-hover h-full border-border/60">
+                    <Card className="card-hover h-full border-border/60 overflow-hidden">
+                      <div className="relative h-40 w-full bg-muted">
+                        <PlaceImageComponent
+                          wikidataId={place.wikidata_id}
+                          placeName={place.name}
+                          cityName={city.name}
+                          className="h-full w-full"
+                        />
+                      </div>
                       <CardHeader className="pb-3">
-                        <Badge variant="secondary" className="w-fit">
-                          {place.category}
-                        </Badge>
-                        <CardTitle className="mt-2 text-base">
+                        <CardTitle className="text-base">
                           {place.name}
                         </CardTitle>
                       </CardHeader>
