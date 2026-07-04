@@ -26,6 +26,13 @@ import { PlaceMap } from "@/components/maps/place-map-wrapper";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getPlaceWikipedia } from "@/lib/data/wikipedia";
 import { getPlaceImageServerSide } from "@/lib/data/place-images";
+import { PlacePhotosGallery } from "@/components/place/place-photos-gallery";
+import {
+  getPlaceDescriptionFallback,
+  getPlaceThinContentFallback,
+  hasEditorialContent,
+  shouldIndexPlace,
+} from "@/lib/content/place-quality";
 
 export async function generateStaticParams() {
   const slugs = await getAllPlaceSlugs();
@@ -42,20 +49,26 @@ export async function generateMetadata({
 
   if (!place) return {};
 
-  const wiki = await getPlaceWikipedia(
-    place.wikidata_id,
-    place.name,
-    place.cityName
-  );
+  const isEditorial = hasEditorialContent(place);
+  const wiki = isEditorial
+    ? null
+    : await getPlaceWikipedia(place.wikidata_id, place.name, place.cityName);
 
-  const description =
-    wiki?.extract?.slice(0, 160) ||
-    place.description ||
-    `${place.name}, ${place.cityName}'da görülmeye değer bir mekan.`;
+  const description = isEditorial
+    ? place.description?.slice(0, 160) ||
+      getPlaceDescriptionFallback(place.name, place.cityName)
+    : wiki?.extract?.slice(0, 160) ||
+      place.description?.slice(0, 160) ||
+      getPlaceDescriptionFallback(place.name, place.cityName);
+
+  const indexable = shouldIndexPlace(place);
 
   return {
     title: `${place.name} - ${place.cityName}`,
     description,
+    robots: indexable
+      ? { index: true, follow: true }
+      : { index: false, follow: true },
     openGraph: {
       title: `${place.name} - ${place.cityName}`,
       description,
@@ -96,7 +109,12 @@ export default async function PlacePage({
   const [categories, wiki, image] = await Promise.all([
     getPlaceCategories(place.id),
     getPlaceWikipedia(place.wikidata_id, place.name, cityData.name),
-    getPlaceImageServerSide(place.wikidata_id, place.name, cityData.name),
+    getPlaceImageServerSide(
+      place.wikidata_id,
+      place.name,
+      cityData.name,
+      place.cover_image
+    ),
   ]);
 
   const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`;
@@ -106,15 +124,19 @@ export default async function PlacePage({
       ? `https://www.wikidata.org/wiki/${place.wikidata_id}`
       : null);
   const openingHoursLines = formatOpeningHours(place.opening_hours);
+  const isEditorial = hasEditorialContent(place);
+  const aboutText = isEditorial
+    ? place.description ||
+      getPlaceDescriptionFallback(place.name, cityData.name)
+    : wiki?.extract ||
+      place.description ||
+      getPlaceThinContentFallback(place.name, cityData.name);
 
   const placeJsonLd = {
     "@context": "https://schema.org",
     "@type": "TouristAttraction",
     name: place.name,
-    description:
-      wiki?.extract ||
-      place.description ||
-      `${place.name}, ${cityData.name}'da görülmeye değer bir mekandır.`,
+    description: aboutText,
     image: image?.url || undefined,
     address: {
       "@type": "PostalAddress",
@@ -209,6 +231,9 @@ export default async function PlacePage({
                 <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
                   {place.name}
                 </h1>
+                {place.is_featured && (
+                  <Badge className="mt-3">Öne Çıkan Mekan</Badge>
+                )}
 
                 <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1.5">
@@ -244,7 +269,26 @@ export default async function PlacePage({
               {/* About Section */}
               <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
                 <h2 className="mb-4 text-xl font-bold">Hakkında</h2>
-                {wiki?.extract ? (
+                {isEditorial ? (
+                  <div className="space-y-4">
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                      {place.description}
+                    </p>
+                    {wikiUrl && (
+                      <p className="text-xs text-muted-foreground">
+                        Ek kaynak:{" "}
+                        <a
+                          href={wikiUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          Wikipedia
+                        </a>
+                      </p>
+                    )}
+                  </div>
+                ) : wiki?.extract ? (
                   <div className="space-y-4">
                     <p className="text-muted-foreground leading-relaxed">
                       {wiki.extract}
@@ -265,10 +309,12 @@ export default async function PlacePage({
                 ) : (
                   <p className="text-muted-foreground leading-relaxed">
                     {place.description ||
-                      `${place.name}, ${cityData.name}'da bulunan görülmeye değer bir mekandır. Daha detaylı bilgi yakında eklenecektir.`}
+                      getPlaceThinContentFallback(place.name, cityData.name)}
                   </p>
                 )}
               </div>
+
+              <PlacePhotosGallery photos={place.photos} placeName={place.name} />
 
               {/* Map */}
               <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">

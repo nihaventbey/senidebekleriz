@@ -3,15 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[\s_]+/g, "-")
-    .replace(/[^\w\-]+/g, "")
-    .replace(/\-\-+/g, "-");
-}
+import { slugify } from "@/lib/slugify";
 
 // Cities
 export async function createCity(formData: FormData) {
@@ -133,7 +125,9 @@ export async function createPlace(formData: FormData) {
     lat: parseFloat(formData.get("lat") as string) || 0,
     lng: parseFloat(formData.get("lng") as string) || 0,
     source: formData.get("source") as string,
+    cover_image: (formData.get("cover_image") as string) || null,
     is_active: formData.get("is_active") === "on",
+    is_featured: formData.get("is_featured") === "on",
   };
 
   const { data: place, error } = await supabaseAdmin
@@ -162,19 +156,23 @@ export async function createPlace(formData: FormData) {
 
   revalidatePath("/sehirler");
   revalidatePath("/yonetim/mekanlar");
+  revalidatePath(`/mekan/${placeData.slug}`);
   redirect("/yonetim/mekanlar");
 }
 
 export async function updatePlace(slug: string, formData: FormData) {
+  const newSlug = slugify(formData.get("slug") as string);
   const placeData = {
     name: formData.get("name") as string,
-    slug: slugify(formData.get("slug") as string),
+    slug: newSlug,
     description: formData.get("description") as string,
     address: formData.get("address") as string,
     lat: parseFloat(formData.get("lat") as string) || 0,
     lng: parseFloat(formData.get("lng") as string) || 0,
     source: formData.get("source") as string,
+    cover_image: (formData.get("cover_image") as string) || null,
     is_active: formData.get("is_active") === "on",
+    is_featured: formData.get("is_featured") === "on",
   };
 
   const { data: place, error } = await supabaseAdmin
@@ -208,6 +206,8 @@ export async function updatePlace(slug: string, formData: FormData) {
 
   revalidatePath("/sehirler");
   revalidatePath("/yonetim/mekanlar");
+  revalidatePath(`/mekan/${slug}`);
+  revalidatePath(`/mekan/${newSlug}`);
   redirect("/yonetim/mekanlar");
 }
 

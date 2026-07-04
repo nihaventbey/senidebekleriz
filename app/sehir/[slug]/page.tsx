@@ -7,6 +7,9 @@ import { MapPin, ArrowRight } from "lucide-react";
 import { getCityBySlug, getAllCities } from "@/lib/data/cities";
 import { AdBanner } from "@/components/ads/ad-banner";
 import { getPlacesByCity } from "@/lib/data/places";
+import { getCityGuidePage } from "@/lib/data/pages";
+import { getCityArticle } from "@/lib/data/articles";
+import { renderMarkdown } from "@/lib/markdown";
 import { CityMap } from "@/components/maps/city-map-wrapper";
 import { JsonLd } from "@/components/seo/json-ld";
 import { PlaceImageComponent } from "@/components/place/place-image";
@@ -45,6 +48,10 @@ export default async function CityPage({
   }
 
   const allPlaces = await getPlacesByCity(slug);
+  const [cityArticle, cityGuidePage] = await Promise.all([
+    getCityArticle(slug),
+    getCityGuidePage(slug),
+  ]);
   const firstPage = allPlaces.slice(0, 20);
   const hasMore = allPlaces.length > 20;
 
@@ -69,16 +76,26 @@ export default async function CityPage({
       <JsonLd data={cityJsonLd} />
 
       {/* Hero */}
-      <section className="bg-hero-gradient py-12 md:py-16">
-        <div className="container mx-auto px-4">
+      <section className="relative overflow-hidden bg-hero-gradient py-12 md:py-16">
+        {city.coverImage && (
+          <>
+            <img
+              src={city.coverImage}
+              alt={city.name}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/50" />
+          </>
+        )}
+        <div className="container relative mx-auto px-4">
           <div className="max-w-3xl">
             <Badge variant="secondary" className="mb-4">
               {city.region}
             </Badge>
-            <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl">
+            <h1 className={`text-4xl font-extrabold tracking-tight md:text-5xl ${city.coverImage ? "text-white" : ""}`}>
               {city.name}
             </h1>
-            <p className="mt-4 text-base text-muted-foreground md:text-lg">
+            <p className={`mt-4 text-base md:text-lg ${city.coverImage ? "text-white/90" : "text-muted-foreground"}`}>
               {city.description}
             </p>
           </div>
@@ -105,6 +122,46 @@ export default async function CityPage({
           />
         </div>
 
+        {(cityArticle || cityGuidePage) && (
+          <section className="mb-10 rounded-2xl border bg-card p-6 md:p-8">
+            <h2 className="text-xl font-bold tracking-tight md:text-2xl">
+              {cityArticle?.title || cityGuidePage?.title}
+            </h2>
+            {cityArticle ? (
+              <>
+                <p className="mt-3 text-muted-foreground">{cityArticle.excerpt}</p>
+                <div
+                  className="prose prose-neutral mt-4 max-w-none line-clamp-6 text-muted-foreground dark:prose-invert"
+                  dangerouslySetInnerHTML={{
+                    __html: renderMarkdown(cityArticle.content.slice(0, 1200)),
+                  }}
+                />
+                <Link
+                  href={`/blog/${cityArticle.slug}`}
+                  className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                >
+                  Tam rehberi oku
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </>
+            ) : cityGuidePage ? (
+              <>
+                <div
+                  className="prose prose-neutral mt-4 max-w-none text-muted-foreground dark:prose-invert"
+                  dangerouslySetInnerHTML={{ __html: cityGuidePage.content }}
+                />
+                <Link
+                  href={`/sayfa/${cityGuidePage.slug}`}
+                  className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                >
+                  Tam rehberi oku
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </>
+            ) : null}
+          </section>
+        )}
+
         {/* Mekan Listesi */}
         <section>
           <div className="mb-6 flex items-end justify-between">
@@ -127,10 +184,14 @@ export default async function CityPage({
                   <Link key={place.slug} href={`/mekan/${place.slug}`}>
                     <Card className="card-hover h-full border-border/60 overflow-hidden">
                       <div className="relative h-40 w-full bg-muted">
+                        {place.is_featured && (
+                          <Badge className="absolute left-3 top-3 z-10">Öne Çıkan</Badge>
+                        )}
                         <PlaceImageComponent
                           wikidataId={place.wikidata_id}
                           placeName={place.name}
                           cityName={city.name}
+                          coverImage={place.cover_image}
                           className="h-full w-full"
                         />
                       </div>

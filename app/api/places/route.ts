@@ -18,9 +18,7 @@ export async function GET(request: NextRequest) {
       cities!inner(name, slug),
       place_categories(categories(name, slug))
     `)
-    .eq("is_active", true)
-    .order("name")
-    .range(offset, offset + limit - 1);
+    .eq("is_active", true);
 
   if (citySlug) {
     const { data: city } = await supabaseAdmin
@@ -52,7 +50,9 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const { data, error } = await query;
+  const { data, error } = await query
+    .order("name")
+    .range(offset, offset + limit - 1);
 
   if (error) {
     return NextResponse.json({ items: [], total: 0, error: error.message });
@@ -74,6 +74,8 @@ export async function GET(request: NextRequest) {
       lng: place.lng ? Number(place.lng) : 0,
       source: place.source || "manual",
       wikidata_id: place.wikidata_id || null,
+      cover_image: place.cover_image || null,
+      is_featured: place.is_featured ?? false,
       cityName: city?.name || "",
       citySlug: city?.slug || "",
     };

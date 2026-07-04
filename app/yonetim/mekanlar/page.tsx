@@ -1,28 +1,35 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { getAdminPlaces } from "@/lib/data/admin";
-import { Plus, Pencil } from "lucide-react";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { getAdminPlacesPaginated } from "@/lib/data/admin";
+import { getAllCities } from "@/lib/data/cities";
+import { AdminPlacesList } from "@/components/admin/places-list";
+import { Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 30;
+
 export default async function AdminPlacesPage() {
-  const places = await getAdminPlaces();
+  const [initial, cities] = await Promise.all([
+    getAdminPlacesPaginated({ page: 1, limit: PAGE_SIZE }),
+    getAllCities(),
+  ]);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Mekanlar</h1>
           <p className="text-muted-foreground">
-            Mekanları yönetin, düzenleyin ve yeni mekanlar ekleyin.
+            {initial.total.toLocaleString("tr-TR")} mekan · sayfa başına{" "}
+            {PAGE_SIZE} kayıt
           </p>
         </div>
         <Button asChild>
@@ -33,35 +40,23 @@ export default async function AdminPlacesPage() {
         </Button>
       </div>
 
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Mekan</TableHead>
-              <TableHead>Şehir</TableHead>
-              <TableHead>Kaynak</TableHead>
-              <TableHead className="text-right">İşlemler</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {places.map((place) => (
-              <TableRow key={place.slug}>
-                <TableCell className="font-medium">{place.name}</TableCell>
-                <TableCell>{place.cityName}</TableCell>
-                <TableCell className="capitalize">{place.source}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/yonetim/mekanlar/${place.slug}/duzenle`}>
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Düzenle
-                    </Link>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Mekan Listesi</CardTitle>
+          <CardDescription>
+            Ara, filtrele ve daha fazla yükle butonuyla kayıtları getirin.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AdminPlacesList
+            initialItems={initial.items}
+            initialTotal={initial.total}
+            initialHasMore={initial.hasMore}
+            cities={cities.map((c) => ({ slug: c.slug, name: c.name }))}
+            pageSize={PAGE_SIZE}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

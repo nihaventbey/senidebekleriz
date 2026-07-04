@@ -170,20 +170,17 @@ async function enrichPlace(
   return null;
 }
 
-async function main() {
-  console.log("=== Wikipedia Zenginleştirme Scripti ===");
-  console.log(`Batch size: ${BATCH_SIZE}, Delay: ${DELAY_MS}ms, Min chars: ${MIN_CHARS}`);
-  console.log("");
-
-  // Get places that need enrichment (no description)
+async function processBatch(): Promise<{ enriched: number; skipped: number; processed: number }> {
   const { data: places, error } = await supabase
     .from("places")
     .select(`
-      id, name, slug, wikidata_id, description, address,
+      id, name, slug, wikidata_id, description, address, source, is_featured,
       cities!inner(name)
     `)
     .eq("is_active", true)
     .is("description", null)
+    .neq("source", "manual")
+    .eq("is_featured", false)
     .order("name")
     .limit(BATCH_SIZE);
 
@@ -191,12 +188,11 @@ async function main() {
 
   if (error) {
     console.error("Veritabanı hatası:", error.message);
-    return;
+    return { enriched: 0, skipped: 0, processed: 0 };
   }
 
-  if (!filtered || filtered.length === 0) {
-    console.log("Zenginleştirilecek mekan bulunamadı.");
-    return;
+  if (filtered.length === 0) {
+    return { enriched: 0, skipped: 0, processed: 0 };
   }
 
   console.log(`${filtered.length} mekan zenginleştirilecek...`);
@@ -217,7 +213,6 @@ async function main() {
     });
 
     if (result && result.description && result.description.length > MIN_CHARS) {
-      // Update the place
       const { error: updateError } = await supabase
         .from("places")
         .update({
@@ -241,10 +236,36 @@ async function main() {
     await sleep(DELAY_MS);
   }
 
+  return { enriched, skipped, processed: filtered.length };
+}
+
+async function main() {
+  console.log("=== Wikipedia Zenginleştirme Scripti ===");
+  console.log(`Batch size: ${BATCH_SIZE}, Delay: ${DELAY_MS}ms, Min chars: ${MIN_CHARS}`);
   console.log("");
+
+  let totalEnriched = 0;
+  let totalSkipped = 0;
+  let batch = 0;
+
+  while (true) {
+    batch++;
+    console.log(`--- Batch ${batch} ---`);
+    const result = await processBatch();
+
+    if (result.processed === 0) {
+      console.log("Zenginleştirilecek mekan bulunamadı.");
+      break;
+    }
+
+    totalEnriched += result.enriched;
+    totalSkipped += result.skipped;
+    console.log("");
+  }
+
   console.log("=== Tamamlandı ===");
-  console.log(`Zenginleştirilen: ${enriched}`);
-  console.log(`Atılan: ${skipped}`);
+  console.log(`Zenginleştirilen: ${totalEnriched}`);
+  console.log(`Atılan: ${totalSkipped}`);
 }
 
 // Run

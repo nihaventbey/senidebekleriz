@@ -80,29 +80,105 @@ export type AdminPlaceListItem = {
   slug: string;
   source: string;
   cityName: string;
+  is_featured: boolean;
+  is_active: boolean;
 };
 
-export async function getAdminPlaces(): Promise<AdminPlaceListItem[]> {
-  const { data, error } = await supabaseAdmin
-    .from("places")
-    .select("id, name, slug, source, cities(name)")
-    .order("name");
+export type AdminPlacesPageResult = {
+  items: AdminPlaceListItem[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+};
 
-  if (error) {
-    console.error("getAdminPlaces error:", error.message);
-    return [];
+function mapAdminPlaceRow(p: {
+  id: string;
+  name: string;
+  slug: string;
+  source: string | null;
+  is_featured: boolean | null;
+  is_active: boolean | null;
+  cities: { name: string }[] | { name: string } | null;
+}): AdminPlaceListItem {
+  const cities = p.cities;
+  const cityName = Array.isArray(cities)
+    ? cities[0]?.name || ""
+    : cities?.name || "";
+
+  return {
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    source: p.source || "manual",
+    cityName,
+    is_featured: p.is_featured ?? false,
+    is_active: p.is_active ?? true,
+  };
+}
+
+export async function getAdminPlacesPaginated(options: {
+  page?: number;
+  limit?: number;
+  q?: string;
+  citySlug?: string;
+  source?: string;
+}): Promise<AdminPlacesPageResult> {
+  const page = Math.max(1, options.page ?? 1);
+  const limit = Math.min(50, Math.max(1, options.limit ?? 30));
+  const offset = (page - 1) * limit;
+
+  let query = supabaseAdmin
+    .from("places")
+    .select("id, name, slug, source, is_featured, is_active, cities(name)", {
+      count: "exact",
+    });
+
+  if (options.q?.trim()) {
+    query = query.ilike("name", `%${options.q.trim()}%`);
   }
 
-  return (data || []).map((p) => {
-    const cities = p.cities as { name: string }[] | null;
-    return {
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      source: p.source || "manual",
-      cityName: cities?.[0]?.name || "",
-    };
-  });
+  if (options.citySlug) {
+    const { data: city } = await supabaseAdmin
+      .from("cities")
+      .select("id")
+      .eq("slug", options.citySlug)
+      .single();
+
+    if (city) {
+      query = query.eq("city_id", city.id);
+    }
+  }
+
+  if (options.source) {
+    query = query.eq("source", options.source);
+  }
+
+  const { data, error, count } = await query
+    .order("name")
+    .range(offset, offset + limit - 1);
+
+  if (error) {
+    console.error("getAdminPlacesPaginated error:", error.message);
+    return { items: [], total: 0, page, limit, hasMore: false };
+  }
+
+  const items = (data || []).map(mapAdminPlaceRow);
+  const total = count ?? 0;
+
+  return {
+    items,
+    total,
+    page,
+    limit,
+    hasMore: offset + items.length < total,
+  };
+}
+
+/** @deprecated Use getAdminPlacesPaginated instead */
+export async function getAdminPlaces(): Promise<AdminPlaceListItem[]> {
+  const result = await getAdminPlacesPaginated({ page: 1, limit: 50 });
+  return result.items;
 }
 
 export type AdminPlaceData = {
@@ -115,7 +191,9 @@ export type AdminPlaceData = {
   lat: number;
   lng: number;
   source: string;
+  cover_image: string | null;
   is_active: boolean;
+  is_featured: boolean;
 };
 
 export async function getAdminPlaceBySlug(
@@ -142,7 +220,9 @@ export async function getAdminPlaceBySlug(
     lat: data.lat ? Number(data.lat) : 0,
     lng: data.lng ? Number(data.lng) : 0,
     source: data.source || "manual",
+    cover_image: data.cover_image,
     is_active: data.is_active ?? true,
+    is_featured: data.is_featured ?? false,
   };
 }
 

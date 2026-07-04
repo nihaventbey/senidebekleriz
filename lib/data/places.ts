@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { shouldIndexPlace } from "@/lib/content/place-quality";
 
 export type PlaceData = {
   id: string;
@@ -11,6 +12,8 @@ export type PlaceData = {
   lng: number;
   source: string;
   wikidata_id: string | null;
+  cover_image: string | null;
+  is_featured: boolean;
   photos: string[];
   phone: string | null;
   website: string | null;
@@ -21,6 +24,56 @@ export type PlaceData = {
     typeLabel: string;
   };
 };
+
+function mapPlaceRow(
+  place: {
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    address: string | null;
+    lat: number | string | null;
+    lng: number | string | null;
+    source: string | null;
+    wikidata_id: string | null;
+    cover_image: string | null;
+    is_featured: boolean | null;
+    photos: string[] | null;
+    phone: string | null;
+    website: string | null;
+    opening_hours: Record<string, unknown> | null;
+    rating: number | string | null;
+    place_categories?: Array<{ categories: { name: string; slug: string } | null }> | null;
+  },
+  categoryFallback = "tarihi-yer"
+): PlaceData {
+  const placeCats = place.place_categories;
+  const firstCat = placeCats?.[0]?.categories;
+
+  return {
+    id: place.id,
+    name: place.name,
+    slug: place.slug,
+    category: firstCat?.slug || categoryFallback,
+    description: place.description,
+    address: place.address,
+    lat: place.lat ? Number(place.lat) : 0,
+    lng: place.lng ? Number(place.lng) : 0,
+    source: place.source || "manual",
+    wikidata_id: place.wikidata_id || null,
+    cover_image: place.cover_image || null,
+    is_featured: place.is_featured ?? false,
+    photos: place.photos || [],
+    phone: place.phone || null,
+    website: place.website || null,
+    opening_hours: place.opening_hours || null,
+    rating: place.rating ? Number(place.rating) : null,
+    tags: {
+      type: "",
+      typeLabel: "",
+    },
+  };
+}
 
 export async function getPlacesByCity(citySlug: string): Promise<PlaceData[]> {
   const { data: city, error: cityError } = await supabaseAdmin
@@ -42,6 +95,7 @@ export async function getPlacesByCity(citySlug: string): Promise<PlaceData[]> {
     `)
     .eq("city_id", city.id)
     .eq("is_active", true)
+    .order("is_featured", { ascending: false })
     .order("name");
 
   if (error) {
@@ -49,31 +103,7 @@ export async function getPlacesByCity(citySlug: string): Promise<PlaceData[]> {
     return [];
   }
 
-  return (data || []).map((place) => {
-    const placeCats = place.place_categories as Array<{ categories: { name: string; slug: string } | null }> | null;
-    const firstCat = placeCats?.[0]?.categories;
-    return {
-      id: place.id,
-      name: place.name,
-      slug: place.slug,
-      category: firstCat?.slug || "tarihi-yer",
-      description: place.description,
-      address: place.address,
-      lat: place.lat ? Number(place.lat) : 0,
-      lng: place.lng ? Number(place.lng) : 0,
-      source: place.source || "manual",
-      wikidata_id: place.wikidata_id || null,
-      photos: place.photos || [],
-      phone: place.phone || null,
-      website: place.website || null,
-      opening_hours: place.opening_hours || null,
-      rating: place.rating ? Number(place.rating) : null,
-      tags: {
-        type: "",
-        typeLabel: "",
-      },
-    };
-  });
+  return (data || []).map((place) => mapPlaceRow(place));
 }
 
 export async function getPlaceBySlug(
@@ -130,22 +160,7 @@ export async function getPlaceWithCityBySlug(
   const firstCat = placeCats?.[0]?.categories;
 
   return {
-    id: data.id,
-    name: data.name,
-    slug: data.slug,
-    category: firstCat?.slug || "tarihi-yer",
-    description: data.description,
-    address: data.address,
-    lat: data.lat ? Number(data.lat) : 0,
-    lng: data.lng ? Number(data.lng) : 0,
-    source: data.source || "manual",
-    wikidata_id: data.wikidata_id || null,
-    photos: data.photos || [],
-    phone: data.phone || null,
-    website: data.website || null,
-    opening_hours: data.opening_hours || null,
-    rating: data.rating ? Number(data.rating) : null,
-    tags: { type: "", typeLabel: "" },
+    ...mapPlaceRow({ ...data, place_categories: placeCats }, firstCat?.slug || "tarihi-yer"),
     citySlug: city.slug,
     cityName: city.name,
   };
@@ -192,6 +207,8 @@ export async function getPlacesByCategory(
       lng: number;
       source: string;
       wikidata_id: string | null;
+      cover_image: string | null;
+      is_featured: boolean | null;
       photos: string[];
       phone: string | null;
       website: string | null;
@@ -206,28 +223,57 @@ export async function getPlacesByCategory(
     if (!city) continue;
 
     results.push({
-      id: place.id,
-      name: place.name,
-      slug: place.slug,
-      category: categorySlug,
-      description: place.description,
-      address: place.address,
-      lat: place.lat ? Number(place.lat) : 0,
-      lng: place.lng ? Number(place.lng) : 0,
-      source: place.source || "manual",
-      wikidata_id: place.wikidata_id || null,
-      photos: place.photos || [],
-      phone: place.phone || null,
-      website: place.website || null,
-      opening_hours: place.opening_hours || null,
-      rating: place.rating ? Number(place.rating) : null,
-      tags: { type: "", typeLabel: "" },
+      ...mapPlaceRow(
+        {
+          ...place,
+          place_categories: [{ categories: { name: "", slug: categorySlug } }],
+        },
+        categorySlug
+      ),
       citySlug: city.slug,
       cityName: city.name,
     });
   }
 
-  return results.sort((a, b) => a.name.localeCompare(b.name));
+  return results.sort((a, b) => {
+    if (a.is_featured !== b.is_featured) {
+      return a.is_featured ? -1 : 1;
+    }
+    return a.name.localeCompare(b.name);
+  });
+}
+
+export async function getFeaturedPlaces(
+  limit = 6
+): Promise<Array<PlaceData & { citySlug: string; cityName: string }>> {
+  const { data, error } = await supabaseAdmin
+    .from("places")
+    .select(`
+      *,
+      cities!inner(slug, name),
+      place_categories(categories(name, slug))
+    `)
+    .eq("is_active", true)
+    .eq("is_featured", true)
+    .order("name")
+    .limit(limit);
+
+  if (error) {
+    console.error("getFeaturedPlaces error:", error.message);
+    return [];
+  }
+
+  return (data || []).map((row) => {
+    const city = Array.isArray(row.cities)
+      ? (row.cities[0] as { slug: string; name: string } | undefined)
+      : (row.cities as { slug: string; name: string } | undefined);
+
+    return {
+      ...mapPlaceRow(row),
+      citySlug: city?.slug || "",
+      cityName: city?.name || "",
+    };
+  });
 }
 
 export async function getPlaceCategories(
@@ -243,4 +289,31 @@ export async function getPlaceCategories(
   return data
     .map((row) => row.categories as unknown as { name: string; slug: string; icon: string | null } | null)
     .filter(Boolean) as Array<{ name: string; slug: string; icon: string | null }>;
+}
+
+export async function getIndexablePlacesForSitemap(): Promise<
+  Array<{ slug: string; updatedAt: string }>
+> {
+  const { data, error } = await supabaseAdmin
+    .from("places")
+    .select("slug, updated_at, description, source, is_featured")
+    .eq("is_active", true);
+
+  if (error) {
+    console.error("getIndexablePlacesForSitemap error:", error.message);
+    return [];
+  }
+
+  return (data || [])
+    .filter((place) =>
+      shouldIndexPlace({
+        description: place.description,
+        source: place.source,
+        is_featured: place.is_featured,
+      })
+    )
+    .map((place) => ({
+      slug: place.slug,
+      updatedAt: place.updated_at,
+    }));
 }

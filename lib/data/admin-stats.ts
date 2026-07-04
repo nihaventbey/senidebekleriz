@@ -1,0 +1,168 @@
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { shouldIndexPlace } from "@/lib/content/place-quality";
+
+export type AdminDashboardStats = {
+  cities: number;
+  places: number;
+  activePlaces: number;
+  featuredPlaces: number;
+  indexablePlaces: number;
+  pages: number;
+  categories: number;
+  articles: number;
+  publishedArticles: number;
+  recentPlaces: Array<{
+    name: string;
+    slug: string;
+    cityName: string;
+    updatedAt: string;
+    isFeatured: boolean;
+  }>;
+};
+
+export type ContentReadinessStats = {
+  publishedArticles: number;
+  indexablePlaces: number;
+  citiesWithGuide: number;
+  citiesWithoutGuide: number;
+  missingGuideCities: string[];
+  hasPrivacyPage: boolean;
+  hasSiteVerification: boolean;
+};
+
+async function countIndexablePlaces(): Promise<number> {
+  const { data, error } = await supabaseAdmin
+    .from("places")
+    .select("description, source, is_featured")
+    .eq("is_active", true);
+
+  if (error) return 0;
+
+  return (data || []).filter((place) =>
+    shouldIndexPlace({
+      description: place.description,
+      source: place.source,
+      is_featured: place.is_featured,
+    })
+  ).length;
+}
+
+export async function getContentReadinessStats(): Promise<ContentReadinessStats> {
+  const [
+    publishedArticlesRes,
+    indexablePlaces,
+    guideArticlesRes,
+    citiesRes,
+    privacyRes,
+  ] = await Promise.all([
+    supabaseAdmin
+      .from("articles")
+      .select("*", { count: "exact", head: true })
+      .eq("is_published", true),
+    countIndexablePlaces(),
+    supabaseAdmin
+      .from("articles")
+      .select("city_slug")
+      .eq("is_published", true)
+      .not("city_slug", "is", null),
+    supabaseAdmin.from("cities").select("name, slug").eq("is_active", true),
+    supabaseAdmin
+      .from("pages")
+      .select("slug")
+      .eq("slug", "gizlilik-politikasi")
+      .eq("is_published", true)
+      .maybeSingle(),
+  ]);
+
+  const guideSlugs = new Set(
+    (guideArticlesRes.data || [])
+      .map((a) => a.city_slug)
+      .filter(Boolean) as string[]
+  );
+
+  const allCities = citiesRes.data || [];
+  const missingGuideCities = allCities
+    .filter((city) => !guideSlugs.has(city.slug))
+    .map((city) => city.name)
+    .slice(0, 12);
+
+  return {
+    publishedArticles: publishedArticlesRes.count ?? 0,
+    indexablePlaces,
+    citiesWithGuide: guideSlugs.size,
+    citiesWithoutGuide: allCities.length - guideSlugs.size,
+    missingGuideCities,
+    hasPrivacyPage: Boolean(privacyRes.data),
+    hasSiteVerification: Boolean(process.env.GOOGLE_SITE_VERIFICATION),
+  };
+}
+
+export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
+  const indexablePlaces = await countIndexablePlaces();
+
+  const [
+    citiesRes,
+    placesRes,
+    activePlacesRes,
+    featuredPlacesRes,
+    pagesRes,
+    categoriesRes,
+    articlesRes,
+    publishedArticlesRes,
+    recentRes,
+  ] = await Promise.all([
+    supabaseAdmin.from("cities").select("*", { count: "exact", head: true }),
+    supabaseAdmin.from("places").select("*", { count: "exact", head: true }),
+    supabaseAdmin
+      .from("places")
+      .select("*", { count: "exact", head: true })
+      .eq("is_active", true),
+    supabaseAdmin
+      .from("places")
+      .select("*", { count: "exact", head: true })
+      .eq("is_featured", true),
+    supabaseAdmin.from("pages").select("*", { count: "exact", head: true }),
+    supabaseAdmin
+      .from("categories")
+      .select("*", { count: "exact", head: true })
+      .eq("is_active", true),
+    supabaseAdmin.from("articles").select("*", { count: "exact", head: true }),
+    supabaseAdmin
+      .from("articles")
+      .select("*", { count: "exact", head: true })
+      .eq("is_published", true),
+    supabaseAdmin
+      .from("places")
+      .select("name, slug, updated_at, is_featured, cities(name)")
+      .order("updated_at", { ascending: false })
+      .limit(5),
+  ]);
+
+  const recentPlaces = (recentRes.data || []).map((place) => {
+    const cities = place.cities as { name: string }[] | { name: string } | null;
+    const cityName = Array.isArray(cities)
+      ? cities[0]?.name || ""
+      : cities?.name || "";
+
+    return {
+      name: place.name,
+      slug: place.slug,
+      cityName,
+      updatedAt: place.updated_at,
+      isFeatured: place.is_featured ?? false,
+    };
+  });
+
+  return {
+    cities: citiesRes.count ?? 0,
+    places: placesRes.count ?? 0,
+    activePlaces: activePlacesRes.count ?? 0,
+    featuredPlaces: featuredPlacesRes.count ?? 0,
+    indexablePlaces,
+    pages: pagesRes.count ?? 0,
+    categories: categoriesRes.count ?? 0,
+    articles: articlesRes.count ?? 0,
+    publishedArticles: publishedArticlesRes.count ?? 0,
+    recentPlaces,
+  };
+}

@@ -8,7 +8,7 @@ import { AdBanner } from "@/components/ads/ad-banner";
 export const metadata: Metadata = {
   title: "Şehirler",
   description:
-    "Türkiye'nin 81 ilini keşfedin. İstanbul, İzmir, Ankara ve daha fazlası.",
+    "Türkiye'nin 81 ilinde müzeler, tarihi yerler ve sanat mekanları.",
 };
 
 const regions = [

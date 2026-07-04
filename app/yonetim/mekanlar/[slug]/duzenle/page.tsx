@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -21,6 +20,7 @@ import {
 import { getAllCities } from "@/lib/data/cities";
 import { getAllCategories } from "@/lib/data/categories";
 import { SubmitButton } from "@/components/admin/submit-button";
+import { PlaceDescriptionField } from "@/components/admin/place-description-field";
 import { ArrowLeft, Trash2 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -115,13 +115,16 @@ export default async function EditPlacePage({
           </div>
         </div>
 
+        <PlaceDescriptionField defaultValue={place.description || ""} />
+
         <div className="space-y-2">
-          <Label htmlFor="description">Açıklama</Label>
-          <Textarea
-            id="description"
-            name="description"
-            rows={4}
-            defaultValue={place.description || ""}
+          <Label htmlFor="cover_image">Kapak Görseli URL</Label>
+          <Input
+            id="cover_image"
+            name="cover_image"
+            type="url"
+            defaultValue={place.cover_image || ""}
+            placeholder="https://..."
           />
         </div>
 
@@ -168,13 +171,23 @@ export default async function EditPlacePage({
           </Select>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="is_active"
-            name="is_active"
-            defaultChecked={place.is_active}
-          />
-          <Label htmlFor="is_active">Aktif</Label>
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="is_active"
+              name="is_active"
+              defaultChecked={place.is_active}
+            />
+            <Label htmlFor="is_active">Aktif</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="is_featured"
+              name="is_featured"
+              defaultChecked={place.is_featured}
+            />
+            <Label htmlFor="is_featured">Öne çıkan (SEO indeks)</Label>
+          </div>
         </div>
 
         <SubmitButton>Güncelle</SubmitButton>

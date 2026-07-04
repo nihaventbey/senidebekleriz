@@ -27,14 +27,7 @@ export function AdBanner({ slot, className, style }: AdBannerProps) {
   }, [isConfigured]);
 
   if (!isConfigured) {
-    return (
-      <div
-        className={`flex items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/30 text-sm text-muted-foreground ${className || ""}`}
-        style={style}
-      >
-        Reklam Alanı ({slot})
-      </div>
-    );
+    return null;
   }
 
   return (

@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Seni de Bekleriz
 
-## Getting Started
+Türkiye'nin 81 ilini ve kültür/tarih/sanat mekanlarını keşfetmeye yönelik Next.js tabanlı bir gezi rehberi. Herkese açık keşif sitesi + `/yonetim` altında admin CMS.
 
-First, run the development server:
+## Teknoloji
+
+- Next.js 16 (App Router), React 19, TypeScript
+- Supabase (PostgreSQL, Auth yalnızca admin paneli için)
+- Tailwind CSS 4, shadcn/ui
+- Leaflet haritalar
+
+## Kurulum
+
+```bash
+npm install
+cp .env.local.example .env.local
+# .env.local dosyasını doldurun
+```
+
+### Veritabanı
+
+Supabase projesinde SQL migration dosyalarını sırayla çalıştırın:
+
+1. [`supabase/migrations/001_initial_schema.sql`](supabase/migrations/001_initial_schema.sql)
+2. [`supabase/migrations/002_remove_user_tables.sql`](supabase/migrations/002_remove_user_tables.sql) — mevcut veritabanında kullanıcı tabloları varsa
+3. [`supabase/migrations/003_culture_focus.sql`](supabase/migrations/003_culture_focus.sql) — restoran kategorisini kaldırır, sanat mekanları ekler
+4. [`supabase/migrations/004_articles.sql`](supabase/migrations/004_articles.sql) — Markdown blog yazıları tablosu
+
+Ardından seed:
+
+```bash
+npm run seed
+```
+
+### Geliştirme
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Site: [http://localhost:3000](http://localhost:3000)  
+Admin: [http://localhost:3000/yonetim/giris](http://localhost:3000/yonetim/giris)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Veri scriptleri
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Komut | Açıklama |
+|-------|----------|
+| `npm run seed` | 81 şehir, kategoriler, reklam slotları, admin kullanıcı |
+| `npm run fetch-places [şehir\|all]` | OSM/Overpass ile mekan importu |
+| `npm run fetch:istanbul` | İstanbul özel import |
+| `npm run enrich` | Wikipedia açıklama zenginleştirmesi |
+| `npm run check:supabase` | Supabase bağlantı kontrolü |
+| `npm run build:deploy` | Standalone FTP deploy paketi (`deploy/`) |
 
-## Learn More
+Tüm iller için mekan verisi:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run fetch-places all
+npm run enrich
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Test
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm test
+```
 
-## Deploy on Vercel
+## Ürün kapsamı
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Herkese açık şehir, mekan, kategori keşfi (tarih, müze, sanat, park)
+- Markdown blog / gezi rehberi (`/blog`) + admin AI taslak desteği
+- Admin CMS: şehir, mekan, kategori, sayfa ve reklam yönetimi
+- Kişiselleştirme veya halka açık kullanıcı hesabı **yok**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deploy
+
+```bash
+npm run build:deploy
+```
+
+Çıktı `deploy/` klasöründe standalone build olarak oluşur.

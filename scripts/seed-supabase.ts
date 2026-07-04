@@ -14,8 +14,8 @@ const supabase = createClient(
 const categories = [
   { name: "Tarihi Yer", slug: "tarihi-yer", icon: "Landmark", color: "#8B5CF6", is_active: true },
   { name: "Müzeler", slug: "muzeler", icon: "Camera", color: "#F59E0B", is_active: true },
+  { name: "Sanat Mekanları", slug: "sanat-mekanlari", icon: "Palette", color: "#EC4899", is_active: true },
   { name: "Parklar", slug: "parklar", icon: "TreePine", color: "#10B981", is_active: true },
-  { name: "Restoranlar", slug: "restoranlar", icon: "Utensils", color: "#EF4444", is_active: true },
 ];
 
 const adPlacements = [

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { MapPin, ChevronDown, Loader2 } from "lucide-react";
 import { PlaceImageComponent } from "@/components/place/place-image";
 
@@ -16,6 +17,8 @@ type Place = {
   lat: number;
   lng: number;
   wikidata_id: string | null;
+  cover_image: string | null;
+  is_featured: boolean;
 };
 
 type Props = {
@@ -58,10 +61,14 @@ export function PlacesLoadMore({ citySlug, cityName, initialCount, totalCount }:
             <Link key={place.slug} href={`/mekan/${place.slug}`}>
               <Card className="card-hover h-full border-border/60 overflow-hidden">
                 <div className="relative h-40 w-full bg-muted">
+                  {place.is_featured && (
+                    <Badge className="absolute left-3 top-3 z-10">Öne Çıkan</Badge>
+                  )}
                   <PlaceImageComponent
                     wikidataId={place.wikidata_id}
                     placeName={place.name}
                     cityName={cityName}
+                    coverImage={place.cover_image}
                     className="h-full w-full"
                   />
                 </div>

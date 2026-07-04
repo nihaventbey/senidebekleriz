@@ -5,14 +5,18 @@ import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Logo } from "@/components/layout/logo";
 import { SearchBar } from "@/components/layout/search-bar";
+import { useSearch } from "@/components/layout/search-provider";
+import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Ana Sayfa" },
   { href: "/sehirler", label: "Şehirler" },
   { href: "/kategoriler", label: "Kategoriler" },
+  { href: "/blog", label: "Gezi Rehberi" },
 ];
 
 export function Header() {
+  const { isOpen: searchOpen } = useSearch();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -28,7 +32,14 @@ export function Header() {
   }, [mobileMenuOpen]);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-md">
+    <header
+      className={cn(
+        "sticky top-0 z-50 w-full border-b border-border/60",
+        searchOpen
+          ? "bg-background"
+          : "bg-background/80 backdrop-blur-md"
+      )}
+    >
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Logo />
 

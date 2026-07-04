@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -16,6 +15,7 @@ import { createPlace } from "@/lib/actions/admin";
 import { getAllCities } from "@/lib/data/cities";
 import { getAllCategories } from "@/lib/data/categories";
 import { SubmitButton } from "@/components/admin/submit-button";
+import { PlaceDescriptionField } from "@/components/admin/place-description-field";
 import { ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -85,9 +85,16 @@ export default async function NewPlacePage() {
           </div>
         </div>
 
+        <PlaceDescriptionField />
+
         <div className="space-y-2">
-          <Label htmlFor="description">Açıklama</Label>
-          <Textarea id="description" name="description" rows={4} />
+          <Label htmlFor="cover_image">Kapak Görseli URL</Label>
+          <Input
+            id="cover_image"
+            name="cover_image"
+            type="url"
+            placeholder="https://..."
+          />
         </div>
 
         <div className="space-y-2">
@@ -121,9 +128,15 @@ export default async function NewPlacePage() {
           </Select>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Checkbox id="is_active" name="is_active" defaultChecked />
-          <Label htmlFor="is_active">Aktif</Label>
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="flex items-center gap-2">
+            <Checkbox id="is_active" name="is_active" defaultChecked />
+            <Label htmlFor="is_active">Aktif</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox id="is_featured" name="is_featured" />
+            <Label htmlFor="is_featured">Öne çıkan (SEO indeks)</Label>
+          </div>
         </div>
 
         <SubmitButton>Kaydet</SubmitButton>

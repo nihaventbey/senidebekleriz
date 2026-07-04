@@ -8,6 +8,7 @@ type PlaceImageProps = {
   wikidataId: string | null;
   placeName: string;
   cityName: string;
+  coverImage?: string | null;
   className?: string;
 };
 
@@ -27,20 +28,29 @@ export function PlaceImageComponent({
   wikidataId,
   placeName,
   cityName,
+  coverImage,
   className = "",
 }: PlaceImageProps) {
   const [image, setImage] = useState<PlaceImageType | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!coverImage);
 
   useEffect(() => {
-    if (!wikidataId) {
+    if (coverImage) {
+      setImage({ url: coverImage, alt: placeName, source: "manual" });
       setLoading(false);
       return;
     }
 
     const controller = new AbortController();
+    const params = new URLSearchParams({
+      placeName,
+      cityName,
+    });
+    if (wikidataId) {
+      params.set("wikidataId", wikidataId);
+    }
 
-    fetch(`/api/place-image?wikidataId=${encodeURIComponent(wikidataId)}&placeName=${encodeURIComponent(placeName)}&cityName=${encodeURIComponent(cityName)}`, {
+    fetch(`/api/place-image?${params.toString()}`, {
       signal: controller.signal,
     })
       .then((res) => res.json())
@@ -51,7 +61,7 @@ export function PlaceImageComponent({
       .finally(() => setLoading(false));
 
     return () => controller.abort();
-  }, [wikidataId, placeName, cityName]);
+  }, [wikidataId, placeName, cityName, coverImage]);
 
   if (loading) {
     return (

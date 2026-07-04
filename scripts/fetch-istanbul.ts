@@ -17,8 +17,10 @@ SELECT DISTINCT ?place ?placeLabel ?coord ?type ?typeLabel ?description WHERE {
     wd:Q421092,   # historical site
     wd:Q811979,   # archaeological site
     wd:Q1637706,  # church building
-    wd:Q15275882, # neighborhood
-    wd:Q123705    # palace
+    wd:Q123705,   # palace
+    wd:Q24354,    # theatre
+    wd:Q1007870,  # art gallery
+    wd:Q207694    # art museum
   ))
   SERVICE wikibase:label { bd:serviceParam wikibase:language "tr,en". }
 }
@@ -27,7 +29,10 @@ LIMIT 200
 
 const CATEGORY_MAP: Record<string, string> = {
   "http://www.wikidata.org/entity/Q33506": "muzeler",
+  "http://www.wikidata.org/entity/Q207694": "muzeler",
   "http://www.wikidata.org/entity/Q22698": "parklar",
+  "http://www.wikidata.org/entity/Q24354": "sanat-mekanlari",
+  "http://www.wikidata.org/entity/Q1007870": "sanat-mekanlari",
 };
 
 const DEFAULT_CATEGORY = "tarihi-yer";

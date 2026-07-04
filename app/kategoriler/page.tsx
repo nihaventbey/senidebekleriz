@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Metadata } from "next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Landmark, Camera, TreePine, Utensils } from "lucide-react";
+import { Landmark, Camera, TreePine, Palette } from "lucide-react";
 import { getAllCategories } from "@/lib/data/categories";
 import { AdBanner } from "@/components/ads/ad-banner";
 
@@ -9,13 +9,13 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Landmark,
   Camera,
   TreePine,
-  Utensils,
+  Palette,
 };
 
 export const metadata: Metadata = {
   title: "Kategoriler",
   description:
-    "Mekanları kategoriye göre keşfedin. Müzeler, tarihi yerler, parklar ve daha fazlası.",
+    "Mekanları kategoriye göre keşfedin. Müzeler, tarihi yerler, sanat mekanları ve daha fazlası.",
 };
 
 export default async function CategoriesPage() {

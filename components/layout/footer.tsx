@@ -11,7 +11,8 @@ export function Footer() {
           <div className="md:col-span-1">
             <Logo />
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              Türkiye'nin 81 ilini ve gezilecek yerlerini keşfedin.
+              Türkiye'nin müzelerini, tarihi yerlerini ve sanat mekanlarını
+              keşfedin.
             </p>
           </div>
 
@@ -29,8 +30,23 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/blog" className="transition-colors hover:text-foreground">
+                  Gezi Rehberi
+                </Link>
+              </li>
+              <li>
                 <Link href="/sayfa/hakkimizda" className="transition-colors hover:text-foreground">
                   Hakkımızda
+                </Link>
+              </li>
+              <li>
+                <Link href="/sayfa/misyon" className="transition-colors hover:text-foreground">
+                  Misyonumuz
+                </Link>
+              </li>
+              <li>
+                <Link href="/sayfa/vizyon" className="transition-colors hover:text-foreground">
+                  Vizyonumuz
                 </Link>
               </li>
             </ul>
@@ -60,22 +76,17 @@ export function Footer() {
           <div>
             <h3 className="text-sm font-semibold">Hakkında</h3>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              Seni de Bekleriz, Türkiye'nin şehirlerini ve gezilecek yerlerini
-              tanıtan bir keşif platformudur.
+              Sanat, tarih ve kültür odaklı bir keşif platformu. Amacımız,
+              müzeleri ve tarihi mekanları daha görünür kılmak; insanları bu
+              alanlara yönlendirmek.
             </p>
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-border/60 pt-6 sm:flex-row">
-          <p className="text-sm text-muted-foreground">
+        <div className="mt-10 border-t border-border/60 pt-6">
+          <p className="text-center text-sm text-muted-foreground sm:text-left">
             © {currentYear} Seni de Bekleriz. Tüm hakları saklıdır.
           </p>
-          <Link
-            href="/yonetim/giris"
-            className="text-xs text-muted-foreground/40 transition-colors hover:text-muted-foreground"
-          >
-            Yönetim
-          </Link>
         </div>
       </div>
     </footer>

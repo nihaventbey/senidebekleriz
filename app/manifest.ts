@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Seni de Bekleriz",
     short_name: "SeniDeBekleriz",
     description:
-      "Türkiye'nin şehirlerini ve gezilecek yerlerini keşfedin.",
+      "Türkiye'nin müzeleri, tarihi yerleri ve sanat mekanlarını keşfedin.",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",

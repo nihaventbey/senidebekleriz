@@ -51,6 +51,12 @@ export async function getPageBySlug(slug: string): Promise<PageData | undefined>
   };
 }
 
+export async function getCityGuidePage(
+  citySlug: string
+): Promise<PageData | undefined> {
+  return getPageBySlug(`rehber-${citySlug}`);
+}
+
 export async function getAllPageSlugs(): Promise<string[]> {
   const pages = await getAllPages();
   return pages.map((page) => page.slug);

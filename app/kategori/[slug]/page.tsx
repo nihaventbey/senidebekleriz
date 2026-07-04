@@ -75,10 +75,14 @@ export default async function CategoryPage({
               <Link href={`/mekan/${place.slug}`}>
                 <Card className="h-full overflow-hidden transition-shadow hover:shadow-lg">
                   <div className="relative h-40 w-full bg-muted">
+                    {place.is_featured && (
+                      <Badge className="absolute left-3 top-3 z-10">Öne Çıkan</Badge>
+                    )}
                     <PlaceImageComponent
                       wikidataId={place.wikidata_id}
                       placeName={place.name}
                       cityName={place.cityName}
+                      coverImage={place.cover_image}
                       className="h-full w-full"
                     />
                   </div>

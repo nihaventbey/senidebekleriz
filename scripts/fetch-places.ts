@@ -37,27 +37,46 @@ function slugify(text: string): string {
 }
 
 function categorizePlace(tags: Record<string, string>): string | null {
-  if (tags.tourism === "museum" || tags.tourism === "gallery") return "muzeler";
-  if (tags.historic || tags.tourism === "attraction" || tags.tourism === "artwork" || tags.tourism === "monument")
+  if (tags.tourism === "museum") return "muzeler";
+  if (
+    tags.tourism === "gallery" ||
+    tags.tourism === "arts_centre" ||
+    tags.amenity === "arts_centre" ||
+    tags.amenity === "theatre" ||
+    tags.amenity === "cinema"
+  ) {
+    return "sanat-mekanlari";
+  }
+  if (
+    tags.historic ||
+    tags.tourism === "attraction" ||
+    tags.tourism === "artwork" ||
+    tags.tourism === "monument"
+  ) {
     return "tarihi-yer";
-  if (tags.leisure === "park" || tags.leisure === "garden" || tags.tourism === "viewpoint" || tags.natural === "peak")
+  }
+  if (
+    tags.leisure === "park" ||
+    tags.leisure === "garden" ||
+    tags.tourism === "viewpoint" ||
+    tags.natural === "peak"
+  ) {
     return "parklar";
-  if (tags.amenity === "restaurant" || tags.amenity === "cafe" || tags.amenity === "bar")
-    return "restoranlar";
-  if (tags.tourism === "museum" || tags.historic) return "tarihi-yer";
+  }
   return null;
 }
 
 function buildQuery(lat: number, lng: number, radius: number): string {
   return `[out:json][timeout:60];
 (
-  node["tourism"~"museum|attraction|artwork|gallery|viewpoint|monument"](around:${radius},${lat},${lng});
-  way["tourism"~"museum|attraction|artwork|gallery|viewpoint|monument"](around:${radius},${lat},${lng});
+  node["tourism"~"museum|attraction|artwork|gallery|viewpoint|monument|arts_centre"](around:${radius},${lat},${lng});
+  way["tourism"~"museum|attraction|artwork|gallery|viewpoint|monument|arts_centre"](around:${radius},${lat},${lng});
   node["historic"](around:${radius},${lat},${lng});
   way["historic"](around:${radius},${lat},${lng});
   node["leisure"~"park|garden"](around:${radius},${lat},${lng});
   way["leisure"~"park|garden"](around:${radius},${lat},${lng});
-  node["amenity"~"restaurant|cafe"](around:${radius},${lat},${lng});
+  node["amenity"~"arts_centre|theatre|cinema"](around:${radius},${lat},${lng});
+  way["amenity"~"arts_centre|theatre|cinema"](around:${radius},${lat},${lng});
 );
 out center 300;`;
 }

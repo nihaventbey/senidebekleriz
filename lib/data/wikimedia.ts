@@ -4,7 +4,7 @@ const COMMONS_API = "https://commons.wikimedia.org/w/api.php";
 export type PlaceImage = {
   url: string;
   alt: string;
-  source: "wikimedia" | "unsplash" | "placeholder";
+  source: "wikimedia" | "unsplash" | "placeholder" | "manual";
 };
 
 const cache = new Map<string, PlaceImage | null>();

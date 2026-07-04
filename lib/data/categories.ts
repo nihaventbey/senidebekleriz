@@ -8,40 +8,64 @@ export type CategoryData = {
   description: string;
 };
 
+const EXCLUDED_CATEGORY_SLUGS = new Set(["restoranlar"]);
+
+const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+  "tarihi-yer":
+    "Türkiye'nin zengin tarihinden izler taşıyan camiler, kiliseler, saraylar, anıtlar ve antik kalıntılar.",
+  muzeler:
+    "Sanat, arkeoloji ve kültürü bir araya getiren müzeler ile sergi alanları.",
+  "sanat-mekanlari":
+    "Galeriler, tiyatrolar, sanat merkezleri ve çağdaş sanat mekanları.",
+  parklar:
+    "Tarihi parklar, botanik bahçeleri ve kültürel peyzaj alanları.",
+};
+
 const DEFAULT_CATEGORIES: CategoryData[] = [
   {
     id: "tarihi-yer",
     name: "Tarihi Yer",
     slug: "tarihi-yer",
     icon: "Landmark",
-    description:
-      "Türkiye'nin zengin tarihinden izler taşıyan camiler, kiliseler, saraylar ve antik kalıntılar.",
+    description: CATEGORY_DESCRIPTIONS["tarihi-yer"],
   },
   {
     id: "muzeler",
     name: "Müzeler",
     slug: "muzeler",
     icon: "Camera",
-    description:
-      "Sanat, tarih ve kültürü bir araya getiren müzeler ve sergi alanları.",
+    description: CATEGORY_DESCRIPTIONS.muzeler,
+  },
+  {
+    id: "sanat-mekanlari",
+    name: "Sanat Mekanları",
+    slug: "sanat-mekanlari",
+    icon: "Palette",
+    description: CATEGORY_DESCRIPTIONS["sanat-mekanlari"],
   },
   {
     id: "parklar",
     name: "Parklar",
     slug: "parklar",
     icon: "TreePine",
-    description:
-      "Şehir içinde nefes alabileceğiniz yeşil alanlar, botanik bahçeleri ve parklar.",
-  },
-  {
-    id: "restoranlar",
-    name: "Restoranlar",
-    slug: "restoranlar",
-    icon: "Utensils",
-    description:
-      "Yerel lezzetlerden dünya mutfağına şehirlerin en iyi yeme-içme mekanları.",
+    description: CATEGORY_DESCRIPTIONS.parklar,
   },
 ];
+
+function mapCategoryRow(category: {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+}): CategoryData {
+  return {
+    id: category.id,
+    name: category.name,
+    slug: category.slug,
+    icon: category.icon || "Landmark",
+    description: CATEGORY_DESCRIPTIONS[category.slug] || "",
+  };
+}
 
 export async function getAllCategories(): Promise<CategoryData[]> {
   const { data, error } = await supabaseAdmin
@@ -55,22 +79,22 @@ export async function getAllCategories(): Promise<CategoryData[]> {
     return DEFAULT_CATEGORIES;
   }
 
-  if (!data || data.length === 0) {
+  const rows = (data || []).filter((c) => !EXCLUDED_CATEGORY_SLUGS.has(c.slug));
+
+  if (rows.length === 0) {
     return DEFAULT_CATEGORIES;
   }
 
-  return data.map((category) => ({
-    id: category.id,
-    name: category.name,
-    slug: category.slug,
-    icon: category.icon || "Landmark",
-    description: "",
-  }));
+  return rows.map(mapCategoryRow);
 }
 
 export async function getCategoryBySlug(
   slug: string
 ): Promise<CategoryData | undefined> {
+  if (EXCLUDED_CATEGORY_SLUGS.has(slug)) {
+    return undefined;
+  }
+
   const { data, error } = await supabaseAdmin
     .from("categories")
     .select("*")
@@ -82,11 +106,5 @@ export async function getCategoryBySlug(
     return DEFAULT_CATEGORIES.find((c) => c.slug === slug);
   }
 
-  return {
-    id: data.id,
-    name: data.name,
-    slug: data.slug,
-    icon: data.icon || "Landmark",
-    description: "",
-  };
+  return mapCategoryRow(data);
 }

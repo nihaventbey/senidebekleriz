@@ -5,8 +5,17 @@ import { getPlaceWikipedia } from "@/lib/data/wikipedia";
 export async function getPlaceImageServerSide(
   wikidataId: string | null,
   placeName: string,
-  cityName: string
+  cityName: string,
+  coverImage?: string | null
 ): Promise<PlaceImage> {
+  if (coverImage) {
+    return {
+      url: coverImage,
+      alt: placeName,
+      source: "manual",
+    };
+  }
+
   if (wikidataId) {
     const image = await getWikimediaImage(wikidataId);
     if (image) return image;
