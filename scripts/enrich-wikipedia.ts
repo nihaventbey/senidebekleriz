@@ -175,35 +175,37 @@ async function main() {
   console.log(`Batch size: ${BATCH_SIZE}, Delay: ${DELAY_MS}ms, Min chars: ${MIN_CHARS}`);
   console.log("");
 
-  // Get places that need enrichment (no description or short description)
+  // Get places that need enrichment (no description)
   const { data: places, error } = await supabase
     .from("places")
     .select(`
-      id, name, slug, wikidata_id, description, address, phone,
+      id, name, slug, wikidata_id, description, address,
       cities!inner(name)
     `)
     .eq("is_active", true)
-    .or("description.is.null,description.length.lt.100")
+    .is("description", null)
     .order("name")
     .limit(BATCH_SIZE);
+
+  const filtered = places || [];
 
   if (error) {
     console.error("Veritabanı hatası:", error.message);
     return;
   }
 
-  if (!places || places.length === 0) {
+  if (!filtered || filtered.length === 0) {
     console.log("Zenginleştirilecek mekan bulunamadı.");
     return;
   }
 
-  console.log(`${places.length} mekan zenginleştirilecek...`);
+  console.log(`${filtered.length} mekan zenginleştirilecek...`);
   console.log("");
 
   let enriched = 0;
   let skipped = 0;
 
-  for (const place of places) {
+  for (const place of filtered) {
     const city = Array.isArray(place.cities) ? place.cities[0] : place.cities;
     const cityName = (city as { name: string })?.name || "";
 
@@ -221,9 +223,6 @@ async function main() {
         .update({
           description: result.description,
           address: result.address || place.address,
-          phone: result.phone || place.phone || null,
-          website: result.website || null,
-          opening_hours: result.opening_hours || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", place.id);
