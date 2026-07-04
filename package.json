@@ -9,6 +9,7 @@
     "lint": "eslint",
     "fetch:istanbul": "tsx scripts/fetch-istanbul.ts",
     "seed": "tsx scripts/seed-supabase.ts",
+    "fetch-places": "tsx scripts/fetch-places.ts",
     "check:supabase": "tsx scripts/check-supabase.ts",
     "build:deploy": "node scripts/prepare-deploy.js"
   },

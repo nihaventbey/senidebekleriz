@@ -8,22 +8,39 @@ import { AdBanner } from "@/components/ads/ad-banner";
 export const metadata: Metadata = {
   title: "Şehirler",
   description:
-    "Türkiye'nin şehirlerini keşfedin. İstanbul, İzmir, Ankara ve daha fazlası.",
+    "Türkiye'nin 81 ilini keşfedin. İstanbul, İzmir, Ankara ve daha fazlası.",
 };
+
+const regions = [
+  "Marmara",
+  "Ege",
+  "İç Anadolu",
+  "Karadeniz",
+  "Akdeniz",
+  "Güneydoğu Anadolu",
+  "Doğu Anadolu",
+];
 
 export default async function CitiesPage() {
   const cities = await getAllCities();
 
+  const citiesByRegion = regions
+    .map((region) => ({
+      region,
+      cities: cities.filter((c) => c.region === region),
+    }))
+    .filter((g) => g.cities.length > 0);
+
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="mb-10 text-center">
-        <h1 className="text-4xl font-bold tracking-tight">Şehirler</h1>
-        <p className="mt-4 text-lg text-muted-foreground">
-          Keşfetmek istediğin şehri seç ve mekanları gör.
+        <h1 className="text-4xl font-extrabold tracking-tight">Şehirler</h1>
+        <p className="mt-3 text-lg text-muted-foreground">
+          Türkiye'nin {cities.length} ilini keşfetmeye başla.
         </p>
       </div>
 
-      <div className="mb-8">
+      <div className="mb-10">
         <AdBanner
           slot="cities-top"
           className="min-h-[90px] w-full"
@@ -31,30 +48,39 @@ export default async function CitiesPage() {
         />
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {cities.map((city) => (
-          <Link key={city.slug} href={`/sehir/${city.slug}`}>
-            <Card className="h-full transition-shadow hover:shadow-lg">
-              <CardHeader className="pb-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                  <MapPin className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle className="mt-4 text-xl">{city.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {city.description}
-                </p>
-                <div className="mt-4 inline-flex items-center rounded-full bg-secondary px-3 py-1 text-xs font-medium">
-                  {city.region}
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      {citiesByRegion.map(({ region, cities: regionCities }) => (
+        <section key={region} className="mb-12">
+          <h2 className="mb-6 text-2xl font-bold tracking-tight">{region}</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {regionCities.map((city) => (
+              <Link key={city.slug} href={`/sehir/${city.slug}`}>
+                <Card className="card-hover h-full border-border/60">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                        <MapPin className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">{city.name}</CardTitle>
+                        <p className="text-xs text-muted-foreground">
+                          {city.region}
+                        </p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                      {city.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ))}
 
-      <div className="mt-8">
+      <div className="mt-10">
         <AdBanner
           slot="cities-bottom"
           className="min-h-[90px] w-full"

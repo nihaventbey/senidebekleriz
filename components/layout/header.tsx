@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { MapPin, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/layout/logo";
 
 const navItems = [
   { href: "/", label: "Ana Sayfa" },
@@ -23,24 +24,15 @@ export function Header() {
   }, []);
 
   useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
   }, [mobileMenuOpen]);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <MapPin className="h-5 w-5" />
-          </div>
-          <span>Seni de Bekleriz</span>
-        </Link>
+        <Logo />
 
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden items-center gap-8 md:flex">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -58,15 +50,13 @@ export function Header() {
           </Button>
         </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
+        <button
+          className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted md:hidden"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Menü"
         >
           {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
+        </button>
       </div>
 
       {mobileMenuOpen && (
@@ -81,7 +71,7 @@ export function Header() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="block rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {item.label}
@@ -90,7 +80,7 @@ export function Header() {
               <div className="border-t pt-2 mt-2">
                 <Link
                   href="/yonetim/giris"
-                  className="block rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Yönetim

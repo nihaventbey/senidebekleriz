@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -29,24 +28,28 @@ const iconMap: Record<string, ComponentType<{ className?: string }>> = {
 };
 
 export default async function HomePage() {
-  const cities = await getAllCities();
-  const categoryList = await getAllCategories();
+  const [cities, categoryList] = await Promise.all([
+    getAllCities(),
+    getAllCategories(),
+  ]);
+
+  const featuredCities = cities.slice(0, 6);
 
   return (
-    <div className="flex flex-col gap-16 pb-16">
+    <div className="flex flex-col">
       {/* Hero */}
-      <section className="relative overflow-hidden bg-hero-gradient py-24 md:py-32">
-        <div className="absolute inset-0 bg-grid-pattern opacity-60" />
+      <section className="relative overflow-hidden bg-hero-gradient py-20 md:py-28">
+        <div className="absolute inset-0 bg-grid-pattern opacity-50" />
         <div className="container relative mx-auto px-4 text-center">
-          <span className="inline-flex items-center rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
-            Türkiye&apos;nin Şehir Rehberi
+          <span className="inline-flex items-center rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary">
+            81 İl · Binlerce Mekan
           </span>
-          <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
-            Türkiye&apos;yi{" "}
-            <span className="text-gradient">Şehir Şehir Keşfet</span>
+          <h1 className="mx-auto mt-6 max-w-4xl text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl md:text-6xl">
+            Türkiye'yi{" "}
+            <span className="text-gradient">Şehir Şehir</span> Keşfet
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            Seni de Bekleriz ile Türkiye&apos;nin en güzel şehirlerini, tarihi
+          <p className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground md:text-lg">
+            Seni de Bekleriz ile Türkiye'nin en güzel şehirlerini, tarihi
             mekanlarını, lezzet duraklarını ve gizli köşelerini keşfet.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -67,8 +70,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Ad Placeholder - Header Hero altı */}
-      <section className="container mx-auto px-4">
+      {/* Ad - Hero altı */}
+      <section className="container mx-auto px-4 py-8">
         <AdBanner
           slot="home-hero-bottom"
           className="min-h-[90px] w-full"
@@ -77,12 +80,14 @@ export default async function HomePage() {
       </section>
 
       {/* Popüler Şehirler */}
-      <section className="container mx-auto px-4">
+      <section className="container mx-auto px-4 py-12">
         <div className="mb-8 flex items-end justify-between">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Popüler Şehirler</h2>
-            <p className="mt-2 text-muted-foreground">
-              Türkiye&apos;nin en çok ziyaret edilen şehirlerini keşfet.
+            <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
+              Popüler Şehirler
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground md:text-base">
+              Türkiye'nin en çok ziyaret edilen şehirlerini keşfet.
             </p>
           </div>
           <Button variant="outline" asChild className="hidden sm:flex">
@@ -90,21 +95,21 @@ export default async function HomePage() {
           </Button>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {cities.map((city) => (
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {featuredCities.map((city) => (
             <Link key={city.slug} href={`/sehir/${city.slug}`}>
-              <Card className="card-hover h-full overflow-hidden border-0 bg-gradient-to-br from-card to-muted/50 shadow-sm">
+              <Card className="card-hover h-full overflow-hidden border-border/60 bg-gradient-to-br from-card to-muted/30">
                 <CardHeader className="pb-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 shadow-sm">
-                    <MapPin className="h-7 w-7 text-primary" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                    <MapPin className="h-6 w-6 text-primary" />
                   </div>
-                  <CardTitle className="mt-5 text-xl">{city.name}</CardTitle>
-                  <CardDescription className="font-medium text-primary/70">
+                  <CardTitle className="mt-4 text-lg">{city.name}</CardTitle>
+                  <p className="text-xs font-medium text-primary/70">
                     {city.region}
-                  </CardDescription>
+                  </p>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm leading-relaxed text-muted-foreground">
+                  <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
                     {city.description}
                   </p>
                 </CardContent>
@@ -115,8 +120,8 @@ export default async function HomePage() {
       </section>
 
       {/* Kategoriler */}
-      <section className="container mx-auto px-4">
-        <h2 className="mb-8 text-3xl font-bold tracking-tight">
+      <section className="container mx-auto px-4 py-12">
+        <h2 className="mb-8 text-2xl font-bold tracking-tight md:text-3xl">
           Neye Göre Keşfetmek İstersin?
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -124,8 +129,8 @@ export default async function HomePage() {
             const Icon = iconMap[category.icon] || Landmark;
             return (
               <Link key={category.slug} href={`/kategori/${category.slug}`}>
-                <Card className="card-hover flex flex-col items-center p-6 text-center border-0 bg-gradient-to-br from-card to-muted/50 shadow-sm">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary shadow-sm">
+                <Card className="card-hover flex flex-col items-center p-6 text-center border-border/60 bg-gradient-to-br from-card to-muted/30">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary">
                     <Icon className="h-7 w-7 text-secondary-foreground" />
                   </div>
                   <h3 className="mt-5 font-semibold">{category.name}</h3>
@@ -137,15 +142,15 @@ export default async function HomePage() {
       </section>
 
       {/* CTA */}
-      <section className="container mx-auto px-4">
+      <section className="container mx-auto px-4 py-12">
         <div className="relative overflow-hidden rounded-3xl bg-primary px-6 py-14 text-center text-primary-foreground md:py-20">
           <div className="absolute inset-0 bg-grid-pattern opacity-10" />
           <div className="relative">
-            <h2 className="text-3xl font-bold tracking-tight">
-              Türkiye&apos;yi Keşfetmeye Başla
+            <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
+              Türkiye'yi Keşfetmeye Başla
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-primary-foreground/90">
-              Şehirleri, mekanları ve gezi rehberlerini keşfet.
+              81 il, binlerce mekan, sınırsız keşif fırsatı.
             </p>
             <Button
               size="lg"
@@ -162,8 +167,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Ad - Footer Öncesi */}
-      <section className="container mx-auto px-4">
+      {/* Ad - Footer öncesi */}
+      <section className="container mx-auto px-4 py-8 pb-16">
         <AdBanner
           slot="home-footer-top"
           className="min-h-[90px] w-full"

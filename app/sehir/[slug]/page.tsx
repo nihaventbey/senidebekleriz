@@ -3,10 +3,10 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin } from "lucide-react";
+import { MapPin, ArrowRight } from "lucide-react";
 import { getCityBySlug, getAllCities } from "@/lib/data/cities";
 import { AdBanner } from "@/components/ads/ad-banner";
-import { getPlacesByCity, getAllPlaceSlugs } from "@/lib/data/places";
+import { getPlacesByCity } from "@/lib/data/places";
 import { CityMap } from "@/components/maps/city-map-wrapper";
 import { JsonLd } from "@/components/seo/json-ld";
 
@@ -61,82 +61,118 @@ export default async function CityPage({
   };
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div>
       <JsonLd data={cityJsonLd} />
-      <div className="mb-10">
-        <h1 className="text-4xl font-bold tracking-tight">{city.name}</h1>
-        <p className="mt-4 max-w-3xl text-lg text-muted-foreground">
-          {city.description}
-        </p>
-      </div>
 
-      {/* Harita */}
-      <section className="mb-12">
-        <h2 className="mb-4 text-2xl font-semibold">Harita Üzerinde</h2>
-        <CityMap places={places} center={[city.lat, city.lng]} zoom={11} />
-      </section>
-
-      {/* Reklam Alanı */}
-      <div className="mb-12">
-        <AdBanner
-          slot="city-content-top"
-          className="min-h-[90px] w-full"
-          style={{ display: "block", minHeight: "90px", width: "100%" }}
-        />
-      </div>
-
-      {/* Mekan Listesi */}
-      <section>
-        <h2 className="mb-6 text-2xl font-semibold">
-          {city.name}&apos;da Gezilecek Yerler
-        </h2>
-
-        {places.length === 0 ? (
-          <p className="text-muted-foreground">
-            Henüz bu şehir için mekan eklenmemiş.
-          </p>
-        ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {places.map((place, index) => (
-              <div key={place.slug}>
-                <Link href={`/mekan/${place.slug}`}>
-                  <Card className="h-full transition-shadow hover:shadow-lg">
-                    <CardHeader className="pb-3">
-                      <Badge variant="secondary">{place.category}</Badge>
-                      <CardTitle className="mt-2 text-lg">{place.name}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="line-clamp-3 text-sm text-muted-foreground">
-                        {place.description ||
-                          `${place.name}, ${city.name}'da görülmeye değer bir mekandır.`}
-                      </p>
-                      <div className="mt-4 flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="h-3 w-3" />
-                        {place.lat.toFixed(4)}, {place.lng.toFixed(4)}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-
-                {/* Liste arası reklam */}
-                {(index + 1) % 6 === 0 && (
-                  <div className="mt-6">
-                    <AdBanner
-                      slot="city-list-inline"
-                      className="min-h-[250px] w-full"
-                      style={{
-                        display: "block",
-                        minHeight: "250px",
-                        width: "100%",
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
+      {/* Hero */}
+      <section className="bg-hero-gradient py-12 md:py-16">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl">
+            <Badge variant="secondary" className="mb-4">
+              {city.region}
+            </Badge>
+            <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl">
+              {city.name}
+            </h1>
+            <p className="mt-4 text-base text-muted-foreground md:text-lg">
+              {city.description}
+            </p>
           </div>
-        )}
+        </div>
       </section>
+
+      <div className="container mx-auto px-4 py-10">
+        {/* Harita */}
+        {places.length > 0 && (
+          <section className="mb-10">
+            <h2 className="mb-4 text-xl font-bold tracking-tight">
+              Harita Üzerinde
+            </h2>
+            <CityMap places={places} center={[city.lat, city.lng]} zoom={11} />
+          </section>
+        )}
+
+        {/* Ad */}
+        <div className="mb-10">
+          <AdBanner
+            slot="city-content-top"
+            className="min-h-[90px] w-full"
+            style={{ display: "block", minHeight: "90px", width: "100%" }}
+          />
+        </div>
+
+        {/* Mekan Listesi */}
+        <section>
+          <div className="mb-6 flex items-end justify-between">
+            <h2 className="text-xl font-bold tracking-tight">
+              {city.name}'da Gezilecek Yerler
+            </h2>
+            <span className="text-sm text-muted-foreground">
+              {places.length} mekan
+            </span>
+          </div>
+
+          {places.length === 0 ? (
+            <p className="py-12 text-center text-muted-foreground">
+              Henüz bu şehir için mekan eklenmemiş.
+            </p>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {places.map((place, index) => (
+                <div key={place.slug}>
+                  <Link href={`/mekan/${place.slug}`}>
+                    <Card className="card-hover h-full border-border/60">
+                      <CardHeader className="pb-3">
+                        <Badge variant="secondary" className="w-fit">
+                          {place.category}
+                        </Badge>
+                        <CardTitle className="mt-2 text-base">
+                          {place.name}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                          {place.description ||
+                            `${place.name}, ${city.name}'da görülmeye değer bir mekandır.`}
+                        </p>
+                        <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3" />
+                          {place.lat.toFixed(4)}, {place.lng.toFixed(4)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+
+                  {(index + 1) % 6 === 0 && (
+                    <div className="mt-5">
+                      <AdBanner
+                        slot="city-list-inline"
+                        className="min-h-[250px] w-full"
+                        style={{
+                          display: "block",
+                          minHeight: "250px",
+                          width: "100%",
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Back link */}
+        <div className="mt-12">
+          <Link
+            href="/sehirler"
+            className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Tüm şehirler
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

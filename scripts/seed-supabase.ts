@@ -4,53 +4,18 @@ config({ path: ".env.local" });
 import fs from "fs/promises";
 import path from "path";
 import { createClient } from "@supabase/supabase-js";
+import { turkeyCities } from "../data/turkey-cities";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const cities = [
-  {
-    name: "İstanbul",
-    slug: "istanbul",
-    region: "Marmara",
-    description:
-      "İki kıtanın buluştuğu, binlerce yıllık tarihi, Boğaz'ın eşsiz manzarası ve sonsuz keşif imkanlarıyla Türkiye'nin en büyük metropolü.",
-    lat: 41.0082,
-    lng: 28.9784,
-    population: 15460000,
-    is_active: true,
-  },
-  {
-    name: "İzmir",
-    slug: "izmir",
-    region: "Ege",
-    description:
-      "Ege'nin incisi, masmavi kıyıları, antik kentleri ve sıcak insanlarıyla İzmir.",
-    lat: 38.4192,
-    lng: 27.1287,
-    population: 4363000,
-    is_active: true,
-  },
-  {
-    name: "Ankara",
-    slug: "ankara",
-    region: "İç Anadolu",
-    description:
-      "Türkiye'nin başkenti, müzeleri, anıtları ve modern yaşamıyla Ankara.",
-    lat: 39.9334,
-    lng: 32.8597,
-    population: 5503000,
-    is_active: true,
-  },
-];
-
 const categories = [
-  { name: "Tarihi Yer", slug: "tarihi-yer", icon: "Landmark", color: "#8B5CF6" },
-  { name: "Müzeler", slug: "muzeler", icon: "Camera", color: "#F59E0B" },
-  { name: "Parklar", slug: "parklar", icon: "TreePine", color: "#10B981" },
-  { name: "Restoranlar", slug: "restoranlar", icon: "Utensils", color: "#EF4444" },
+  { name: "Tarihi Yer", slug: "tarihi-yer", icon: "Landmark", color: "#8B5CF6", is_active: true },
+  { name: "Müzeler", slug: "muzeler", icon: "Camera", color: "#F59E0B", is_active: true },
+  { name: "Parklar", slug: "parklar", icon: "TreePine", color: "#10B981", is_active: true },
+  { name: "Restoranlar", slug: "restoranlar", icon: "Utensils", color: "#EF4444", is_active: true },
 ];
 
 const adPlacements = [
@@ -63,11 +28,22 @@ const adPlacements = [
 ];
 
 async function seedCities() {
-  const { error } = await supabase.from("cities").upsert(cities, {
+  const cityData = turkeyCities.map((c) => ({
+    name: c.name,
+    slug: c.slug,
+    region: c.region,
+    description: c.description,
+    lat: c.lat,
+    lng: c.lng,
+    population: c.population,
+    is_active: true,
+  }));
+
+  const { error } = await supabase.from("cities").upsert(cityData, {
     onConflict: "slug",
   });
   if (error) throw new Error(`Cities seed error: ${error.message}`);
-  console.log("✅ Şehirler eklendi");
+  console.log(`✅ ${cityData.length} şehir eklendi`);
 }
 
 async function seedCategories() {
@@ -111,9 +87,8 @@ async function seedPlaces() {
     .upsert(formattedPlaces, { onConflict: "slug" });
 
   if (error) throw new Error(`Places seed error: ${error.message}`);
-  console.log(`✅ ${formattedPlaces.length} mekan eklendi`);
+  console.log(`✅ ${formattedPlaces.length} mekan eklendi (İstanbul - Wikidata)`);
 
-  // Link places to categories
   await seedPlaceCategories(places);
 }
 
@@ -195,7 +170,7 @@ async function seedAdminUser() {
 
   if (!adminPassword) {
     throw new Error(
-      "ADMIN_PASSWORD environment variable is required. Lütfen .env.local dosyasına ADMIN_PASSWORD=guclu_bir_sifre ekleyin."
+      "ADMIN_PASSWORD environment variable is required."
     );
   }
 
@@ -211,10 +186,7 @@ async function seedAdminUser() {
         existingUser.id,
         {
           password: adminPassword,
-          user_metadata: {
-            full_name: "Admin",
-            role: "admin",
-          },
+          user_metadata: { full_name: "Admin", role: "admin" },
         }
       );
       if (updateError) {
@@ -230,16 +202,11 @@ async function seedAdminUser() {
     email: adminEmail,
     password: adminPassword,
     email_confirm: true,
-    user_metadata: {
-      full_name: "Admin",
-      role: "admin",
-    },
+    user_metadata: { full_name: "Admin", role: "admin" },
   });
 
   if (error) throw new Error(`Admin user seed error: ${error.message}`);
   console.log("✅ Admin kullanıcısı oluşturuldu:", data.user.email);
-  console.log("   E-posta:", adminEmail);
-  console.log("   Şifre:  ", "(ADMIN_PASSWORD ortam değişkeninde)");
 }
 
 async function main() {
@@ -253,6 +220,9 @@ async function main() {
   await seedAdminUser();
 
   console.log("\n🎉 Tüm veriler başarıyla aktarıldı!");
+  console.log("\n📌 Diğer şehirlerin mekanlarını çekmek için:");
+  console.log("   npm run fetch-places          # Tüm şehirler");
+  console.log("   npm run fetch-places ankara    # Tek şehir");
 }
 
 main().catch((err) => {
