@@ -53,8 +53,7 @@ export default async function AdminDashboardPage() {
         <h2 className="text-lg font-semibold">Hoş Geldiniz</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           Sol menüden şehir, mekan, kategori, sayfa ve reklam yönetimine
-          ulaşabilirsiniz. Bu panel şu an için iskelet modundadır; veritabanı
-          bağlantısı tamamlandıktan sonra CRUD işlemleri aktif hale gelecektir.
+          ulaşabilirsiniz.
         </p>
       </div>
     </div>

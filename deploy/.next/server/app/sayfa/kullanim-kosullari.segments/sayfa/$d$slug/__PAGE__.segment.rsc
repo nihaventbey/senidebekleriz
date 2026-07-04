@@ -1,5 +1,0 @@
-1:"$Sreact.fragment"
-2:I[97367,["/_next/static/chunks/14cvwqunuwhw2.js","/_next/static/chunks/14mrh2-p_w84d.js","/_next/static/chunks/3cj9p54vu2_hd.js"],"OutletBoundary"]
-3:"$Sreact.suspense"
-0:{"rsc":["$","$1","c",{"children":[["$","div",null,{"className":"container mx-auto px-4 py-12","children":["$","article",null,{"className":"mx-auto max-w-3xl","children":[["$","h1",null,{"className":"text-4xl font-bold tracking-tight","children":"Kullanım Koşulları"}],["$","div",null,{"className":"prose prose-stone mt-8 max-w-none dark:prose-invert","dangerouslySetInnerHTML":{"__html":"<p>Seni de Bekleriz web sitesini kullanarak aşağıdaki koşulları kabul etmiş sayılırsınız:</p><ul><li>Site içeriği bilgilendirme amaçlıdır.</li><li>Mekan bilgileri açık kaynak veri kaynaklarından derlenmektedir.</li><li>Reklam içerikleri üçüncü taraflar tarafından sağlanmaktadır.</li></ul>"}}]]}]}],null,["$","$L2",null,{"children":["$","$3",null,{"name":"Next.MetadataOutlet","children":"$@4"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"M_2jgVRApbcG5QiXo1bsg"}
-4:null

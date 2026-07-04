@@ -112,6 +112,54 @@ async function seedPlaces() {
 
   if (error) throw new Error(`Places seed error: ${error.message}`);
   console.log(`✅ ${formattedPlaces.length} mekan eklendi`);
+
+  // Link places to categories
+  await seedPlaceCategories(places);
+}
+
+async function seedPlaceCategories(places: Array<Record<string, unknown>>) {
+  const { data: categoryRows, error: catError } = await supabase
+    .from("categories")
+    .select("id, slug");
+
+  if (catError || !categoryRows) {
+    throw new Error(`Categories lookup error: ${catError?.message}`);
+  }
+
+  const categoryMap = new Map(categoryRows.map((c) => [c.slug, c.id]));
+
+  const { data: placeRows, error: placeError } = await supabase
+    .from("places")
+    .select("id, slug");
+
+  if (placeError || !placeRows) {
+    throw new Error(`Places lookup error: ${placeError?.message}`);
+  }
+
+  const placeMap = new Map(placeRows.map((p) => [p.slug, p.id]));
+
+  const placeCategories: Array<{ place_id: string; category_id: string }> = [];
+
+  for (const place of places) {
+    const placeId = placeMap.get(place.slug as string);
+    const categoryId = categoryMap.get(place.category as string);
+
+    if (placeId && categoryId) {
+      placeCategories.push({ place_id: placeId, category_id: categoryId });
+    }
+  }
+
+  if (placeCategories.length === 0) {
+    console.log("ℹ️  Kategori ilişkisi eklenecek mekan bulunamadı");
+    return;
+  }
+
+  const { error } = await supabase
+    .from("place_categories")
+    .upsert(placeCategories, { onConflict: "place_id, category_id" });
+
+  if (error) throw new Error(`Place categories seed error: ${error.message}`);
+  console.log(`✅ ${placeCategories.length} mekan-kategori ilişkisi eklendi`);
 }
 
 async function seedPages() {
@@ -142,8 +190,14 @@ async function seedAdPlacements() {
 }
 
 async function seedAdminUser() {
-  const adminEmail = "admin@senidebekleriz.com";
-  const adminPassword = "SenideBekleriz2024!";
+  const adminEmail = process.env.ADMIN_EMAIL || "admin@senidebekleriz.com";
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (!adminPassword) {
+    throw new Error(
+      "ADMIN_PASSWORD environment variable is required. Lütfen .env.local dosyasına ADMIN_PASSWORD=guclu_bir_sifre ekleyin."
+    );
+  }
 
   const { data: existingUsers } = await supabase.auth.admin.listUsers();
   const adminExists = existingUsers?.users?.some(
@@ -151,7 +205,24 @@ async function seedAdminUser() {
   );
 
   if (adminExists) {
-    console.log("ℹ️  Admin kullanıcısı zaten mevcut");
+    const existingUser = existingUsers?.users?.find((u) => u.email === adminEmail);
+    if (existingUser) {
+      const { error: updateError } = await supabase.auth.admin.updateUserById(
+        existingUser.id,
+        {
+          password: adminPassword,
+          user_metadata: {
+            full_name: "Admin",
+            role: "admin",
+          },
+        }
+      );
+      if (updateError) {
+        console.error("Admin şifresi güncellenemedi:", updateError.message);
+      } else {
+        console.log("✅ Admin şifresi güncellendi");
+      }
+    }
     return;
   }
 
@@ -168,7 +239,7 @@ async function seedAdminUser() {
   if (error) throw new Error(`Admin user seed error: ${error.message}`);
   console.log("✅ Admin kullanıcısı oluşturuldu:", data.user.email);
   console.log("   E-posta:", adminEmail);
-  console.log("   Şifre:  ", adminPassword);
+  console.log("   Şifre:  ", "(ADMIN_PASSWORD ortam değişkeninde)");
 }
 
 async function main() {

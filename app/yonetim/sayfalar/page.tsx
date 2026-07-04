@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -8,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getAllPages } from "@/lib/data/pages";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +25,11 @@ export default async function AdminPagesPage() {
             İçerik sayfalarını yönetin, düzenleyin ve yeni sayfalar ekleyin.
           </p>
         </div>
-        <Button disabled>
-          <Plus className="mr-2 h-4 w-4" />
-          Yeni Sayfa
+        <Button asChild>
+          <Link href="/yonetim/sayfalar/yeni">
+            <Plus className="mr-2 h-4 w-4" />
+            Yeni Sayfa
+          </Link>
         </Button>
       </div>
 
@@ -47,8 +50,11 @@ export default async function AdminPagesPage() {
                 <TableCell>{page.slug}</TableCell>
                 <TableCell>Yayında</TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" disabled>
-                    Düzenle
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={`/yonetim/sayfalar/${page.slug}/duzenle`}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Düzenle
+                    </Link>
                   </Button>
                 </TableCell>
               </TableRow>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -8,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getAllCities } from "@/lib/data/cities";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +25,11 @@ export default async function AdminCitiesPage() {
             Şehirleri yönetin, düzenleyin ve yeni şehirler ekleyin.
           </p>
         </div>
-        <Button disabled>
-          <Plus className="mr-2 h-4 w-4" />
-          Yeni Şehir
+        <Button asChild>
+          <Link href="/yonetim/sehirler/yeni">
+            <Plus className="mr-2 h-4 w-4" />
+            Yeni Şehir
+          </Link>
         </Button>
       </div>
 
@@ -47,8 +50,11 @@ export default async function AdminCitiesPage() {
                 <TableCell>{city.region}</TableCell>
                 <TableCell>{city.slug}</TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" disabled>
-                    Düzenle
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={`/yonetim/sehirler/${city.slug}/duzenle`}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Düzenle
+                    </Link>
                   </Button>
                 </TableCell>
               </TableRow>

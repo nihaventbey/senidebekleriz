@@ -5,24 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { MapPin, ArrowLeft, ExternalLink } from "lucide-react";
-import { getCityBySlug, getAllCities } from "@/lib/data/cities";
+import { getCityBySlug } from "@/lib/data/cities";
 import { AdBanner } from "@/components/ads/ad-banner";
-import { getPlacesByCity, getPlaceBySlug } from "@/lib/data/places";
+import {
+  getAllPlaceSlugs,
+  getPlaceWithCityBySlug,
+} from "@/lib/data/places";
 import { PlaceMap } from "@/components/maps/place-map-wrapper";
 import { JsonLd } from "@/components/seo/json-ld";
 
 export async function generateStaticParams() {
-  const cities = await getAllCities();
-  const params: { slug: string }[] = [];
-
-  for (const city of cities) {
-    const places = await getPlacesByCity(city.slug);
-    for (const place of places) {
-      params.push({ slug: place.slug });
-    }
-  }
-
-  return params;
+  const slugs = await getAllPlaceSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
@@ -31,22 +25,16 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const place = await getPlaceWithCityBySlug(slug);
 
-  // Find place across all cities
-  const cities = await getAllCities();
-  for (const city of cities) {
-    const place = await getPlaceBySlug(city.slug, slug);
-    if (place) {
-      return {
-        title: `${place.name} - ${city.name}`,
-        description:
-          place.description ||
-          `${place.name}, ${city.name}'da görülmeye değer bir mekan.`,
-      };
-    }
-  }
+  if (!place) return {};
 
-  return {};
+  return {
+    title: `${place.name} - ${place.cityName}`,
+    description:
+      place.description ||
+      `${place.name}, ${place.cityName}'da görülmeye değer bir mekan.`,
+  };
 }
 
 export default async function PlacePage({
@@ -55,25 +43,16 @@ export default async function PlacePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const place = await getPlaceWithCityBySlug(slug);
 
-  const cities = await getAllCities();
-  let place = null;
-  let city = null;
-
-  for (const c of cities) {
-    const p = await getPlaceBySlug(c.slug, slug);
-    if (p) {
-      place = p;
-      city = c;
-      break;
-    }
-  }
-
-  if (!place || !city) {
+  if (!place) {
     notFound();
   }
 
-  const cityData = (await getCityBySlug(city.slug))!;
+  const cityData = await getCityBySlug(place.citySlug);
+  if (!cityData) {
+    notFound();
+  }
 
   const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`;
 

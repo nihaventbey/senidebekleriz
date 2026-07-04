@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -8,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getAllCategories } from "@/lib/data/categories";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +25,11 @@ export default async function AdminCategoriesPage() {
             Kategorileri yönetin ve yeni kategoriler ekleyin.
           </p>
         </div>
-        <Button disabled>
-          <Plus className="mr-2 h-4 w-4" />
-          Yeni Kategori
+        <Button asChild>
+          <Link href="/yonetim/kategoriler/yeni">
+            <Plus className="mr-2 h-4 w-4" />
+            Yeni Kategori
+          </Link>
         </Button>
       </div>
 
@@ -47,8 +50,11 @@ export default async function AdminCategoriesPage() {
                 <TableCell>{category.slug}</TableCell>
                 <TableCell>{category.icon}</TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" disabled>
-                    Düzenle
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={`/yonetim/kategoriler/${category.slug}/duzenle`}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Düzenle
+                    </Link>
                   </Button>
                 </TableCell>
               </TableRow>

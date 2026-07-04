@@ -1,3 +1,0 @@
-module.exports=[10070,a=>{"use strict";var b=a.i(87924),c=a.i(72131);let d=process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;a.s(["AdBanner",0,function({slot:a,className:e,style:f}){return((0,c.useEffect)(()=>{try{(window.adsbygoogle=window.adsbygoogle||[]).push({})}catch{}},[]),d)?(0,b.jsx)("ins",{className:`adsbygoogle ${e||""}`,style:f||{display:"block"},"data-ad-client":d,"data-ad-slot":a,"data-ad-format":"auto","data-full-width-responsive":"true"}):(0,b.jsx)("div",{className:`flex items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/30 text-sm text-muted-foreground ${e||""}`,style:f,children:"Reklam Alanı (AdSense)"})}])}];
-
-//# sourceMappingURL=components_ads_ad-banner_tsx_1bvj8--._.js.map

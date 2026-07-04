@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -7,24 +8,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getAllCities } from "@/lib/data/cities";
-import { getPlacesByCity } from "@/lib/data/places";
-import { Plus } from "lucide-react";
+import { getAdminPlaces } from "@/lib/data/admin";
+import { Plus, Pencil } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPlacesPage() {
-  const cities = await getAllCities();
-  const placesByCity: Record<string, string> = {};
-  const allPlaces = [];
-
-  for (const city of cities) {
-    placesByCity[city.slug] = city.name;
-    const places = await getPlacesByCity(city.slug);
-    for (const place of places) {
-      allPlaces.push({ ...place, cityName: city.name });
-    }
-  }
+  const places = await getAdminPlaces();
 
   return (
     <div className="space-y-6">
@@ -35,9 +25,11 @@ export default async function AdminPlacesPage() {
             Mekanları yönetin, düzenleyin ve yeni mekanlar ekleyin.
           </p>
         </div>
-        <Button disabled>
-          <Plus className="mr-2 h-4 w-4" />
-          Yeni Mekan
+        <Button asChild>
+          <Link href="/yonetim/mekanlar/yeni">
+            <Plus className="mr-2 h-4 w-4" />
+            Yeni Mekan
+          </Link>
         </Button>
       </div>
 
@@ -47,21 +39,22 @@ export default async function AdminPlacesPage() {
             <TableRow>
               <TableHead>Mekan</TableHead>
               <TableHead>Şehir</TableHead>
-              <TableHead>Kategori</TableHead>
               <TableHead>Kaynak</TableHead>
               <TableHead className="text-right">İşlemler</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {allPlaces.slice(0, 50).map((place) => (
+            {places.map((place) => (
               <TableRow key={place.slug}>
                 <TableCell className="font-medium">{place.name}</TableCell>
                 <TableCell>{place.cityName}</TableCell>
-                <TableCell>{place.category}</TableCell>
                 <TableCell className="capitalize">{place.source}</TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" disabled>
-                    Düzenle
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={`/yonetim/mekanlar/${place.slug}/duzenle`}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Düzenle
+                    </Link>
                   </Button>
                 </TableCell>
               </TableRow>
