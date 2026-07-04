@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Landmark, Camera, TreePine, Utensils } from "lucide-react";
 import { getAllCategories } from "@/lib/data/categories";
+import { AdBanner } from "@/components/ads/ad-banner";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Landmark,
@@ -29,6 +30,14 @@ export default async function CategoriesPage() {
         </p>
       </div>
 
+      <div className="mb-8">
+        <AdBanner
+          slot="categories-top"
+          className="min-h-[90px] w-full"
+          style={{ display: "block", minHeight: "90px", width: "100%" }}
+        />
+      </div>
+
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {categories.map((category) => {
           const Icon = iconMap[category.icon] || Landmark;
@@ -50,6 +59,14 @@ export default async function CategoriesPage() {
             </Link>
           );
         })}
+      </div>
+
+      <div className="mt-8">
+        <AdBanner
+          slot="categories-bottom"
+          className="min-h-[90px] w-full"
+          style={{ display: "block", minHeight: "90px", width: "100%" }}
+        />
       </div>
     </div>
   );

@@ -124,10 +124,10 @@ export default async function HomePage() {
       <section className="container mx-auto px-4">
         <div className="rounded-2xl bg-primary px-6 py-12 text-center text-primary-foreground md:py-16">
           <h2 className="text-3xl font-bold tracking-tight">
-            Gezilecek Yerleri Sen de Kaydet
+            Türkiye&apos;yi Keşfetmeye Başla
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-primary-foreground/90">
-            Üye ol, favori mekanlarını kaydet ve kendi gezi listelerini oluştur.
+            Şehirleri, mekanları ve gezi rehberlerini keşfet.
           </p>
           <Button
             size="lg"
@@ -138,6 +138,15 @@ export default async function HomePage() {
             <Link href="/sehirler">Hemen Keşfet</Link>
           </Button>
         </div>
+      </section>
+
+      {/* Ad - Footer Öncesi */}
+      <section className="container mx-auto px-4">
+        <AdBanner
+          slot="home-footer-top"
+          className="min-h-[90px] w-full"
+          style={{ display: "block", minHeight: "90px", width: "100%" }}
+        />
       </section>
     </div>
   );

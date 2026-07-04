@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin } from "lucide-react";
 import { getAllCities } from "@/lib/data/cities";
+import { AdBanner } from "@/components/ads/ad-banner";
 
 export const metadata: Metadata = {
   title: "Şehirler",
@@ -20,6 +21,14 @@ export default async function CitiesPage() {
         <p className="mt-4 text-lg text-muted-foreground">
           Keşfetmek istediğin şehri seç ve mekanları gör.
         </p>
+      </div>
+
+      <div className="mb-8">
+        <AdBanner
+          slot="cities-top"
+          className="min-h-[90px] w-full"
+          style={{ display: "block", minHeight: "90px", width: "100%" }}
+        />
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -43,6 +52,14 @@ export default async function CitiesPage() {
             </Card>
           </Link>
         ))}
+      </div>
+
+      <div className="mt-8">
+        <AdBanner
+          slot="cities-bottom"
+          className="min-h-[90px] w-full"
+          style={{ display: "block", minHeight: "90px", width: "100%" }}
+        />
       </div>
     </div>
   );

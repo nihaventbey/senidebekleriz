@@ -54,6 +54,15 @@ export default async function CategoryPage({
         </p>
       </div>
 
+      {/* Reklam Alanı */}
+      <div className="mb-8">
+        <AdBanner
+          slot="category-content-top"
+          className="min-h-[90px] w-full"
+          style={{ display: "block", minHeight: "90px", width: "100%" }}
+        />
+      </div>
+
       {places.length === 0 ? (
         <p className="text-muted-foreground">
           Bu kategoride henüz mekan bulunmuyor.

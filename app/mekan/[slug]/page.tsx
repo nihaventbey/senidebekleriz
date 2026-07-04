@@ -110,6 +110,13 @@ export default async function PlacePage({
       <div className="grid gap-10 lg:grid-cols-3">
         {/* Sol İçerik */}
         <div className="lg:col-span-2">
+          {/* Üst reklam */}
+          <AdBanner
+            slot="place-top"
+            className="mb-6 min-h-[90px] w-full"
+            style={{ display: "block", minHeight: "90px", width: "100%" }}
+          />
+
           <Badge variant="secondary" className="mb-3">
             {place.category}
           </Badge>

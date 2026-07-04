@@ -23,33 +23,31 @@ export function AuthForm() {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      if (authError) {
-        setError(authError.message);
-      } else {
-        router.push("/yonetim");
-        router.refresh();
-      }
-    } finally {
+    if (authError) {
+      setError("Kullanıcı adı veya şifre hatalı.");
       setIsPending(false);
+    } else {
+      router.push("/yonetim");
+      router.refresh();
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">E-posta</Label>
+        <Label htmlFor="email">Kullanıcı Adı</Label>
         <Input
           id="email"
           name="email"
           type="email"
-          placeholder="ornek@email.com"
+          placeholder="admin@senidebekleriz.com"
           required
+          autoComplete="username"
         />
       </div>
 
@@ -61,7 +59,7 @@ export function AuthForm() {
           type="password"
           placeholder="••••••••"
           required
-          minLength={6}
+          autoComplete="current-password"
         />
       </div>
 
