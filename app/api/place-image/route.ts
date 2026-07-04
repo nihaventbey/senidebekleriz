@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getWikimediaImage, getUnsplashFallback } from "@/lib/data/wikimedia";
+import { getPlaceImageServerSide } from "@/lib/data/place-images";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -13,19 +13,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ image: null }, { status: 400 });
   }
 
-  let image = null;
+  const image = await getPlaceImageServerSide(wikidataId, placeName, cityName);
 
-  if (wikidataId) {
-    image = await getWikimediaImage(wikidataId);
-  }
-
-  if (!image) {
-    image = getUnsplashFallback(placeName, cityName);
-  }
-
-  return NextResponse.json({ image }, {
-    headers: {
-      "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
-    },
-  });
+  return NextResponse.json(
+    { image },
+    {
+      headers: {
+        "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
+      },
+    }
+  );
 }

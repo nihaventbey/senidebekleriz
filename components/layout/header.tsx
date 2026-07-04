@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/layout/logo";
+import { SearchBar } from "@/components/layout/search-bar";
 
 const navItems = [
   { href: "/", label: "Ana Sayfa" },
@@ -45,18 +45,19 @@ export function Header() {
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/yonetim/giris">Yönetim</Link>
-          </Button>
+          <SearchBar />
         </div>
 
-        <button
-          className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted md:hidden"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Menü"
-        >
-          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        <div className="flex items-center gap-2 md:hidden">
+          <SearchBar />
+          <button
+            className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Menü"
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
 
       {mobileMenuOpen && (
@@ -77,15 +78,6 @@ export function Header() {
                   {item.label}
                 </Link>
               ))}
-              <div className="border-t pt-2 mt-2">
-                <Link
-                  href="/yonetim/giris"
-                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Yönetim
-                </Link>
-              </div>
             </nav>
           </div>
         </>

@@ -36,7 +36,10 @@ export async function getPlacesByCity(citySlug: string): Promise<PlaceData[]> {
 
   const { data, error } = await supabaseAdmin
     .from("places")
-    .select("*")
+    .select(`
+      *,
+      place_categories(categories(name, slug))
+    `)
     .eq("city_id", city.id)
     .eq("is_active", true)
     .order("name");
@@ -46,27 +49,31 @@ export async function getPlacesByCity(citySlug: string): Promise<PlaceData[]> {
     return [];
   }
 
-  return (data || []).map((place) => ({
-    id: place.id,
-    name: place.name,
-    slug: place.slug,
-    category: "tarihi-yer",
-    description: place.description,
-    address: place.address,
-    lat: place.lat ? Number(place.lat) : 0,
-    lng: place.lng ? Number(place.lng) : 0,
-    source: place.source || "manual",
-    wikidata_id: place.wikidata_id || null,
-    photos: place.photos || [],
-    phone: place.phone || null,
-    website: place.website || null,
-    opening_hours: place.opening_hours || null,
-    rating: place.rating ? Number(place.rating) : null,
-    tags: {
-      type: "",
-      typeLabel: "",
-    },
-  }));
+  return (data || []).map((place) => {
+    const placeCats = place.place_categories as Array<{ categories: { name: string; slug: string } | null }> | null;
+    const firstCat = placeCats?.[0]?.categories;
+    return {
+      id: place.id,
+      name: place.name,
+      slug: place.slug,
+      category: firstCat?.slug || "tarihi-yer",
+      description: place.description,
+      address: place.address,
+      lat: place.lat ? Number(place.lat) : 0,
+      lng: place.lng ? Number(place.lng) : 0,
+      source: place.source || "manual",
+      wikidata_id: place.wikidata_id || null,
+      photos: place.photos || [],
+      phone: place.phone || null,
+      website: place.website || null,
+      opening_hours: place.opening_hours || null,
+      rating: place.rating ? Number(place.rating) : null,
+      tags: {
+        type: "",
+        typeLabel: "",
+      },
+    };
+  });
 }
 
 export async function getPlaceBySlug(
@@ -98,7 +105,8 @@ export async function getPlaceWithCityBySlug(
     .from("places")
     .select(`
       *,
-      cities!inner(slug, name)
+      cities!inner(slug, name),
+      place_categories(categories(name, slug))
     `)
     .eq("slug", slug)
     .eq("is_active", true)
@@ -118,11 +126,14 @@ export async function getPlaceWithCityBySlug(
     return undefined;
   }
 
+  const placeCats = data.place_categories as Array<{ categories: { name: string; slug: string } | null }> | null;
+  const firstCat = placeCats?.[0]?.categories;
+
   return {
     id: data.id,
     name: data.name,
     slug: data.slug,
-    category: "tarihi-yer",
+    category: firstCat?.slug || "tarihi-yer",
     description: data.description,
     address: data.address,
     lat: data.lat ? Number(data.lat) : 0,

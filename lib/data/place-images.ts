@@ -1,5 +1,6 @@
 import { getWikimediaImage, getUnsplashFallback } from "@/lib/data/wikimedia";
 import type { PlaceImage } from "@/lib/data/wikimedia";
+import { getPlaceWikipedia } from "@/lib/data/wikipedia";
 
 export async function getPlaceImageServerSide(
   wikidataId: string | null,
@@ -9,6 +10,15 @@ export async function getPlaceImageServerSide(
   if (wikidataId) {
     const image = await getWikimediaImage(wikidataId);
     if (image) return image;
+  }
+
+  const wiki = await getPlaceWikipedia(wikidataId, placeName, cityName);
+  if (wiki?.thumbnail) {
+    return {
+      url: wiki.thumbnail,
+      alt: wiki.title || placeName,
+      source: "wikimedia",
+    };
   }
 
   return getUnsplashFallback(placeName, cityName);
