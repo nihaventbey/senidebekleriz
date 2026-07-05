@@ -120,7 +120,7 @@ export function AdminPlacesList({
         <Select
           value={citySlug || "all"}
           onValueChange={(value) =>
-            setCitySlug(value === "all" ? "" : value)
+            setCitySlug(!value || value === "all" ? "" : value)
           }
         >
           <SelectTrigger className="w-full lg:w-[200px]">
@@ -137,7 +137,9 @@ export function AdminPlacesList({
         </Select>
         <Select
           value={source || "all"}
-          onValueChange={(value) => setSource(value === "all" ? "" : value)}
+          onValueChange={(value) =>
+            setSource(!value || value === "all" ? "" : value)
+          }
         >
           <SelectTrigger className="w-full lg:w-[180px]">
             <SelectValue placeholder="Kaynak" />

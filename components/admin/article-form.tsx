@@ -145,7 +145,7 @@ export function ArticleForm({
           />
           <Select
             value={aiCity || "none"}
-            onValueChange={(v) => setAiCity(v === "none" ? "" : v)}
+            onValueChange={(v) => setAiCity(!v || v === "none" ? "" : v)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Şehir (opsiyonel)" />
@@ -262,7 +262,10 @@ export function ArticleForm({
           <div className="space-y-2">
             <Label htmlFor="city_slug">İlişkili Şehir</Label>
             <input type="hidden" name="city_slug" value={citySlug} />
-            <Select value={citySlug} onValueChange={setCitySlug}>
+            <Select
+              value={citySlug}
+              onValueChange={(v) => setCitySlug(!v || v === "none" ? "none" : v)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Şehir rehberi olarak bağla" />
               </SelectTrigger>
