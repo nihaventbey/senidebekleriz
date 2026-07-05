@@ -12,6 +12,7 @@ import {
   ExternalLink,
   UserCog,
   BookOpen,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/yonetim/kategoriler", label: "Kategoriler", icon: Tags },
   { href: "/yonetim/sayfalar", label: "Sayfalar", icon: FileText },
   { href: "/yonetim/yazilar", label: "Blog Yazıları", icon: BookOpen },
+  { href: "/yonetim/etkinlikler", label: "Etkinlikler", icon: CalendarDays },
   { href: "/yonetim/reklamlar", label: "Reklamlar", icon: Megaphone },
   { href: "/yonetim/hesap", label: "Hesap", icon: UserCog },
 ];

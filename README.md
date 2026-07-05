@@ -25,6 +25,8 @@ Supabase projesinde SQL migration dosyalarını sırayla çalıştırın:
 2. [`supabase/migrations/002_remove_user_tables.sql`](supabase/migrations/002_remove_user_tables.sql) — mevcut veritabanında kullanıcı tabloları varsa
 3. [`supabase/migrations/003_culture_focus.sql`](supabase/migrations/003_culture_focus.sql) — restoran kategorisini kaldırır, sanat mekanları ekler
 4. [`supabase/migrations/004_articles.sql`](supabase/migrations/004_articles.sql) — Markdown blog yazıları tablosu
+5. [`supabase/migrations/005_culture_messaging_pages.sql`](supabase/migrations/005_culture_messaging_pages.sql) — Hakkımızda, Misyon, Vizyon sayfa içerikleri
+6. [`supabase/migrations/006_cultural_events.sql`](supabase/migrations/006_cultural_events.sql) — kültür etkinlikleri, RSS kaynakları, admin onay kuyruğu
 
 Ardından seed:
 
@@ -69,6 +71,7 @@ npm test
 
 - Herkese açık şehir, mekan, kategori keşfi (tarih, müze, sanat, park)
 - Markdown blog / gezi rehberi (`/blog`) + admin AI taslak desteği
+- Kültür etkinlikleri slider (`/`) + liste (`/etkinlikler`); KTB RSS sync + admin onay
 - Admin CMS: şehir, mekan, kategori, sayfa ve reklam yönetimi
 - Kişiselleştirme veya halka açık kullanıcı hesabı **yok**
 

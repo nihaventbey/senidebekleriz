@@ -1,4 +1,5 @@
 -- Editöryal blog yazıları (Markdown)
+-- Tekrar çalıştırılabilir: CREATE IF NOT EXISTS + DROP POLICY IF EXISTS
 
 CREATE TABLE IF NOT EXISTS articles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -22,10 +23,12 @@ CREATE INDEX IF NOT EXISTS idx_articles_city_slug ON articles(city_slug) WHERE c
 
 ALTER TABLE articles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Allow public read published articles" ON articles;
 CREATE POLICY "Allow public read published articles"
   ON articles FOR SELECT TO anon, authenticated
   USING (is_published = TRUE);
 
+DROP POLICY IF EXISTS "Admin full access articles" ON articles;
 CREATE POLICY "Admin full access articles"
   ON articles FOR ALL TO authenticated
   USING (

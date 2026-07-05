@@ -21,9 +21,11 @@ import { getAllCities } from "@/lib/data/cities";
 import { getAllCategories } from "@/lib/data/categories";
 import { getFeaturedPlaces } from "@/lib/data/places";
 import { getPublishedArticles } from "@/lib/data/articles";
+import { getFeaturedEvents } from "@/lib/data/events";
 import { SearchBar } from "@/components/layout/search-bar";
 import { PlaceImageComponent } from "@/components/place/place-image";
 import { ArticleCard } from "@/components/blog/article-card";
+import { CulturalEventsSlider } from "@/components/events/cultural-events-slider";
 
 const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   Landmark,
@@ -33,13 +35,14 @@ const iconMap: Record<string, ComponentType<{ className?: string }>> = {
 };
 
 export default async function HomePage() {
-  const [cities, categoryList, featuredPlaces, latestArticles] =
+  const [cities, categoryList, featuredPlaces, latestArticles, featuredEvents] =
     await Promise.all([
-    getAllCities(),
-    getAllCategories(),
-    getFeaturedPlaces(6),
-    getPublishedArticles(3),
-  ]);
+      getAllCities(),
+      getAllCategories(),
+      getFeaturedPlaces(6),
+      getPublishedArticles(3),
+      getFeaturedEvents(8),
+    ]);
 
   const featuredCities = [...cities]
     .sort((a, b) => {
@@ -88,6 +91,8 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      <CulturalEventsSlider events={featuredEvents} />
 
       {/* Ad - Hero altı */}
       <section className="container mx-auto px-4 py-8">
