@@ -54,6 +54,7 @@ export function EventForm({
   const [slug, setSlug] = useState(defaultValues.slug || "");
   const [eventType, setEventType] = useState(defaultValues.event_type || "duyuru");
   const [citySlug, setCitySlug] = useState(defaultValues.city_slug || "none");
+  const [coverImage, setCoverImage] = useState(defaultValues.cover_image || "");
 
   function handleTitleChange(value: string) {
     setTitle(value);
@@ -209,8 +210,18 @@ export function EventForm({
             <Input
               id="cover_image"
               name="cover_image"
-              defaultValue={defaultValues.cover_image || ""}
+              value={coverImage}
+              onChange={(e) => setCoverImage(e.target.value)}
             />
+            {coverImage && (
+              <img
+                src={coverImage}
+                alt="Etkinlik kapak önizleme"
+                className="mt-2 h-32 w-full max-w-sm rounded-lg border object-cover"
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="starts_at">Başlangıç</Label>
@@ -259,10 +270,22 @@ export function EventForm({
             />
             <Label htmlFor="is_featured">Slider&apos;da öne çıkar</Label>
           </div>
-          {!defaultValues.status || defaultValues.status === "pending_review" ? (
+          {!defaultValues.status ? (
             <div className="flex items-center gap-2">
               <Checkbox id="publish_now" name="publish_now" />
               <Label htmlFor="publish_now">Hemen yayınla</Label>
+            </div>
+          ) : defaultValues.status === "published" ||
+            defaultValues.status === "pending_review" ||
+            defaultValues.status === "rejected" ||
+            defaultValues.status === "expired" ? (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="is_published"
+                name="is_published"
+                defaultChecked={defaultValues.status === "published"}
+              />
+              <Label htmlFor="is_published">Yayında</Label>
             </div>
           ) : null}
         </div>

@@ -9,6 +9,7 @@ export type AdminEventListItem = {
   status: EventStatus;
   city_slug: string | null;
   source_name: string | null;
+  cover_image: string | null;
   starts_at: string | null;
   is_featured: boolean;
   published_at: string | null;
@@ -21,7 +22,7 @@ export async function getAdminEvents(
   let query = supabaseAdmin
     .from("cultural_events")
     .select(
-      "id, title, slug, event_type, status, city_slug, source_name, starts_at, is_featured, published_at, created_at"
+      "id, title, slug, event_type, status, city_slug, source_name, cover_image, starts_at, is_featured, published_at, created_at"
     )
     .order("created_at", { ascending: false });
 

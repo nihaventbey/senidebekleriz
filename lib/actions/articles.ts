@@ -72,3 +72,31 @@ export async function deleteArticle(id: string) {
   revalidateArticlePaths();
   redirect("/yonetim/yazilar");
 }
+
+export async function publishArticle(id: string) {
+  const { error } = await supabaseAdmin
+    .from("articles")
+    .update({
+      is_published: true,
+      published_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidateArticlePaths();
+}
+
+export async function unpublishArticle(id: string) {
+  const { error } = await supabaseAdmin
+    .from("articles")
+    .update({
+      is_published: false,
+      published_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidateArticlePaths();
+}

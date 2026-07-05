@@ -69,16 +69,35 @@ export async function createEvent(formData: FormData) {
 export async function updateEvent(slug: string, formData: FormData) {
   const data = eventFromForm(formData);
   const existing = await getAdminEventBySlug(slug);
+  const wantsPublished = formData.get("is_published") === "on";
+
+  const statusUpdate: {
+    status?: "published" | "pending_review";
+    published_at?: string | null;
+  } = {};
+
+  if (existing) {
+    if (wantsPublished && existing.status !== "published") {
+      statusUpdate.status = "published";
+      statusUpdate.published_at = new Date().toISOString();
+    } else if (!wantsPublished && existing.status === "published") {
+      statusUpdate.status = "pending_review";
+      statusUpdate.published_at = null;
+    }
+  }
 
   const { error } = await supabaseAdmin
     .from("cultural_events")
-    .update(data)
+    .update({
+      ...data,
+      ...statusUpdate,
+    })
     .eq("slug", slug);
 
   if (error) throw new Error(error.message);
 
   revalidateEventPaths();
-  if (existing?.status === "published" || data) {
+  if (existing?.status === "published" || statusUpdate.status === "published") {
     revalidatePath(`/etkinlik/${slug}`);
   }
   redirect("/yonetim/etkinlikler");
@@ -90,6 +109,20 @@ export async function approveEvent(id: string) {
     .update({
       status: "published",
       published_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidateEventPaths();
+}
+
+export async function unpublishEvent(id: string) {
+  const { error } = await supabaseAdmin
+    .from("cultural_events")
+    .update({
+      status: "pending_review",
+      published_at: null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
@@ -145,6 +178,7 @@ export async function importEventFromUrlAction(url: string) {
       venue_name: imported.venue_name,
       starts_at: imported.starts_at,
       ends_at: imported.ends_at,
+      cover_image: imported.cover_image || null,
       raw_payload: { imported },
       updated_at: new Date().toISOString(),
     })

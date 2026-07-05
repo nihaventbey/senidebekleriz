@@ -1,3 +1,4 @@
+import { getCityName } from "@/lib/cities/lookup";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { CulturalEventRow, EventType } from "@/lib/events/types";
 
@@ -11,6 +12,7 @@ export type PublicEvent = {
   sourceUrl: string | null;
   ticketUrl: string | null;
   citySlug: string | null;
+  cityName: string | null;
   venueName: string | null;
   startsAt: string | null;
   endsAt: string | null;
@@ -30,6 +32,7 @@ function mapEvent(row: CulturalEventRow): PublicEvent {
     sourceUrl: row.source_url,
     ticketUrl: row.ticket_url,
     citySlug: row.city_slug,
+    cityName: getCityName(row.city_slug),
     venueName: row.venue_name,
     startsAt: row.starts_at,
     endsAt: row.ends_at,

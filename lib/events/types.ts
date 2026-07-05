@@ -18,6 +18,8 @@ export type RawFeedItem = {
   description: string;
   pubDate?: string;
   sourceName: string;
+  publisherName?: string;
+  publisherSite?: string;
 };
 
 export type NormalizedEventDraft = {

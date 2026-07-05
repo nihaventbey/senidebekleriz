@@ -259,6 +259,34 @@ export async function updatePage(slug: string, formData: FormData) {
   redirect("/yonetim/sayfalar");
 }
 
+export async function publishPage(id: string) {
+  const { error } = await supabaseAdmin
+    .from("pages")
+    .update({
+      is_published: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/");
+  revalidatePath("/yonetim/sayfalar");
+}
+
+export async function unpublishPage(id: string) {
+  const { error } = await supabaseAdmin
+    .from("pages")
+    .update({
+      is_published: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/");
+  revalidatePath("/yonetim/sayfalar");
+}
+
 export async function deletePage(id: string) {
   const { error } = await supabaseAdmin.from("pages").delete().eq("id", id);
   if (error) throw new Error(error.message);

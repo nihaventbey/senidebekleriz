@@ -14,7 +14,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 function formatDate(iso: string | null) {
-  if (!iso) return "Tarih duyurulacak";
+  if (!iso) return null;
   return new Date(iso).toLocaleDateString("tr-TR", {
     day: "numeric",
     month: "long",
@@ -26,6 +26,7 @@ function formatDate(iso: string | null) {
 
 export function EventSlideCard({ event }: { event: PublicEvent }) {
   const ctaUrl = event.ticketUrl || event.sourceUrl;
+  const dateLabel = formatDate(event.startsAt);
 
   return (
     <div className="relative flex min-h-[320px] flex-col justify-end overflow-hidden rounded-3xl border bg-gradient-to-br from-primary/90 via-primary/80 to-primary/60 p-8 text-primary-foreground md:min-h-[420px] md:p-12">
@@ -42,10 +43,10 @@ export function EventSlideCard({ event }: { event: PublicEvent }) {
           <Badge variant="secondary" className="bg-white/20 text-white">
             {TYPE_LABELS[event.eventType] || "Kültür"}
           </Badge>
-          {event.citySlug && (
+          {event.cityName && (
             <Badge variant="outline" className="border-white/30 text-white">
               <MapPin className="mr-1 h-3 w-3" />
-              {event.citySlug}
+              {event.cityName}
             </Badge>
           )}
         </div>
@@ -59,10 +60,12 @@ export function EventSlideCard({ event }: { event: PublicEvent }) {
         </p>
 
         <div className="flex flex-wrap items-center gap-4 text-sm text-primary-foreground/80">
-          <span className="inline-flex items-center gap-1.5">
-            <Calendar className="h-4 w-4" />
-            {formatDate(event.startsAt)}
-          </span>
+          {dateLabel && (
+            <span className="inline-flex items-center gap-1.5">
+              <Calendar className="h-4 w-4" />
+              {dateLabel}
+            </span>
+          )}
           {event.venueName && (
             <span className="inline-flex items-center gap-1.5">
               <MapPin className="h-4 w-4" />
@@ -111,6 +114,7 @@ export function EventSlideCard({ event }: { event: PublicEvent }) {
 
 export function EventListCard({ event }: { event: PublicEvent }) {
   const ctaUrl = event.ticketUrl || event.sourceUrl;
+  const dateLabel = formatDate(event.startsAt);
 
   return (
     <article className="flex h-full flex-col rounded-2xl border bg-card p-5 transition-colors hover:border-primary/40">
@@ -118,17 +122,17 @@ export function EventListCard({ event }: { event: PublicEvent }) {
         <Badge variant="outline">
           {TYPE_LABELS[event.eventType] || "Kültür"}
         </Badge>
-        {event.citySlug && (
-          <span className="text-xs text-muted-foreground">{event.citySlug}</span>
+        {event.cityName && (
+          <span className="text-xs text-muted-foreground">{event.cityName}</span>
         )}
       </div>
       <h3 className="text-lg font-semibold leading-snug">{event.title}</h3>
       <p className="mt-2 flex-1 text-sm text-muted-foreground line-clamp-3">
         {event.summary}
       </p>
-      <p className="mt-3 text-xs text-muted-foreground">
-        {formatDate(event.startsAt)}
-      </p>
+      {dateLabel && (
+        <p className="mt-3 text-xs text-muted-foreground">{dateLabel}</p>
+      )}
       {ctaUrl && (
         <a
           href={ctaUrl}

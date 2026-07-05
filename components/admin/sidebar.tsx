@@ -13,6 +13,7 @@ import {
   UserCog,
   BookOpen,
   CalendarDays,
+  Radar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/yonetim/sayfalar", label: "Sayfalar", icon: FileText },
   { href: "/yonetim/yazilar", label: "Blog Yazıları", icon: BookOpen },
   { href: "/yonetim/etkinlikler", label: "Etkinlikler", icon: CalendarDays },
+  { href: "/yonetim/kesif", label: "İçerik Keşfi", icon: Radar },
   { href: "/yonetim/reklamlar", label: "Reklamlar", icon: Megaphone },
   { href: "/yonetim/hesap", label: "Hesap", icon: UserCog },
 ];

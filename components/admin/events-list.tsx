@@ -13,8 +13,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Check, Loader2, Pencil, X } from "lucide-react";
-import { approveEvent, rejectEvent } from "@/lib/actions/events";
+import { Check, EyeOff, Loader2, Pencil, X } from "lucide-react";
+import { approveEvent, rejectEvent, unpublishEvent } from "@/lib/actions/events";
+import { getCityName } from "@/lib/cities/lookup";
 import type { AdminEventListItem } from "@/lib/data/admin-events";
 import { toast } from "@/lib/toast";
 
@@ -71,6 +72,24 @@ export function EventsList({ events, filter }: Props) {
     });
   }
 
+  function handleUnpublish(id: string) {
+    setPendingId(id);
+    startTransition(async () => {
+      try {
+        await unpublishEvent(id);
+        toast.success("Etkinlik taslağa alındı");
+        router.refresh();
+      } catch (error) {
+        toast.error(
+          "Taslağa alınamadı",
+          error instanceof Error ? error.message : undefined
+        );
+      } finally {
+        setPendingId(null);
+      }
+    });
+  }
+
   if (events.length === 0) {
     return (
       <div className="rounded-lg border py-12 text-center text-muted-foreground">
@@ -86,6 +105,7 @@ export function EventsList({ events, filter }: Props) {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Görsel</TableHead>
             <TableHead>Başlık</TableHead>
             <TableHead>Tip</TableHead>
             <TableHead>Şehir</TableHead>
@@ -96,6 +116,19 @@ export function EventsList({ events, filter }: Props) {
         <TableBody>
           {events.map((event) => (
             <TableRow key={event.id}>
+              <TableCell>
+                {event.cover_image ? (
+                  <img
+                    src={event.cover_image}
+                    alt=""
+                    className="h-12 w-16 rounded-md border object-cover"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="h-12 w-16 rounded-md border bg-muted" />
+                )}
+              </TableCell>
               <TableCell className="max-w-xs font-medium">
                 <span className="line-clamp-2">{event.title}</span>
                 {event.source_name && (
@@ -105,7 +138,7 @@ export function EventsList({ events, filter }: Props) {
                 )}
               </TableCell>
               <TableCell>{event.event_type}</TableCell>
-              <TableCell>{event.city_slug || "—"}</TableCell>
+              <TableCell>{getCityName(event.city_slug) || "—"}</TableCell>
               <TableCell>
                 <Badge
                   variant={
@@ -144,6 +177,21 @@ export function EventsList({ events, filter }: Props) {
                         <X className="h-4 w-4" />
                       </Button>
                     </>
+                  )}
+                  {event.status === "published" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isPending && pendingId === event.id}
+                      onClick={() => handleUnpublish(event.id)}
+                      title="Taslağa al"
+                    >
+                      {isPending && pendingId === event.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <EyeOff className="h-4 w-4" />
+                      )}
+                    </Button>
                   )}
                   <Button variant="ghost" size="sm" asChild>
                     <Link href={`/yonetim/etkinlikler/${event.slug}/duzenle`}>

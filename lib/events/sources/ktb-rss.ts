@@ -25,6 +25,18 @@ function getTag(block: string, tag: string): string {
   return plainMatch ? stripTags(plainMatch[1]) : "";
 }
 
+function getSourceBlock(block: string): { url?: string; name?: string } {
+  const match = block.match(
+    /<source(?:\s+url=["']([^"']+)["'])?[^>]*>([\s\S]*?)<\/source>/i
+  );
+  if (!match) return {};
+
+  return {
+    url: match[1] || undefined,
+    name: match[2] ? stripTags(match[2]) : undefined,
+  };
+}
+
 export function parseKtbRssXml(
   xml: string,
   sourceName: string,
@@ -40,6 +52,7 @@ export function parseKtbRssXml(
     const description =
       getTag(block, "description") || getTag(block, "content:encoded");
     const pubDate = getTag(block, "pubDate") || getTag(block, "dc:date");
+    const publisher = getSourceBlock(block);
 
     if (!title || !link) continue;
 
@@ -49,6 +62,8 @@ export function parseKtbRssXml(
       description: description.slice(0, 3000),
       pubDate: pubDate || undefined,
       sourceName,
+      publisherName: publisher.name,
+      publisherSite: publisher.url,
     });
   }
 

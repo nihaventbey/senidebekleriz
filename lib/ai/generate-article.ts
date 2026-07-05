@@ -8,6 +8,7 @@ type GenerateArticleInput = {
   cityName?: string;
   type?: "guide" | "list" | "tips";
   sourceUrl?: string;
+  fallbackText?: string;
 };
 
 export type GeneratedArticle = {
@@ -73,24 +74,45 @@ export async function generateArticleDraft(
   let slugHint = slugify(topic || "draft");
 
   if (input.sourceUrl?.trim()) {
-    const fetched = await fetchUrlContent(input.sourceUrl.trim(), {
-      maxTextLength: 14000,
-    });
+    try {
+      const fetched = await fetchUrlContent(input.sourceUrl.trim(), {
+        maxTextLength: 14000,
+        fallbackText: input.fallbackText,
+        minTextLength: input.fallbackText && input.fallbackText.length >= 40 ? 40 : 80,
+      });
 
-    if (!topic) {
-      topic = fetched.pageTitle || new URL(fetched.url).hostname;
+      if (!topic) {
+        topic = fetched.pageTitle || new URL(fetched.url).hostname;
+      }
+
+      slugHint = slugify(topic);
+      fetchedImages = fetched.imageUrls;
+
+      sourceBlock = [
+        `Kaynak URL: ${fetched.url}`,
+        fetched.pageTitle ? `Sayfa başlığı: ${fetched.pageTitle}` : null,
+        `Sayfa metni (referans): ${fetched.pageText}`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+    } catch {
+      const fallback = [input.topic, input.fallbackText]
+        .filter(Boolean)
+        .join("\n\n")
+        .trim();
+
+      if (fallback.length < 40) {
+        throw new Error("Sayfadan yeterli metin çıkarılamadı");
+      }
+
+      sourceBlock = [
+        `Kaynak URL: ${input.sourceUrl.trim()}`,
+        input.topic ? `Başlık: ${input.topic}` : null,
+        `Kaynak özeti: ${fallback}`,
+      ]
+        .filter(Boolean)
+        .join("\n");
     }
-
-    slugHint = slugify(topic);
-    fetchedImages = fetched.imageUrls;
-
-    sourceBlock = [
-      `Kaynak URL: ${fetched.url}`,
-      fetched.pageTitle ? `Sayfa başlığı: ${fetched.pageTitle}` : null,
-      `Sayfa metni (referans): ${fetched.pageText}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
   }
 
   if (!topic) {

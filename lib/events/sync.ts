@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { fetchUrlContent } from "@/lib/ai/fetch-url-content";
 import { normalizeFeedItem } from "@/lib/ai/normalize-event";
 import {
   eventSourceUrlExists,
@@ -7,6 +8,7 @@ import {
 import { fetchKtbRssItems } from "@/lib/events/sources/ktb-rss";
 import type { FeedSourceRow } from "@/lib/events/types";
 import { uniqueEventSlug } from "@/lib/events/slug";
+import { uploadEventImagesFromUrls } from "@/lib/storage/upload-image-from-url";
 
 async function getActiveFeedSources(): Promise<FeedSourceRow[]> {
   const { data, error } = await supabaseAdmin
@@ -33,6 +35,7 @@ async function insertPendingEvent(input: {
   venue_name: string | null;
   starts_at: string | null;
   ends_at: string | null;
+  cover_image?: string | null;
   raw_payload: Record<string, unknown>;
 }) {
   const { error } = await supabaseAdmin.from("cultural_events").insert({
@@ -47,6 +50,31 @@ async function insertPendingEvent(input: {
   }
 
   return true;
+}
+
+async function importEventCoverImage(input: {
+  sourceUrl: string;
+  slug: string;
+}): Promise<{ coverImage: string | null; imageUrls: string[] }> {
+  try {
+    const page = await fetchUrlContent(input.sourceUrl, {
+      maxTextLength: 1000,
+      userAgent: "SeniDeBekleriz/1.0 (cultural events aggregator)",
+    });
+
+    const media = await uploadEventImagesFromUrls(page.imageUrls, input.slug);
+
+    return {
+      coverImage: media.coverImage,
+      imageUrls: media.uploadedImages,
+    };
+  } catch (error) {
+    console.error(
+      "importEventCoverImage error:",
+      error instanceof Error ? error.message : error
+    );
+    return { coverImage: null, imageUrls: [] };
+  }
 }
 
 export type SyncEventsResult = {
@@ -94,9 +122,15 @@ export async function syncCulturalEvents(): Promise<SyncEventsResult> {
             continue;
           }
 
+          const slug = uniqueEventSlug(normalized.title);
+          const media = await importEventCoverImage({
+            sourceUrl: item.link,
+            slug,
+          });
+
           const inserted = await insertPendingEvent({
             title: normalized.title,
-            slug: uniqueEventSlug(normalized.title),
+            slug,
             summary: normalized.summary,
             event_type: normalized.event_type,
             source_name: item.sourceName,
@@ -105,7 +139,8 @@ export async function syncCulturalEvents(): Promise<SyncEventsResult> {
             venue_name: normalized.venue_name,
             starts_at: normalized.starts_at,
             ends_at: normalized.ends_at,
-            raw_payload: { rss: item, normalized },
+            cover_image: media.coverImage,
+            raw_payload: { rss: item, normalized, images: media.imageUrls },
           });
 
           if (inserted) {

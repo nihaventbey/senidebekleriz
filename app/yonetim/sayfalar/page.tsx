@@ -1,20 +1,13 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { getAllPages } from "@/lib/data/pages";
-import { Plus, Pencil } from "lucide-react";
+import { getAdminPages } from "@/lib/data/admin-pages";
+import { PagesList } from "@/components/admin/pages-list";
+import { Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPagesPage() {
-  const pages = await getAllPages();
+  const pages = await getAdminPages();
 
   return (
     <div className="space-y-6">
@@ -33,35 +26,7 @@ export default async function AdminPagesPage() {
         </Button>
       </div>
 
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Başlık</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Durum</TableHead>
-              <TableHead className="text-right">İşlemler</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pages.map((page) => (
-              <TableRow key={page.slug}>
-                <TableCell className="font-medium">{page.title}</TableCell>
-                <TableCell>{page.slug}</TableCell>
-                <TableCell>Yayında</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/yonetim/sayfalar/${page.slug}/duzenle`}>
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Düzenle
-                    </Link>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <PagesList pages={pages} />
     </div>
   );
 }

@@ -95,15 +95,29 @@ export type UploadedArticleMedia = {
   uploadedImages: string[];
 };
 
-export async function uploadArticleImagesFromUrls(
+export type UploadedMedia = {
+  coverImage: string | null;
+  uploadedImages: string[];
+};
+
+function safePathSegment(value: string): string {
+  return value.replace(/[^a-z0-9-]/gi, "-").replace(/-+/g, "-").slice(0, 80);
+}
+
+export async function uploadImagesFromUrls(
   imageUrls: string[],
-  slugHint: string
-): Promise<UploadedArticleMedia> {
-  const safeSlug = slugHint.replace(/[^a-z0-9-]/gi, "-").replace(/-+/g, "-").slice(0, 80);
-  const basePath = `articles/${safeSlug || "draft"}/${Date.now()}`;
+  options: {
+    folder: "articles" | "events";
+    slugHint: string;
+    maxImages?: number;
+  }
+): Promise<UploadedMedia> {
+  const safeSlug = safePathSegment(options.slugHint);
+  const basePath = `${options.folder}/${safeSlug || "draft"}/${Date.now()}`;
+  const maxImages = options.maxImages ?? 4;
   const uploadedImages: string[] = [];
 
-  for (let i = 0; i < imageUrls.length && i < 4; i++) {
+  for (let i = 0; i < imageUrls.length && i < maxImages; i++) {
     const label = i === 0 ? "cover" : `inline-${i}`;
     const publicUrl = await uploadImageFromUrl(
       imageUrls[i],
@@ -119,4 +133,26 @@ export async function uploadArticleImagesFromUrls(
     coverImage: uploadedImages[0] ?? null,
     uploadedImages,
   };
+}
+
+export async function uploadArticleImagesFromUrls(
+  imageUrls: string[],
+  slugHint: string
+): Promise<UploadedArticleMedia> {
+  return uploadImagesFromUrls(imageUrls, {
+    folder: "articles",
+    slugHint,
+    maxImages: 4,
+  });
+}
+
+export async function uploadEventImagesFromUrls(
+  imageUrls: string[],
+  slugHint: string
+): Promise<UploadedMedia> {
+  return uploadImagesFromUrls(imageUrls, {
+    folder: "events",
+    slugHint,
+    maxImages: 2,
+  });
 }
