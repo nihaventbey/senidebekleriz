@@ -1,7 +1,18 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { applyAgentLinkHeaders } from "@/lib/agents/link-headers";
+import { acceptsMarkdown, isMarkdownNegotiablePath } from "@/lib/agents/negotiation";
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  if (acceptsMarkdown(request) && isMarkdownNegotiablePath(pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/api/agents/markdown";
+    url.searchParams.set("path", pathname);
+    return NextResponse.rewrite(url);
+  }
+
   const response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -30,8 +41,6 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
-
   // Admin routes protection
   if (pathname.startsWith("/yonetim") && pathname !== "/yonetim/giris") {
     if (!user) {
@@ -54,6 +63,10 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/yonetim";
     return NextResponse.redirect(url);
+  }
+
+  if (pathname === "/") {
+    applyAgentLinkHeaders(response.headers);
   }
 
   return response;

@@ -7,6 +7,7 @@ import { SearchProvider } from "@/components/layout/search-provider";
 import { AppToaster } from "@/components/ui/sonner";
 import { AdSenseScript } from "@/components/ads/adsense-script";
 import { CookieConsent } from "@/components/layout/cookie-consent";
+import { WebMcpTools } from "@/components/agents/webmcp-tools";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -62,6 +63,7 @@ export default function RootLayout({
         <div id="search-portal" />
         <AppToaster />
         <AdSenseScript />
+        <WebMcpTools />
       </body>
     </html>
   );
