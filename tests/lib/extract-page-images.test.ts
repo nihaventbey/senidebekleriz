@@ -30,4 +30,16 @@ describe("extractPageImageUrls", () => {
     expect(isLikelyContentImage("https://x.com/favicon.ico")).toBe(false);
     expect(isLikelyMetaImage("https://cdn.site.gov.tr/path/to/image")).toBe(true);
   });
+
+  it("rejects valilik portrait and staff image urls", () => {
+    expect(isLikelyContentImage("https://adana.gov.tr/upload/vali-foto.jpg")).toBe(
+      false
+    );
+    expect(isLikelyContentImage("https://x.gov.tr/images/personel-banner.png")).toBe(
+      false
+    );
+    expect(
+      isLikelyContentImage("https://x.gov.tr/upload/tanitim/kale-manzara.webp")
+    ).toBe(true);
+  });
 });

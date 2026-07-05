@@ -8,6 +8,7 @@ export type ContentGaps = {
   placesThinContent: number;
   placesIndexableWithoutCover: number;
   citiesWithoutCover: number;
+  citiesValilikCover: number;
   eventsWithoutCover: number;
   articlesMissingMeta: number;
 };
@@ -25,7 +26,7 @@ export async function getContentGaps(): Promise<ContentGaps> {
       .eq("is_active", true),
     supabaseAdmin
       .from("cities")
-      .select("cover_image")
+      .select("cover_image, cover_image_source")
       .eq("is_active", true),
     supabaseAdmin
       .from("cultural_events")
@@ -59,8 +60,21 @@ export async function getContentGaps(): Promise<ContentGaps> {
     }
   }
 
-  const citiesWithoutCover = (citiesRes.data || []).filter(
-    (c) => !c.cover_image
+  let cityRows = citiesRes.data || [];
+  if (citiesRes.error?.message.includes("cover_image_source")) {
+    const fallback = await supabaseAdmin
+      .from("cities")
+      .select("cover_image")
+      .eq("is_active", true);
+    cityRows = (fallback.data || []).map((c) => ({
+      cover_image: c.cover_image,
+      cover_image_source: null,
+    }));
+  }
+
+  const citiesWithoutCover = cityRows.filter((c) => !c.cover_image).length;
+  const citiesValilikCover = cityRows.filter(
+    (c) => c.cover_image && c.cover_image_source === "valilik"
   ).length;
 
   const eventsWithoutCover = (eventsRes.data || []).filter(
@@ -76,6 +90,7 @@ export async function getContentGaps(): Promise<ContentGaps> {
     placesThinContent,
     placesIndexableWithoutCover,
     citiesWithoutCover,
+    citiesValilikCover,
     eventsWithoutCover,
     articlesMissingMeta,
   };

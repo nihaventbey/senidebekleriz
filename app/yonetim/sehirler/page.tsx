@@ -1,67 +1,43 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { getAllCities } from "@/lib/data/cities";
-import { Plus, Pencil } from "lucide-react";
+import { getAdminCities } from "@/lib/data/admin";
+import { getContentGaps } from "@/lib/data/content-gaps";
+import { AdminCitiesList } from "@/components/admin/cities-list";
+import { CityCoverRefreshButton } from "@/components/admin/city-cover-refresh-button";
+import { Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminCitiesPage() {
-  const cities = await getAllCities();
+  const [cities, gaps] = await Promise.all([
+    getAdminCities(),
+    getContentGaps(),
+  ]);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Şehirler</h1>
           <p className="text-muted-foreground">
-            Şehirleri yönetin, düzenleyin ve yeni şehirler ekleyin.
+            Şehirleri yönetin, kapak görsellerini Wikimedia ile düzeltin.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/yonetim/sehirler/yeni">
-            <Plus className="mr-2 h-4 w-4" />
-            Yeni Şehir
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <CityCoverRefreshButton count={gaps.citiesValilikCover} />
+          <Button asChild>
+            <Link href="/yonetim/sehirler/yeni">
+              <Plus className="mr-2 h-4 w-4" />
+              Yeni Şehir
+            </Link>
+          </Button>
+        </div>
       </div>
 
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Şehir</TableHead>
-              <TableHead>Bölge</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead className="text-right">İşlemler</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {cities.map((city) => (
-              <TableRow key={city.slug}>
-                <TableCell className="font-medium">{city.name}</TableCell>
-                <TableCell>{city.region}</TableCell>
-                <TableCell>{city.slug}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/yonetim/sehirler/${city.slug}/duzenle`}>
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Düzenle
-                    </Link>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <Suspense fallback={<div className="text-sm text-muted-foreground">Yükleniyor…</div>}>
+        <AdminCitiesList cities={cities} />
+      </Suspense>
     </div>
   );
 }

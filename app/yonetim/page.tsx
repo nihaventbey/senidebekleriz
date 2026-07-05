@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { getAdminDashboardStats, getContentReadinessStats } from "@/lib/data/admin-stats";
 import { getContentGaps } from "@/lib/data/content-gaps";
 import { AdSenseReadiness } from "@/components/admin/adsense-readiness";
+import { CityCoverRefreshButton } from "@/components/admin/city-cover-refresh-button";
 import {
   Building2,
   MapPinned,
@@ -193,6 +194,17 @@ export default async function AdminDashboardPage() {
                 </p>
                 <p className="text-xs text-muted-foreground">Kapaksız şehir</p>
               </div>
+              <Link
+                href="/yonetim/sehirler?cover=valilik"
+                className="rounded-xl border p-3 transition-colors hover:bg-muted/50"
+              >
+                <p className="text-2xl font-bold">
+                  {gaps.citiesValilikCover.toLocaleString("tr-TR")}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Valilik kaynaklı kapak
+                </p>
+              </Link>
               <div className="rounded-xl border p-3">
                 <p className="text-2xl font-bold">
                   {gaps.articlesMissingMeta.toLocaleString("tr-TR")}
@@ -202,6 +214,12 @@ export default async function AdminDashboardPage() {
                 </p>
               </div>
             </div>
+            {gaps.citiesValilikCover > 0 && (
+              <CityCoverRefreshButton
+                count={gaps.citiesValilikCover}
+                size="sm"
+              />
+            )}
             <div>
               <p className="font-medium">Şehir rehberi eksik</p>
               <p className="text-muted-foreground">

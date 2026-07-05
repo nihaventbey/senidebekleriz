@@ -11,7 +11,7 @@ import { getAdminCityBySlug } from "@/lib/data/admin";
 import { SubmitButton } from "@/components/admin/submit-button";
 import { CoverImageField } from "@/components/admin/cover-image-field";
 import { MetaFields } from "@/components/admin/meta-fields";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2, AlertTriangle } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Şehir Düzenle",
@@ -26,6 +26,8 @@ export default async function EditCityPage({
   const city = await getAdminCityBySlug(slug);
 
   if (!city) notFound();
+
+  const valilikCover = city.cover_image_source === "valilik";
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -80,11 +82,22 @@ export default async function EditCityPage({
           />
         </div>
 
+        {valilikCover && (
+          <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>
+              Kapak görseli valilik kaynağından geliyor ve yanlış olabilir.
+              &quot;Wikimedia öner&quot; ile düzeltin veya manuel yükleyin.
+            </p>
+          </div>
+        )}
+
         <CoverImageField
           defaultValue={city.cover_image}
           source={city.cover_image_source}
           folder="cities"
           slug={city.slug}
+          wikimediaSuggest
         />
 
         <MetaFields

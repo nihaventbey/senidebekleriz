@@ -12,10 +12,45 @@ export type AdminCityData = {
   population: number;
   cover_image: string | null;
   cover_image_source: string | null;
+  cover_image_locked: boolean;
   meta_title: string | null;
   meta_description: string | null;
   is_active: boolean;
 };
+
+export type AdminCityListItem = {
+  id: string;
+  name: string;
+  slug: string;
+  region: string;
+  cover_image: string | null;
+  cover_image_source: string | null;
+  cover_image_locked: boolean;
+};
+
+export async function getAdminCities(): Promise<AdminCityListItem[]> {
+  const { data, error } = await supabaseAdmin
+    .from("cities")
+    .select(
+      "id, name, slug, region, cover_image, cover_image_source, cover_image_locked"
+    )
+    .order("name");
+
+  if (error) {
+    console.error("getAdminCities error:", error.message);
+    return [];
+  }
+
+  return (data || []).map((city) => ({
+    id: city.id,
+    name: city.name,
+    slug: city.slug,
+    region: city.region || "",
+    cover_image: city.cover_image,
+    cover_image_source: city.cover_image_source ?? null,
+    cover_image_locked: Boolean(city.cover_image_locked),
+  }));
+}
 
 export async function getAdminCityBySlug(
   slug: string
@@ -42,6 +77,7 @@ export async function getAdminCityBySlug(
     population: data.population || 0,
     cover_image: data.cover_image,
     cover_image_source: data.cover_image_source ?? null,
+    cover_image_locked: Boolean(data.cover_image_locked),
     meta_title: data.meta_title ?? null,
     meta_description: data.meta_description ?? null,
     is_active: data.is_active ?? true,

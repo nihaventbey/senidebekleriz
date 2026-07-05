@@ -1,0 +1,26 @@
+{
+  "ankara": {
+    "commonsFile": "Anıtkabir ve Ankara manzarası.jpg",
+    "note": "Anıtkabir"
+  },
+  "istanbul": {
+    "commonsFile": "View of Istanbul from Galata Tower.jpg",
+    "note": "Galata'dan İstanbul"
+  },
+  "izmir": {
+    "commonsFile": "Izmir Clock Tower.jpg",
+    "note": "Saat Kulesi"
+  },
+  "nevsehir": {
+    "commonsFile": "Cappadocia landscape.jpg",
+    "note": "Kapadokya"
+  },
+  "antalya": {
+    "commonsFile": "Kaleiçi, Antalya.jpg",
+    "note": "Kaleiçi"
+  },
+  "trabzon": {
+    "commonsFile": "Sumela Monastery (36944891345).jpg",
+    "note": "Sümela Manastırı"
+  }
+}

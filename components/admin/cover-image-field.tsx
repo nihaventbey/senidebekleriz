@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Upload, X } from "lucide-react";
+import { Loader2, Sparkles, Upload, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -23,6 +23,8 @@ type CoverImageFieldProps = {
   folder: string;
   slug: string;
   label?: string;
+  /** Şehir kapakları için Wikimedia öneri API'sini etkinleştirir */
+  wikimediaSuggest?: boolean;
 };
 
 export function CoverImageField({
@@ -32,10 +34,16 @@ export function CoverImageField({
   folder,
   slug,
   label = "Kapak Görseli",
+  wikimediaSuggest = false,
 }: CoverImageFieldProps) {
   const [value, setValue] = useState(defaultValue || "");
+  const [sourceLabel, setSourceLabel] = useState(source || "");
+  const [suggestionNote, setSuggestionNote] = useState<string | null>(null);
   const [uploading, startUpload] = useTransition();
+  const [suggesting, startSuggest] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const displaySource = sourceLabel || source;
 
   function handleFile(file: File) {
     startUpload(async () => {
@@ -53,6 +61,8 @@ export function CoverImageField({
         if (!res.ok) throw new Error(data.error || "Yükleme başarısız");
 
         setValue(data.url);
+        setSourceLabel("manual");
+        setSuggestionNote(null);
         toast.success("Görsel yüklendi");
       } catch (error) {
         toast.error(
@@ -63,27 +73,101 @@ export function CoverImageField({
     });
   }
 
+  function suggestWikimedia(apply: boolean) {
+    if (!wikimediaSuggest || folder !== "cities") return;
+
+    startSuggest(async () => {
+      try {
+        const res = await fetch("/api/admin/suggest-city-cover", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slug, apply }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "Öneri alınamadı");
+        }
+
+        if (apply && data.url) {
+          setValue(data.url);
+          setSourceLabel("wikimedia");
+          setSuggestionNote(data.note || null);
+          toast.success("Wikimedia kapak uygulandı");
+          return;
+        }
+
+        if (data.url) {
+          setValue(data.url);
+          setSourceLabel("wikimedia");
+          setSuggestionNote(
+            data.note
+              ? `${data.source}: ${data.note} (önizleme — kaydetmek için formu gönderin)`
+              : `${data.source} (önizleme — kaydetmek için formu gönderin)`
+          );
+          toast.success("Wikimedia önerisi yüklendi");
+        }
+      } catch (error) {
+        toast.error(
+          "Öneri alınamadı",
+          error instanceof Error ? error.message : undefined
+        );
+      }
+    });
+  }
+
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Label htmlFor={name}>{label}</Label>
-        {source && SOURCE_LABELS[source] && (
+        {displaySource && SOURCE_LABELS[displaySource] && (
           <Badge variant="secondary" className="text-[10px]">
-            Kaynak: {SOURCE_LABELS[source]}
+            Kaynak: {SOURCE_LABELS[displaySource]}
           </Badge>
         )}
       </div>
 
       <input type="hidden" name={name} value={value} />
 
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <Input
           id={name}
           type="url"
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setSuggestionNote(null);
+          }}
           placeholder="https://... veya dosya yükleyin"
+          className="min-w-0 flex-1"
         />
+        {wikimediaSuggest && folder === "cities" && (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => suggestWikimedia(false)}
+              disabled={suggesting || uploading}
+              className="shrink-0"
+            >
+              {suggesting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
+              Wikimedia öner
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => suggestWikimedia(true)}
+              disabled={suggesting || uploading}
+              className="shrink-0"
+            >
+              Uygula ve kaydet
+            </Button>
+          </>
+        )}
         <input
           ref={fileRef}
           type="file"
@@ -113,7 +197,10 @@ export function CoverImageField({
           <Button
             type="button"
             variant="ghost"
-            onClick={() => setValue("")}
+            onClick={() => {
+              setValue("");
+              setSuggestionNote(null);
+            }}
             className="shrink-0"
           >
             <X className="mr-2 h-4 w-4" />
@@ -121,6 +208,10 @@ export function CoverImageField({
           </Button>
         )}
       </div>
+
+      {suggestionNote && (
+        <p className="text-xs text-muted-foreground">{suggestionNote}</p>
+      )}
 
       {value && (
         // eslint-disable-next-line @next/next/no-img-element

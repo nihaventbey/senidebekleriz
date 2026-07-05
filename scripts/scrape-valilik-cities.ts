@@ -1,6 +1,3 @@
-import { config } from "dotenv";
-config({ path: ".env.local" });
-
 import { readFileSync } from "fs";
 import { join } from "path";
 import {
@@ -12,6 +9,7 @@ import {
   createBridgeClient,
 } from "../lib/ingest/supabase-bridge";
 import { pickCoverImage } from "../lib/ai/pick-cover-image";
+import { filterImageCandidatesBySize } from "../lib/ai/extract-page-images";
 import { uploadImageFromUrl } from "../lib/storage/upload-image-from-url";
 
 const DELAY_MS = parseInt(process.env.DELAY_MS || "2500");
@@ -27,6 +25,7 @@ function parseArgs() {
     dryRun: args.includes("--dry-run"),
     force: args.includes("--force"),
     publish: args.includes("--publish"),
+    withCover: args.includes("--with-cover"),
     city: cityArg,
   };
 }
@@ -40,10 +39,10 @@ async function main() {
   const opts = parseArgs();
   console.log("=== Valilik Tanıtım Tarayıcı ===");
   console.log(
-    `Mod: ${opts.dryRun ? "dry-run" : "yazma"} | force=${opts.force} | publish=${opts.publish}`
+    `Mod: ${opts.dryRun ? "dry-run" : "yazma"} | force=${opts.force} | publish=${opts.publish} | kapak=${opts.withCover ? "açık" : "kapalı"}`
   );
-  if (!process.env.GEMINI_API_KEY) {
-    console.log("Uyarı: GEMINI_API_KEY yok — kapak görseli seçimi atlanacak.\n");
+  if (opts.withCover && !process.env.GEMINI_API_KEY) {
+    console.log("Uyarı: --with-cover için GEMINI_API_KEY gerekli.\n");
   }
 
   const db = opts.dryRun ? null : createBridgeClient();
@@ -72,15 +71,19 @@ async function main() {
       continue;
     }
 
-    // Gemini ile tanıtım görseli seç, storage'a yükle.
     let coverUrl: string | null = null;
-    if (process.env.GEMINI_API_KEY && intro.imageUrls.length > 0) {
+    if (
+      opts.withCover &&
+      process.env.GEMINI_API_KEY &&
+      intro.imageUrls.length > 0
+    ) {
+      const filteredUrls = await filterImageCandidatesBySize(intro.imageUrls);
       const pick = await pickCoverImage({
         entityName: intro.name,
         entityType: "city",
         pageUrl: intro.sourceUrl,
         pageText: intro.pageText,
-        candidateUrls: intro.imageUrls,
+        candidateUrls: filteredUrls,
       });
 
       if (pick.selectedUrl && !opts.dryRun) {
@@ -89,13 +92,13 @@ async function main() {
           `cities/${intro.slug}/cover`
         );
       } else if (pick.selectedUrl) {
-        coverUrl = pick.selectedUrl; // dry-run: sadece göster
+        coverUrl = pick.selectedUrl;
       }
     }
 
     if (opts.dryRun || !db) {
       console.log(
-        `[dry-run] başlık="${intro.title.slice(0, 40)}" metin=${intro.pageText.length}c görsel=${coverUrl ? "seçildi" : "yok"}`
+        `[dry-run] başlık="${intro.title.slice(0, 40)}" metin=${intro.pageText.length}c kapak=${coverUrl ? "seçildi" : "yok"}`
       );
       success++;
       await sleep(DELAY_MS);
