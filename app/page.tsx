@@ -1,4 +1,3 @@
-import type { ComponentType } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,19 +6,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  MapPin,
-  Compass,
-  Landmark,
-  Palette,
-  TreePine,
-  Camera,
-  ArrowRight,
-} from "lucide-react";
+import { MapPin, Compass, ArrowRight } from "lucide-react";
 import { AdBanner } from "@/components/ads/ad-banner";
 import { getAllCities } from "@/lib/data/cities";
 import { pickPopularCities } from "@/lib/cities/popular";
 import { PopularCitiesSection } from "@/components/home/popular-cities-section";
+import { DiscoverCategoriesSection } from "@/components/home/discover-categories-section";
+import { MissionVisionSection } from "@/components/home/mission-vision-section";
 import { getAllCategories } from "@/lib/data/categories";
 import { getFeaturedPlaces } from "@/lib/data/places";
 import { getPublishedArticles } from "@/lib/data/articles";
@@ -30,13 +23,6 @@ import { ArticleCard } from "@/components/blog/article-card";
 import { CulturalEventsSlider } from "@/components/events/cultural-events-slider";
 
 export const dynamic = "force-dynamic";
-
-const iconMap: Record<string, ComponentType<{ className?: string }>> = {
-  Landmark,
-  Camera,
-  TreePine,
-  Palette,
-};
 
 export default async function HomePage() {
   const [cities, categoryList, featuredPlaces, latestArticles, featuredEvents] =
@@ -167,72 +153,9 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Kategoriler */}
-      <section className="container mx-auto px-4 py-12">
-        <h2 className="mb-8 text-2xl font-bold tracking-tight md:text-3xl">
-          Neye Göre Keşfetmek İstersin?
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {categoryList.map((category) => {
-            const Icon = iconMap[category.icon] || Landmark;
-            return (
-              <Link key={category.slug} href={`/kategori/${category.slug}`}>
-                <Card className="card-hover flex flex-col items-center p-6 text-center border-border/60 bg-gradient-to-br from-card to-muted/30">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary">
-                    <Icon className="h-7 w-7 text-secondary-foreground" />
-                  </div>
-                  <h3 className="mt-5 font-semibold">{category.name}</h3>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
+      <DiscoverCategoriesSection categories={categoryList} />
 
-      {/* Platform */}
-      <section className="border-y border-border/60 bg-muted/20 py-16">
-        <div className="container mx-auto px-4">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
-              Sanat ve Tarihe Yönelen Bir Platform
-            </h2>
-            <p className="mt-4 text-muted-foreground">
-              Yeme-içme rehberi değiliz. Müzeleri, antik kentleri, sanat
-              mekanlarını ve tarihi durakları öne çıkararak insanların kültüre
-              yönelmesini hedefliyoruz.
-            </p>
-          </div>
-          <div className="mx-auto mt-10 grid max-w-4xl gap-4 sm:grid-cols-3">
-            <Link
-              href="/sayfa/hakkimizda"
-              className="rounded-2xl border bg-background p-6 text-center transition-colors hover:border-primary/40 hover:bg-primary/5"
-            >
-              <h3 className="font-semibold">Hakkımızda</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Platformumuzun amacı ve odağı
-              </p>
-            </Link>
-            <Link
-              href="/sayfa/misyon"
-              className="rounded-2xl border bg-background p-6 text-center transition-colors hover:border-primary/40 hover:bg-primary/5"
-            >
-              <h3 className="font-semibold">Misyonumuz</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Kültürel mekanları görünür kılmak
-              </p>
-            </Link>
-            <Link
-              href="/sayfa/vizyon"
-              className="rounded-2xl border bg-background p-6 text-center transition-colors hover:border-primary/40 hover:bg-primary/5"
-            >
-              <h3 className="font-semibold">Vizyonumuz</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Sanat ve tarihe ilgiyi artırmak
-              </p>
-            </Link>
-          </div>
-        </div>
-      </section>
+      <MissionVisionSection />
 
       {/* CTA */}
       <section className="container mx-auto px-4 py-12">
