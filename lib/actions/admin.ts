@@ -14,6 +14,9 @@ export async function createCity(formData: FormData) {
     slug: newSlug,
     region: formData.get("region") as string,
     description: formData.get("description") as string,
+    description_source: (formData.get("description") as string)?.trim()
+      ? "manual"
+      : null,
     lat: parseFloat(formData.get("lat") as string) || 0,
     lng: parseFloat(formData.get("lng") as string) || 0,
     population: parseInt(formData.get("population") as string) || 0,
@@ -42,6 +45,9 @@ export async function updateCity(slug: string, formData: FormData) {
     slug: newSlug,
     region: formData.get("region") as string,
     description: formData.get("description") as string,
+    description_source: (formData.get("description") as string)?.trim()
+      ? "manual"
+      : null,
     lat: parseFloat(formData.get("lat") as string) || 0,
     lng: parseFloat(formData.get("lng") as string) || 0,
     population: parseInt(formData.get("population") as string) || 0,

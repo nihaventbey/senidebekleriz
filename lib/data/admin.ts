@@ -15,6 +15,7 @@ export type AdminCityData = {
   cover_image_locked: boolean;
   meta_title: string | null;
   meta_description: string | null;
+  description_source: string | null;
   is_active: boolean;
 };
 
@@ -80,6 +81,7 @@ export async function getAdminCityBySlug(
     cover_image_locked: Boolean(data.cover_image_locked),
     meta_title: data.meta_title ?? null,
     meta_description: data.meta_description ?? null,
+    description_source: data.description_source ?? null,
     is_active: data.is_active ?? true,
   };
 }

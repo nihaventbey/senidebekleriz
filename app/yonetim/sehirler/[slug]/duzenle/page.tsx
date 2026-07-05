@@ -4,11 +4,11 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { updateCity, deleteCity } from "@/lib/actions/admin";
 import { getAdminCityBySlug } from "@/lib/data/admin";
 import { SubmitButton } from "@/components/admin/submit-button";
+import { CityDescriptionField } from "@/components/admin/city-description-field";
 import { CoverImageField } from "@/components/admin/cover-image-field";
 import { MetaFields } from "@/components/admin/meta-fields";
 import { ArrowLeft, Trash2, AlertTriangle } from "lucide-react";
@@ -72,15 +72,11 @@ export default async function EditCityPage({
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="description">Açıklama</Label>
-          <Textarea
-            id="description"
-            name="description"
-            rows={4}
-            defaultValue={city.description}
-          />
-        </div>
+        <CityDescriptionField
+          slug={city.slug}
+          defaultValue={city.description}
+          descriptionSource={city.description_source}
+        />
 
         {valilikCover && (
           <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">

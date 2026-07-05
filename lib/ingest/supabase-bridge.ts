@@ -14,8 +14,6 @@ export type BridgeResult = {
   coverUpdated: boolean;
 };
 
-const DESCRIPTION_UPDATE_THRESHOLD = 200;
-
 export function createBridgeClient(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -50,9 +48,8 @@ async function logSync(
 /**
  * Writes a scraped province intro into Supabase:
  * - upserts the guide page (rehber-{slug})
- * - updates cities.description when it is empty/short
  * - optionally sets the city cover image (already uploaded to storage)
- * Honors manual/lock protection so admin edits are never overwritten.
+ * City descriptions are managed via AI/panel — not overwritten here.
  */
 export async function bridgeIntroToSupabase(
   db: SupabaseClient,
@@ -64,7 +61,7 @@ export async function bridgeIntroToSupabase(
     const { data: city } = await db
       .from("cities")
       .select(
-        "id, slug, description, cover_image, cover_image_locked, cover_image_source"
+        "id, slug, cover_image, cover_image_locked, cover_image_source"
       )
       .eq("slug", intro.slug)
       .maybeSingle();
@@ -83,7 +80,6 @@ export async function bridgeIntroToSupabase(
       .eq("slug", pageSlug)
       .maybeSingle();
 
-    // Overwrite protection: never touch manually edited guides unless forced.
     if (
       existingPage &&
       existingPage.content_source === "manual" &&
@@ -111,28 +107,21 @@ export async function bridgeIntroToSupabase(
       updated_at: new Date().toISOString(),
     };
 
-    // Decide cover update (respect manual lock).
     const coverLocked =
       city.cover_image_locked || city.cover_image_source === "manual";
     const shouldSetCover = Boolean(
       coverUrl && !coverLocked && (!city.cover_image || options.force)
     );
 
-    // Decide description update.
-    const currentDescription = (city.description || "").trim();
-    const shouldUpdateDescription =
-      currentDescription.length < DESCRIPTION_UPDATE_THRESHOLD || options.force;
-
     if (options.dryRun) {
       return {
         slug: intro.slug,
         status: "success",
-        message: `[dry-run] page=${pageSlug} cover=${shouldSetCover} desc=${shouldUpdateDescription}`,
+        message: `[dry-run] page=${pageSlug} cover=${shouldSetCover}`,
         coverUpdated: shouldSetCover,
       };
     }
 
-    // Upsert guide page.
     if (existingPage) {
       const { error } = await db
         .from("pages")
@@ -144,12 +133,10 @@ export async function bridgeIntroToSupabase(
       if (error) throw new Error(`pages insert: ${error.message}`);
     }
 
-    // Update city description / cover / source.
     const cityUpdate: Record<string, unknown> = {
       intro_source_url: intro.sourceUrl,
       updated_at: new Date().toISOString(),
     };
-    if (shouldUpdateDescription) cityUpdate.description = intro.summary;
     if (shouldSetCover) {
       cityUpdate.cover_image = coverUrl;
       cityUpdate.cover_image_source = "valilik";

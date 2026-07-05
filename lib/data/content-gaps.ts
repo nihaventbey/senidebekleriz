@@ -9,6 +9,7 @@ export type ContentGaps = {
   placesIndexableWithoutCover: number;
   citiesWithoutCover: number;
   citiesValilikCover: number;
+  citiesValilikDescription: number;
   eventsWithoutCover: number;
   articlesMissingMeta: number;
 };
@@ -26,7 +27,7 @@ export async function getContentGaps(): Promise<ContentGaps> {
       .eq("is_active", true),
     supabaseAdmin
       .from("cities")
-      .select("cover_image, cover_image_source")
+      .select("cover_image, cover_image_source, description_source, intro_source_url")
       .eq("is_active", true),
     supabaseAdmin
       .from("cultural_events")
@@ -64,11 +65,13 @@ export async function getContentGaps(): Promise<ContentGaps> {
   if (citiesRes.error?.message.includes("cover_image_source")) {
     const fallback = await supabaseAdmin
       .from("cities")
-      .select("cover_image")
+      .select("cover_image, description, intro_source_url")
       .eq("is_active", true);
     cityRows = (fallback.data || []).map((c) => ({
       cover_image: c.cover_image,
       cover_image_source: null,
+      description_source: null,
+      intro_source_url: (c as { intro_source_url?: string | null }).intro_source_url ?? null,
     }));
   }
 
@@ -76,6 +79,13 @@ export async function getContentGaps(): Promise<ContentGaps> {
   const citiesValilikCover = cityRows.filter(
     (c) => c.cover_image && c.cover_image_source === "valilik"
   ).length;
+  const citiesValilikDescription = cityRows.filter((c) => {
+    if (c.description_source === "valilik") return true;
+    if (c.description_source === "manual" || c.description_source === "ai") {
+      return false;
+    }
+    return Boolean(c.intro_source_url);
+  }).length;
 
   const eventsWithoutCover = (eventsRes.data || []).filter(
     (e) => !e.cover_image
@@ -91,6 +101,7 @@ export async function getContentGaps(): Promise<ContentGaps> {
     placesIndexableWithoutCover,
     citiesWithoutCover,
     citiesValilikCover,
+    citiesValilikDescription,
     eventsWithoutCover,
     articlesMissingMeta,
   };

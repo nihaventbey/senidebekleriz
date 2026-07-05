@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin } from "lucide-react";
 import { getAllCategories, getCategoryBySlug } from "@/lib/data/categories";
+import { resolveCategoryCoverImage } from "@/lib/data/category-images";
 import { AdBanner } from "@/components/ads/ad-banner";
 import { getPlacesByCategory } from "@/lib/data/places";
 import { PlaceImageComponent } from "@/components/place/place-image";
@@ -42,34 +43,58 @@ export default async function CategoryPage({
   }
 
   const places = await getPlacesByCategory(slug);
+  const cover = await resolveCategoryCoverImage(slug);
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="mb-10">
-        <Badge variant="secondary" className="mb-3">
-          Kategori
-        </Badge>
-        <h1 className="text-4xl font-bold tracking-tight">{category.name}</h1>
-        <p className="mt-4 max-w-3xl text-lg text-muted-foreground">
-          {category.description}
-        </p>
-      </div>
+    <div>
+      <section className="relative overflow-hidden bg-hero-gradient py-10 sm:py-12 md:py-16">
+        {cover?.url && (
+          <>
+            <img
+              src={cover.url}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/50" />
+          </>
+        )}
+        <div className="container relative mx-auto px-4">
+          <div className="max-w-3xl">
+            <Badge
+              variant="secondary"
+              className={cover?.url ? "mb-4" : "mb-3"}
+            >
+              Kategori
+            </Badge>
+            <h1
+              className={`text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl ${cover?.url ? "text-white" : ""}`}
+            >
+              {category.name}
+            </h1>
+            <p
+              className={`mt-4 max-w-3xl text-base md:text-lg ${cover?.url ? "text-white/90" : "text-muted-foreground"}`}
+            >
+              {category.description}
+            </p>
+          </div>
+        </div>
+      </section>
 
-      {/* Reklam Alanı */}
-      <div className="mb-8">
-        <AdBanner
-          slot="category-content-top"
-          className="min-h-[90px] w-full"
-          style={{ display: "block", minHeight: "90px", width: "100%" }}
-        />
-      </div>
+      <div className="container mx-auto px-4 pb-12">
+        <div className="mb-8">
+          <AdBanner
+            slot="category-content-top"
+            className="min-h-[90px] w-full"
+            style={{ display: "block", minHeight: "90px", width: "100%" }}
+          />
+        </div>
 
-      {places.length === 0 ? (
-        <p className="text-muted-foreground">
-          Bu kategoride henüz mekan bulunmuyor.
-        </p>
-      ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {places.length === 0 ? (
+          <p className="text-muted-foreground">
+            Bu kategoride henüz mekan bulunmuyor.
+          </p>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {places.map((place, index) => (
             <div key={place.slug}>
               <Link href={`/mekan/${place.slug}`}>
@@ -117,8 +142,9 @@ export default async function CategoryPage({
               )}
             </div>
           ))}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

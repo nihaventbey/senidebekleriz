@@ -5,6 +5,7 @@ import { getAdminCities } from "@/lib/data/admin";
 import { getContentGaps } from "@/lib/data/content-gaps";
 import { AdminCitiesList } from "@/components/admin/cities-list";
 import { CityCoverRefreshButton } from "@/components/admin/city-cover-refresh-button";
+import { CityDescriptionRefreshButton } from "@/components/admin/city-description-refresh-button";
 import { Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,7 @@ export default async function AdminCitiesPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <CityDescriptionRefreshButton count={gaps.citiesValilikDescription} />
           <CityCoverRefreshButton count={gaps.citiesValilikCover} />
           <Button asChild>
             <Link href="/yonetim/sehirler/yeni">
