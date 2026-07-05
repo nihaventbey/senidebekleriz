@@ -16,6 +16,7 @@ import { getAllCities } from "@/lib/data/cities";
 import { getAllCategories } from "@/lib/data/categories";
 import { SubmitButton } from "@/components/admin/submit-button";
 import { PlaceDescriptionField } from "@/components/admin/place-description-field";
+import { CoverImageField } from "@/components/admin/cover-image-field";
 import { ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -87,15 +88,7 @@ export default async function NewPlacePage() {
 
         <PlaceDescriptionField />
 
-        <div className="space-y-2">
-          <Label htmlFor="cover_image">Kapak Görseli URL</Label>
-          <Input
-            id="cover_image"
-            name="cover_image"
-            type="url"
-            placeholder="https://..."
-          />
-        </div>
+        <CoverImageField folder="places" slug="yeni" />
 
         <div className="space-y-2">
           <Label htmlFor="address">Adres</Label>

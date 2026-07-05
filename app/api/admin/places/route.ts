@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminUser, unauthorizedResponse } from "@/lib/auth/admin";
-import { getAdminPlacesPaginated } from "@/lib/data/admin";
+import { getAdminPlacesPaginated, type PlaceGapFilter } from "@/lib/data/admin";
 
 export const runtime = "nodejs";
+
+const GAP_FILTERS: PlaceGapFilter[] = ["no-cover", "thin", "not-indexable"];
 
 export async function GET(request: NextRequest) {
   const user = await getAdminUser();
@@ -14,6 +16,10 @@ export async function GET(request: NextRequest) {
   const q = searchParams.get("q") || undefined;
   const citySlug = searchParams.get("city") || undefined;
   const source = searchParams.get("source") || undefined;
+  const gapParam = searchParams.get("gap");
+  const gap = GAP_FILTERS.includes(gapParam as PlaceGapFilter)
+    ? (gapParam as PlaceGapFilter)
+    : undefined;
 
   const result = await getAdminPlacesPaginated({
     page,
@@ -21,6 +27,7 @@ export async function GET(request: NextRequest) {
     q,
     citySlug,
     source,
+    gap,
   });
 
   return NextResponse.json(result, {

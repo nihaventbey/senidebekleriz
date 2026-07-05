@@ -15,12 +15,12 @@ const visionPoints = [
 
 export function MissionVisionSection() {
   return (
-    <section className="container mx-auto px-4 py-10 md:py-14">
+    <section className="container mx-auto px-4 py-8 sm:py-10 md:py-14">
       <div className="mb-6 text-center md:mb-8">
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary md:text-xs">
           Seni de Bekleriz
         </p>
-        <h2 className="mt-2 text-2xl font-extrabold tracking-tight md:text-3xl">
+        <h2 className="mt-2 text-xl font-extrabold tracking-tight sm:text-2xl md:text-3xl">
           Kültüre <span className="text-gradient">Yön Veriyoruz</span>
         </h2>
         <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">

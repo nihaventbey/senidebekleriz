@@ -30,6 +30,7 @@ type Props = {
   initialItems: AdminPlaceListItem[];
   initialTotal: number;
   initialHasMore: boolean;
+  initialGap?: string;
   cities: CityOption[];
   pageSize?: number;
 };
@@ -46,6 +47,7 @@ export function AdminPlacesList({
   initialItems,
   initialTotal,
   initialHasMore,
+  initialGap = "",
   cities,
   pageSize = 30,
 }: Props) {
@@ -57,6 +59,7 @@ export function AdminPlacesList({
   const [query, setQuery] = useState("");
   const [citySlug, setCitySlug] = useState("");
   const [source, setSource] = useState("");
+  const [gap, setGap] = useState(initialGap);
   const skipInitialFetch = useRef(true);
 
   const fetchPlaces = useCallback(
@@ -70,6 +73,7 @@ export function AdminPlacesList({
         if (query.trim()) params.set("q", query.trim());
         if (citySlug) params.set("city", citySlug);
         if (source) params.set("source", source);
+        if (gap) params.set("gap", gap);
 
         const res = await fetch(`/api/admin/places?${params.toString()}`);
         if (!res.ok) throw new Error("Yüklenemedi");
@@ -85,7 +89,7 @@ export function AdminPlacesList({
         setLoading(false);
       }
     },
-    [query, citySlug, source, pageSize]
+    [query, citySlug, source, gap, pageSize]
   );
 
   useEffect(() => {
@@ -98,7 +102,7 @@ export function AdminPlacesList({
       fetchPlaces(1, false);
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [query, citySlug, source, fetchPlaces]);
+  }, [query, citySlug, source, gap, fetchPlaces]);
 
   async function loadMore() {
     if (loading || !hasMore) return;
@@ -152,6 +156,22 @@ export function AdminPlacesList({
             <SelectItem value="google">Google</SelectItem>
           </SelectContent>
         </Select>
+        <Select
+          value={gap || "all"}
+          onValueChange={(value) =>
+            setGap(!value || value === "all" ? "" : value)
+          }
+        >
+          <SelectTrigger className="w-full lg:w-[190px]">
+            <SelectValue placeholder="İçerik boşluğu" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tüm mekanlar</SelectItem>
+            <SelectItem value="no-cover">Görsel yok</SelectItem>
+            <SelectItem value="thin">İnce içerik</SelectItem>
+            <SelectItem value="not-indexable">İndekslenebilir değil</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <p className="text-sm text-muted-foreground">
@@ -167,6 +187,7 @@ export function AdminPlacesList({
               <TableHead>Mekan</TableHead>
               <TableHead>Şehir</TableHead>
               <TableHead>Kaynak</TableHead>
+              <TableHead>Görsel</TableHead>
               <TableHead>Durum</TableHead>
               <TableHead className="text-right">İşlemler</TableHead>
             </TableRow>
@@ -175,7 +196,7 @@ export function AdminPlacesList({
             {items.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={6}
                   className="py-12 text-center text-muted-foreground"
                 >
                   {loading ? "Yükleniyor..." : "Mekan bulunamadı."}
@@ -196,6 +217,17 @@ export function AdminPlacesList({
                   </TableCell>
                   <TableCell>{place.cityName}</TableCell>
                   <TableCell className="capitalize">{place.source}</TableCell>
+                  <TableCell>
+                    {place.hasCover ? (
+                      <Badge variant="secondary" className="text-[10px]">
+                        Var
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px]">
+                        Yok
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={place.is_active ? "default" : "outline"}>
                       {place.is_active ? "Aktif" : "Pasif"}

@@ -6,8 +6,9 @@ export async function getPlaceImageServerSide(
   wikidataId: string | null,
   placeName: string,
   cityName: string,
-  coverImage?: string | null
-): Promise<PlaceImage> {
+  coverImage?: string | null,
+  options?: { allowUnsplashFallback?: boolean }
+): Promise<PlaceImage | null> {
   if (coverImage) {
     return {
       url: coverImage,
@@ -29,6 +30,10 @@ export async function getPlaceImageServerSide(
       source: "wikimedia",
     };
   }
+
+  // Unsplash is a generic stock fallback; keep it off indexable pages so that
+  // Google-facing content only shows real, place-specific imagery.
+  if (options?.allowUnsplashFallback === false) return null;
 
   return getUnsplashFallback(placeName, cityName);
 }

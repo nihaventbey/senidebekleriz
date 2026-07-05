@@ -50,30 +50,35 @@ export async function generateMetadata({
   if (!place) return {};
 
   const isEditorial = hasEditorialContent(place);
-  const wiki = isEditorial
-    ? null
-    : await getPlaceWikipedia(place.wikidata_id, place.name, place.cityName);
+  const wiki =
+    isEditorial || place.cover_image
+      ? null
+      : await getPlaceWikipedia(place.wikidata_id, place.name, place.cityName);
 
-  const description = isEditorial
-    ? place.description?.slice(0, 160) ||
-      getPlaceDescriptionFallback(place.name, place.cityName)
-    : wiki?.extract?.slice(0, 160) ||
-      place.description?.slice(0, 160) ||
-      getPlaceDescriptionFallback(place.name, place.cityName);
+  const description =
+    place.meta_description ||
+    (isEditorial
+      ? place.description?.slice(0, 160) ||
+        getPlaceDescriptionFallback(place.name, place.cityName)
+      : wiki?.extract?.slice(0, 160) ||
+        place.description?.slice(0, 160) ||
+        getPlaceDescriptionFallback(place.name, place.cityName));
 
+  const title = place.meta_title || `${place.name} - ${place.cityName}`;
   const indexable = shouldIndexPlace(place);
+  const ogImage = place.cover_image || wiki?.thumbnail || null;
 
   return {
-    title: `${place.name} - ${place.cityName}`,
+    title,
     description,
     robots: indexable
       ? { index: true, follow: true }
       : { index: false, follow: true },
     openGraph: {
-      title: `${place.name} - ${place.cityName}`,
+      title,
       description,
       type: "article",
-      images: wiki?.thumbnail ? [{ url: wiki.thumbnail, width: 800 }] : [],
+      images: ogImage ? [{ url: ogImage, width: 800 }] : [],
     },
   };
 }
@@ -106,6 +111,7 @@ export default async function PlacePage({
     notFound();
   }
 
+  const indexable = shouldIndexPlace(place);
   const [categories, wiki, image] = await Promise.all([
     getPlaceCategories(place.id),
     getPlaceWikipedia(place.wikidata_id, place.name, cityData.name),
@@ -113,7 +119,8 @@ export default async function PlacePage({
       place.wikidata_id,
       place.name,
       cityData.name,
-      place.cover_image
+      place.cover_image,
+      { allowUnsplashFallback: !indexable }
     ),
   ]);
 
@@ -160,7 +167,7 @@ export default async function PlacePage({
       {/* Hero Section - Full Width Image */}
       <section className="relative">
         {image?.url ? (
-          <div className="relative h-[50vh] min-h-[400px] w-full overflow-hidden">
+          <div className="relative h-[38vh] min-h-[240px] w-full overflow-hidden sm:h-[45vh] sm:min-h-[320px] md:min-h-[400px]">
             <img
               src={image.url}
               alt={image.alt}
@@ -175,7 +182,7 @@ export default async function PlacePage({
             )}
           </div>
         ) : (
-          <div className="relative h-[50vh] min-h-[400px] w-full bg-gradient-to-br from-primary/20 via-primary/10 to-background">
+          <div className="relative h-[38vh] min-h-[240px] w-full bg-gradient-to-br from-primary/20 via-primary/10 to-background sm:h-[45vh] sm:min-h-[320px] md:min-h-[400px]">
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
                 <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm">
@@ -196,9 +203,9 @@ export default async function PlacePage({
             asChild
             className="bg-white/90 text-foreground backdrop-blur-sm hover:bg-white"
           >
-            <Link href={`/sehir/${cityData.slug}`}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              {cityData.name}&apos;a Dön
+            <Link href={`/sehir/${cityData.slug}`} className="max-w-[calc(100vw-2rem)]">
+              <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
+              <span className="truncate">{cityData.name}&apos;a Dön</span>
             </Link>
           </Button>
         </div>
@@ -206,12 +213,12 @@ export default async function PlacePage({
 
       {/* Content Section */}
       <section className="container mx-auto px-4">
-        <div className="-mt-16 relative z-10">
+        <div className="-mt-10 relative z-10 sm:-mt-16">
           <div className="grid gap-8 lg:grid-cols-3">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-8">
               {/* Title Card */}
-              <div className="rounded-2xl border bg-card p-6 shadow-lg md:p-8">
+              <div className="rounded-2xl border bg-card p-5 shadow-lg sm:p-6 md:p-8">
                 <div className="mb-4 flex flex-wrap gap-2">
                   {categories.map((cat) => (
                     <Badge
@@ -228,7 +235,7 @@ export default async function PlacePage({
                   )}
                 </div>
 
-                <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
+                <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl">
                   {place.name}
                 </h1>
                 {place.is_featured && (

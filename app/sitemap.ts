@@ -4,6 +4,7 @@ import { getAllCategories } from "@/lib/data/categories";
 import { getIndexablePlacesForSitemap } from "@/lib/data/places";
 import { getAllPageSlugs } from "@/lib/data/pages";
 import { getPublishedArticles } from "@/lib/data/articles";
+import { getPublishedEventSlugs } from "@/lib/data/events";
 
 export const dynamic = "force-dynamic";
 
@@ -16,15 +17,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/sehirler`, lastModified: new Date() },
     { url: `${BASE_URL}/kategoriler`, lastModified: new Date() },
     { url: `${BASE_URL}/blog`, lastModified: new Date() },
+    { url: `${BASE_URL}/etkinlikler`, lastModified: new Date() },
   ];
 
-  const [cities, categories, pageSlugs, indexablePlaces, articles] =
+  const [cities, categories, pageSlugs, indexablePlaces, articles, eventSlugs] =
     await Promise.all([
       getAllCities(),
       getAllCategories(),
       getAllPageSlugs(),
       getIndexablePlacesForSitemap(),
       getPublishedArticles(500),
+      getPublishedEventSlugs(),
     ]);
 
   for (const city of cities) {
@@ -61,6 +64,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: article.publishedAt
         ? new Date(article.publishedAt)
         : new Date(article.updatedAt),
+    });
+  }
+
+  for (const event of eventSlugs) {
+    routes.push({
+      url: `${BASE_URL}/etkinlik/${event.slug}`,
+      lastModified: new Date(event.updatedAt),
     });
   }
 

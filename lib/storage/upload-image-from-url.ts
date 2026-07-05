@@ -36,6 +36,36 @@ export function getMediaPublicUrl(path: string): string {
   return data.publicUrl;
 }
 
+export async function uploadImageBuffer(
+  bytes: Buffer,
+  contentType: string,
+  storagePath: string
+): Promise<string | null> {
+  const mime = contentType.split(";")[0].trim().toLowerCase();
+  if (!ALLOWED_MIME_TYPES.has(mime)) return null;
+  if (bytes.length === 0 || bytes.length > MAX_IMAGE_BYTES) return null;
+
+  const ext = extensionForMime(mime);
+  const pathWithExt = storagePath.includes(".")
+    ? storagePath
+    : `${storagePath}.${ext}`;
+
+  const { error } = await supabaseAdmin.storage
+    .from(MEDIA_BUCKET)
+    .upload(pathWithExt, bytes, {
+      contentType: mime,
+      cacheControl: "31536000",
+      upsert: true,
+    });
+
+  if (error) {
+    console.error("uploadImageBuffer error:", error.message);
+    return null;
+  }
+
+  return getMediaPublicUrl(pathWithExt);
+}
+
 export async function uploadImageFromUrl(
   imageUrl: string,
   storagePath: string

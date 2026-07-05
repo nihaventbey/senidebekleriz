@@ -13,6 +13,8 @@ export type PlaceData = {
   source: string;
   wikidata_id: string | null;
   cover_image: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
   is_featured: boolean;
   photos: string[];
   phone: string | null;
@@ -37,6 +39,8 @@ function mapPlaceRow(
     source: string | null;
     wikidata_id: string | null;
     cover_image: string | null;
+    meta_title?: string | null;
+    meta_description?: string | null;
     is_featured: boolean | null;
     photos: string[] | null;
     phone: string | null;
@@ -62,6 +66,8 @@ function mapPlaceRow(
     source: place.source || "manual",
     wikidata_id: place.wikidata_id || null,
     cover_image: place.cover_image || null,
+    meta_title: place.meta_title ?? null,
+    meta_description: place.meta_description ?? null,
     is_featured: place.is_featured ?? false,
     photos: place.photos || [],
     phone: place.phone || null,

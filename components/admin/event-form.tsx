@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SubmitButton } from "@/components/admin/submit-button";
+import { MetaFields } from "@/components/admin/meta-fields";
 import { slugify } from "@/lib/slugify";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import type { CulturalEventRow } from "@/lib/events/types";
@@ -260,6 +261,17 @@ export function EventForm({
             />
           </div>
         </div>
+
+        <MetaFields
+          type="event"
+          entityName={title}
+          cityName={
+            cities.find((c) => c.slug === citySlug)?.name || undefined
+          }
+          description={defaultValues.summary || undefined}
+          defaultMetaTitle={defaultValues.meta_title}
+          defaultMetaDescription={defaultValues.meta_description}
+        />
 
         <div className="flex flex-wrap gap-6">
           <div className="flex items-center gap-2">

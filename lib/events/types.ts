@@ -60,6 +60,8 @@ export type CulturalEventRow = {
   starts_at: string | null;
   ends_at: string | null;
   cover_image: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
   is_featured: boolean;
   sort_order: number;
   raw_payload: Record<string, unknown> | null;

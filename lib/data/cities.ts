@@ -9,6 +9,8 @@ export type CityData = {
   lat: number;
   lng: number;
   coverImage: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
 };
 
 export async function getAllCities(): Promise<CityData[]> {
@@ -32,6 +34,8 @@ export async function getAllCities(): Promise<CityData[]> {
     lat: city.lat ? Number(city.lat) : 0,
     lng: city.lng ? Number(city.lng) : 0,
     coverImage: city.cover_image,
+    metaTitle: city.meta_title ?? null,
+    metaDescription: city.meta_description ?? null,
   }));
 }
 
@@ -57,5 +61,7 @@ export async function getCityBySlug(slug: string): Promise<CityData | undefined>
     lat: data.lat ? Number(data.lat) : 0,
     lng: data.lng ? Number(data.lng) : 0,
     coverImage: data.cover_image,
+    metaTitle: data.meta_title ?? null,
+    metaDescription: data.meta_description ?? null,
   };
 }

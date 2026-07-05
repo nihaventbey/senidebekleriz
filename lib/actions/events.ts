@@ -43,6 +43,8 @@ function eventFromForm(formData: FormData) {
     starts_at: startsAt,
     ends_at: endsAt,
     cover_image: (formData.get("cover_image") as string) || null,
+    meta_title: (formData.get("meta_title") as string) || null,
+    meta_description: (formData.get("meta_description") as string) || null,
     is_featured: formData.get("is_featured") === "on",
     sort_order: parseInt((formData.get("sort_order") as string) || "0", 10),
     expires_at: expiresAt,

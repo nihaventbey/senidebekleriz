@@ -30,9 +30,22 @@ export async function generateMetadata({
   const city = await getCityBySlug(slug);
   if (!city) return {};
 
+  const title = city.metaTitle || `${city.name} Gezilecek Yerler`;
+  const description =
+    city.metaDescription ||
+    (city.description
+      ? city.description.slice(0, 160)
+      : `${city.name}'da gezilecek yerler, mekanlar ve şehir rehberi.`);
+
   return {
-    title: `${city.name} Gezilecek Yerler`,
-    description: `${city.name}'da gezilecek yerler, mekanlar ve şehir rehberi.`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      images: city.coverImage ? [{ url: city.coverImage, width: 1200 }] : [],
+    },
   };
 }
 
@@ -61,6 +74,7 @@ export default async function CityPage({
     "@type": "City",
     name: city.name,
     description: city.description,
+    image: city.coverImage || undefined,
     geo: {
       "@type": "GeoCoordinates",
       latitude: city.lat,
@@ -77,7 +91,7 @@ export default async function CityPage({
       <JsonLd data={cityJsonLd} />
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-hero-gradient py-12 md:py-16">
+      <section className="relative overflow-hidden bg-hero-gradient py-10 sm:py-12 md:py-16">
         {city.coverImage && (
           <>
             <img
@@ -93,7 +107,7 @@ export default async function CityPage({
             <Badge variant="secondary" className="mb-4">
               {city.region}
             </Badge>
-            <h1 className={`text-4xl font-extrabold tracking-tight md:text-5xl ${city.coverImage ? "text-white" : ""}`}>
+            <h1 className={`text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl ${city.coverImage ? "text-white" : ""}`}>
               {city.name}
             </h1>
             <p className={`mt-4 text-base md:text-lg ${city.coverImage ? "text-white/90" : "text-muted-foreground"}`}>

@@ -1,4 +1,5 @@
-export const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
+export const ADSENSE_CLIENT_ID =
+  process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "ca-pub-8173666333919708";
 
 // Map logical ad slots to actual AdSense ad unit IDs.
 // Set NEXT_PUBLIC_ADSENSE_SLOT_<NAME> env vars or fill in real IDs below.

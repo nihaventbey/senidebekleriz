@@ -12,6 +12,8 @@ function city(slug: string, name: string): CityData {
     lat: 0,
     lng: 0,
     coverImage: null,
+    metaTitle: null,
+    metaDescription: null,
   };
 }
 

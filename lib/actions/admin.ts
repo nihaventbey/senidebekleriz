@@ -7,14 +7,21 @@ import { slugify } from "@/lib/slugify";
 
 // Cities
 export async function createCity(formData: FormData) {
+  const coverImage = (formData.get("cover_image") as string) || null;
+  const newSlug = slugify(formData.get("slug") as string);
   const data = {
     name: formData.get("name") as string,
-    slug: slugify(formData.get("slug") as string),
+    slug: newSlug,
     region: formData.get("region") as string,
     description: formData.get("description") as string,
     lat: parseFloat(formData.get("lat") as string) || 0,
     lng: parseFloat(formData.get("lng") as string) || 0,
     population: parseInt(formData.get("population") as string) || 0,
+    cover_image: coverImage,
+    cover_image_source: coverImage ? "manual" : null,
+    cover_image_locked: Boolean(coverImage),
+    meta_title: (formData.get("meta_title") as string) || null,
+    meta_description: (formData.get("meta_description") as string) || null,
     is_active: formData.get("is_active") === "on",
   };
 
@@ -22,19 +29,28 @@ export async function createCity(formData: FormData) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/sehirler");
+  revalidatePath(`/sehir/${newSlug}`);
   revalidatePath("/yonetim/sehirler");
   redirect("/yonetim/sehirler");
 }
 
 export async function updateCity(slug: string, formData: FormData) {
+  const coverImage = (formData.get("cover_image") as string) || null;
+  const newSlug = slugify(formData.get("slug") as string);
   const data = {
     name: formData.get("name") as string,
-    slug: slugify(formData.get("slug") as string),
+    slug: newSlug,
     region: formData.get("region") as string,
     description: formData.get("description") as string,
     lat: parseFloat(formData.get("lat") as string) || 0,
     lng: parseFloat(formData.get("lng") as string) || 0,
     population: parseInt(formData.get("population") as string) || 0,
+    cover_image: coverImage,
+    // Admin edits lock the cover so ingest scripts do not overwrite it.
+    cover_image_source: coverImage ? "manual" : null,
+    cover_image_locked: Boolean(coverImage),
+    meta_title: (formData.get("meta_title") as string) || null,
+    meta_description: (formData.get("meta_description") as string) || null,
     is_active: formData.get("is_active") === "on",
   };
 
@@ -45,6 +61,8 @@ export async function updateCity(slug: string, formData: FormData) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/sehirler");
+  revalidatePath(`/sehir/${slug}`);
+  revalidatePath(`/sehir/${newSlug}`);
   revalidatePath("/yonetim/sehirler");
   redirect("/yonetim/sehirler");
 }
@@ -116,6 +134,7 @@ export async function createPlace(formData: FormData) {
 
   if (!city) throw new Error("Şehir bulunamadı");
 
+  const coverImage = (formData.get("cover_image") as string) || null;
   const placeData = {
     city_id: city.id,
     name: formData.get("name") as string,
@@ -125,7 +144,11 @@ export async function createPlace(formData: FormData) {
     lat: parseFloat(formData.get("lat") as string) || 0,
     lng: parseFloat(formData.get("lng") as string) || 0,
     source: formData.get("source") as string,
-    cover_image: (formData.get("cover_image") as string) || null,
+    cover_image: coverImage,
+    cover_image_source: coverImage ? "manual" : null,
+    cover_image_locked: Boolean(coverImage),
+    meta_title: (formData.get("meta_title") as string) || null,
+    meta_description: (formData.get("meta_description") as string) || null,
     is_active: formData.get("is_active") === "on",
     is_featured: formData.get("is_featured") === "on",
   };
@@ -162,6 +185,7 @@ export async function createPlace(formData: FormData) {
 
 export async function updatePlace(slug: string, formData: FormData) {
   const newSlug = slugify(formData.get("slug") as string);
+  const coverImage = (formData.get("cover_image") as string) || null;
   const placeData = {
     name: formData.get("name") as string,
     slug: newSlug,
@@ -170,7 +194,11 @@ export async function updatePlace(slug: string, formData: FormData) {
     lat: parseFloat(formData.get("lat") as string) || 0,
     lng: parseFloat(formData.get("lng") as string) || 0,
     source: formData.get("source") as string,
-    cover_image: (formData.get("cover_image") as string) || null,
+    cover_image: coverImage,
+    cover_image_source: coverImage ? "manual" : null,
+    cover_image_locked: Boolean(coverImage),
+    meta_title: (formData.get("meta_title") as string) || null,
+    meta_description: (formData.get("meta_description") as string) || null,
     is_active: formData.get("is_active") === "on",
     is_featured: formData.get("is_featured") === "on",
   };

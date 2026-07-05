@@ -2,6 +2,8 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 
 import { createClient } from "@supabase/supabase-js";
+import { uploadImageFromUrl } from "../lib/storage/upload-image-from-url";
+import { updatePlaceCoverImage } from "../lib/ingest/script-db";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,6 +24,7 @@ type WikiResult = {
   phone: string | null;
   website: string | null;
   address: string | null;
+  thumbnail: string | null;
 };
 
 function sleep(ms: number): Promise<void> {
@@ -139,6 +142,7 @@ async function enrichPlace(
         phone: null,
         website: null,
         address: place.address,
+        thumbnail: extract.thumbnail,
       };
     }
   }
@@ -161,6 +165,7 @@ async function enrichPlace(
             phone: null,
             website: null,
             address: place.address,
+            thumbnail: extract.thumbnail,
           };
         }
       }
@@ -175,6 +180,7 @@ async function processBatch(): Promise<{ enriched: number; skipped: number; proc
     .from("places")
     .select(`
       id, name, slug, wikidata_id, description, address, source, is_featured,
+      cover_image,
       cities!inner(name)
     `)
     .eq("is_active", true)
@@ -213,19 +219,41 @@ async function processBatch(): Promise<{ enriched: number; skipped: number; proc
     });
 
     if (result && result.description && result.description.length > MIN_CHARS) {
+      const updatePayload: Record<string, unknown> = {
+        description: result.description,
+        address: result.address || place.address,
+        updated_at: new Date().toISOString(),
+      };
+
+      const canSetCover = !place.cover_image && result.thumbnail;
+      let coverUrl: string | null = null;
+      if (canSetCover) {
+        coverUrl = await uploadImageFromUrl(
+          result.thumbnail!,
+          `places/${place.slug}/cover`
+        );
+      }
+
       const { error: updateError } = await supabase
         .from("places")
-        .update({
-          description: result.description,
-          address: result.address || place.address,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq("id", place.id);
 
       if (updateError) {
         console.log(`HATA: ${updateError.message}`);
       } else {
-        console.log(`OK (${result.description.length} karakter)`);
+        if (coverUrl) {
+          const coverError = await updatePlaceCoverImage(
+            supabase,
+            place.id,
+            coverUrl
+          );
+          if (coverError) {
+            console.log(`UYARI: kapak kaydedilemedi: ${coverError}`);
+          }
+        }
+        const coverNote = coverUrl ? " +kapak" : "";
+        console.log(`OK (${result.description.length} karakter${coverNote})`);
         enriched++;
       }
     } else {

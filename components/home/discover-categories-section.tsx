@@ -52,11 +52,11 @@ export function DiscoverCategoriesSection({ categories }: Props) {
       <div className="container mx-auto px-4">
         <div className="mb-4 flex items-end justify-between gap-3 md:mb-6">
           <div>
-            <div className="mb-1.5 flex items-center gap-2">
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
+            <div className="mb-1.5 flex flex-wrap items-center gap-2">
+              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                 <Compass className="h-3.5 w-3.5 text-primary" />
               </span>
-              <h2 className="text-xl font-bold tracking-tight md:text-2xl">
+              <h2 className="min-w-0 text-base font-bold leading-snug tracking-tight sm:text-xl md:text-2xl">
                 Neye Göre Keşfetmek İstersin?
               </h2>
             </div>

@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { shouldIndexPlace } from "@/lib/content/place-quality";
 
 export type AdminCityData = {
   id: string;
@@ -10,6 +11,9 @@ export type AdminCityData = {
   lng: number;
   population: number;
   cover_image: string | null;
+  cover_image_source: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
   is_active: boolean;
 };
 
@@ -37,6 +41,9 @@ export async function getAdminCityBySlug(
     lng: data.lng ? Number(data.lng) : 0,
     population: data.population || 0,
     cover_image: data.cover_image,
+    cover_image_source: data.cover_image_source ?? null,
+    meta_title: data.meta_title ?? null,
+    meta_description: data.meta_description ?? null,
     is_active: data.is_active ?? true,
   };
 }
@@ -82,7 +89,10 @@ export type AdminPlaceListItem = {
   cityName: string;
   is_featured: boolean;
   is_active: boolean;
+  hasCover: boolean;
 };
+
+export type PlaceGapFilter = "no-cover" | "thin" | "not-indexable";
 
 export type AdminPlacesPageResult = {
   items: AdminPlaceListItem[];
@@ -99,6 +109,7 @@ function mapAdminPlaceRow(p: {
   source: string | null;
   is_featured: boolean | null;
   is_active: boolean | null;
+  cover_image: string | null;
   cities: { name: string }[] | { name: string } | null;
 }): AdminPlaceListItem {
   const cities = p.cities;
@@ -114,7 +125,20 @@ function mapAdminPlaceRow(p: {
     cityName,
     is_featured: p.is_featured ?? false,
     is_active: p.is_active ?? true,
+    hasCover: Boolean(p.cover_image),
   };
+}
+
+const PLACE_LIST_COLUMNS =
+  "id, name, slug, source, is_featured, is_active, cover_image, description, cities(name)";
+
+async function resolveCityId(citySlug: string): Promise<string | null> {
+  const { data } = await supabaseAdmin
+    .from("cities")
+    .select("id")
+    .eq("slug", citySlug)
+    .single();
+  return data?.id ?? null;
 }
 
 export async function getAdminPlacesPaginated(options: {
@@ -123,35 +147,37 @@ export async function getAdminPlacesPaginated(options: {
   q?: string;
   citySlug?: string;
   source?: string;
+  gap?: PlaceGapFilter;
 }): Promise<AdminPlacesPageResult> {
   const page = Math.max(1, options.page ?? 1);
   const limit = Math.min(50, Math.max(1, options.limit ?? 30));
   const offset = (page - 1) * limit;
 
+  // Content-based gap filters (thin / not-indexable) cannot be expressed as a
+  // single SQL predicate, so we fetch matching rows and filter in memory.
+  if (options.gap === "thin" || options.gap === "not-indexable") {
+    return getPlacesByContentGap(options, page, limit, offset);
+  }
+
   let query = supabaseAdmin
     .from("places")
-    .select("id, name, slug, source, is_featured, is_active, cities(name)", {
-      count: "exact",
-    });
+    .select(PLACE_LIST_COLUMNS, { count: "exact" });
 
   if (options.q?.trim()) {
     query = query.ilike("name", `%${options.q.trim()}%`);
   }
 
   if (options.citySlug) {
-    const { data: city } = await supabaseAdmin
-      .from("cities")
-      .select("id")
-      .eq("slug", options.citySlug)
-      .single();
-
-    if (city) {
-      query = query.eq("city_id", city.id);
-    }
+    const cityId = await resolveCityId(options.citySlug);
+    if (cityId) query = query.eq("city_id", cityId);
   }
 
   if (options.source) {
     query = query.eq("source", options.source);
+  }
+
+  if (options.gap === "no-cover") {
+    query = query.is("cover_image", null);
   }
 
   const { data, error, count } = await query
@@ -165,6 +191,62 @@ export async function getAdminPlacesPaginated(options: {
 
   const items = (data || []).map(mapAdminPlaceRow);
   const total = count ?? 0;
+
+  return {
+    items,
+    total,
+    page,
+    limit,
+    hasMore: offset + items.length < total,
+  };
+}
+
+async function getPlacesByContentGap(
+  options: { q?: string; citySlug?: string; source?: string; gap?: PlaceGapFilter },
+  page: number,
+  limit: number,
+  offset: number
+): Promise<AdminPlacesPageResult> {
+  let query = supabaseAdmin
+    .from("places")
+    .select(PLACE_LIST_COLUMNS)
+    .eq("is_active", true);
+
+  if (options.q?.trim()) {
+    query = query.ilike("name", `%${options.q.trim()}%`);
+  }
+
+  if (options.citySlug) {
+    const cityId = await resolveCityId(options.citySlug);
+    if (cityId) query = query.eq("city_id", cityId);
+  }
+
+  if (options.source) {
+    query = query.eq("source", options.source);
+  }
+
+  const { data, error } = await query.order("name");
+
+  if (error) {
+    console.error("getPlacesByContentGap error:", error.message);
+    return { items: [], total: 0, page, limit, hasMore: false };
+  }
+
+  const matched = (data || []).filter((p) => {
+    if (options.gap === "thin") {
+      const words = (p.description || "").trim().split(/\s+/).filter(Boolean);
+      return words.length < 150;
+    }
+    // not-indexable
+    return !shouldIndexPlace({
+      description: p.description,
+      source: p.source,
+      is_featured: p.is_featured,
+    });
+  });
+
+  const total = matched.length;
+  const items = matched.slice(offset, offset + limit).map(mapAdminPlaceRow);
 
   return {
     items,
@@ -192,6 +274,10 @@ export type AdminPlaceData = {
   lng: number;
   source: string;
   cover_image: string | null;
+  cover_image_source: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
+  cityName: string;
   is_active: boolean;
   is_featured: boolean;
 };
@@ -201,7 +287,7 @@ export async function getAdminPlaceBySlug(
 ): Promise<AdminPlaceData | undefined> {
   const { data, error } = await supabaseAdmin
     .from("places")
-    .select("*")
+    .select("*, cities(name)")
     .eq("slug", slug)
     .single();
 
@@ -209,6 +295,11 @@ export async function getAdminPlaceBySlug(
     console.error("getAdminPlaceBySlug error:", error?.message);
     return undefined;
   }
+
+  const cities = data.cities as { name: string }[] | { name: string } | null;
+  const cityName = Array.isArray(cities)
+    ? cities[0]?.name || ""
+    : cities?.name || "";
 
   return {
     id: data.id,
@@ -221,6 +312,10 @@ export async function getAdminPlaceBySlug(
     lng: data.lng ? Number(data.lng) : 0,
     source: data.source || "manual",
     cover_image: data.cover_image,
+    cover_image_source: data.cover_image_source ?? null,
+    meta_title: data.meta_title ?? null,
+    meta_description: data.meta_description ?? null,
+    cityName,
     is_active: data.is_active ?? true,
     is_featured: data.is_featured ?? false,
   };

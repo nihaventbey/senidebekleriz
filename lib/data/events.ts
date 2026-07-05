@@ -7,6 +7,7 @@ export type PublicEvent = {
   title: string;
   slug: string;
   summary: string;
+  description: string | null;
   eventType: EventType;
   sourceName: string | null;
   sourceUrl: string | null;
@@ -17,6 +18,8 @@ export type PublicEvent = {
   startsAt: string | null;
   endsAt: string | null;
   coverImage: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
   isFeatured: boolean;
   publishedAt: string | null;
 };
@@ -27,6 +30,7 @@ function mapEvent(row: CulturalEventRow): PublicEvent {
     title: row.title,
     slug: row.slug,
     summary: row.summary || row.title,
+    description: row.description,
     eventType: row.event_type,
     sourceName: row.source_name,
     sourceUrl: row.source_url,
@@ -37,6 +41,8 @@ function mapEvent(row: CulturalEventRow): PublicEvent {
     startsAt: row.starts_at,
     endsAt: row.ends_at,
     coverImage: row.cover_image,
+    metaTitle: row.meta_title,
+    metaDescription: row.meta_description,
     isFeatured: row.is_featured,
     publishedAt: row.published_at,
   };
@@ -101,6 +107,27 @@ export async function getPublishedEvents(options?: {
   }
 
   return ((data || []) as CulturalEventRow[]).map(mapEvent);
+}
+
+export async function getPublishedEventSlugs(): Promise<
+  Array<{ slug: string; updatedAt: string }>
+> {
+  const now = new Date().toISOString();
+  const { data, error } = await supabaseAdmin
+    .from("cultural_events")
+    .select("slug, updated_at")
+    .eq("status", "published")
+    .or(`expires_at.is.null,expires_at.gt.${now}`);
+
+  if (error) {
+    console.error("getPublishedEventSlugs error:", error.message);
+    return [];
+  }
+
+  return (data || []).map((row) => ({
+    slug: row.slug,
+    updatedAt: row.updated_at,
+  }));
 }
 
 export async function getEventBySlug(

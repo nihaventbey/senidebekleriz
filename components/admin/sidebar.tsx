@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const navItems = [
+export const adminNavItems = [
   { href: "/yonetim", label: "Dashboard", icon: LayoutDashboard },
   { href: "/yonetim/sehirler", label: "Şehirler", icon: Building2 },
   { href: "/yonetim/mekanlar", label: "Mekanlar", icon: MapPinned },
@@ -44,7 +44,7 @@ export function AdminSidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 p-4">
-        {navItems.map((item) => {
+        {adminNavItems.map((item) => {
           const Icon = item.icon;
           const isActive =
             item.href === "/yonetim"

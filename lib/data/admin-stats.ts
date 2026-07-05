@@ -23,6 +23,7 @@ export type AdminDashboardStats = {
 export type ContentReadinessStats = {
   publishedArticles: number;
   indexablePlaces: number;
+  indexablePlacesWithoutCover: number;
   citiesWithGuide: number;
   citiesWithoutGuide: number;
   missingGuideCities: string[];
@@ -31,26 +32,43 @@ export type ContentReadinessStats = {
 };
 
 async function countIndexablePlaces(): Promise<number> {
+  const stats = await getIndexablePlaceCoverStats();
+  return stats.indexable;
+}
+
+async function getIndexablePlaceCoverStats(): Promise<{
+  indexable: number;
+  withoutCover: number;
+}> {
   const { data, error } = await supabaseAdmin
     .from("places")
-    .select("description, source, is_featured")
+    .select("description, source, is_featured, cover_image")
     .eq("is_active", true);
 
-  if (error) return 0;
+  if (error) return { indexable: 0, withoutCover: 0 };
 
-  return (data || []).filter((place) =>
-    shouldIndexPlace({
-      description: place.description,
-      source: place.source,
-      is_featured: place.is_featured,
-    })
-  ).length;
+  let indexable = 0;
+  let withoutCover = 0;
+  for (const place of data || []) {
+    if (
+      shouldIndexPlace({
+        description: place.description,
+        source: place.source,
+        is_featured: place.is_featured,
+      })
+    ) {
+      indexable++;
+      if (!place.cover_image) withoutCover++;
+    }
+  }
+
+  return { indexable, withoutCover };
 }
 
 export async function getContentReadinessStats(): Promise<ContentReadinessStats> {
   const [
     publishedArticlesRes,
-    indexablePlaces,
+    coverStats,
     guideArticlesRes,
     citiesRes,
     privacyRes,
@@ -59,7 +77,7 @@ export async function getContentReadinessStats(): Promise<ContentReadinessStats>
       .from("articles")
       .select("*", { count: "exact", head: true })
       .eq("is_published", true),
-    countIndexablePlaces(),
+    getIndexablePlaceCoverStats(),
     supabaseAdmin
       .from("articles")
       .select("city_slug")
@@ -88,7 +106,8 @@ export async function getContentReadinessStats(): Promise<ContentReadinessStats>
 
   return {
     publishedArticles: publishedArticlesRes.count ?? 0,
-    indexablePlaces,
+    indexablePlaces: coverStats.indexable,
+    indexablePlacesWithoutCover: coverStats.withoutCover,
     citiesWithGuide: guideSlugs.size,
     citiesWithoutGuide: allCities.length - guideSlugs.size,
     missingGuideCities,

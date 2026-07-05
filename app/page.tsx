@@ -51,7 +51,7 @@ export default async function HomePage() {
     <div className="flex flex-col">
       {/* Hero */}
       <section
-        className={`relative overflow-hidden py-20 md:py-28 ${
+        className={`relative overflow-hidden py-14 sm:py-20 md:py-28 ${
           heroActive ? "" : "bg-hero-gradient"
         }`}
       >
@@ -69,7 +69,7 @@ export default async function HomePage() {
             Sanat · Tarih · Kültür · Müzeler
           </span>
           <h1
-            className={`mx-auto mt-6 max-w-4xl text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl md:text-6xl ${
+            className={`mx-auto mt-6 max-w-4xl text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl md:text-5xl lg:text-6xl ${
               heroOnDark ? "text-white" : ""
             }`}
           >
@@ -91,15 +91,15 @@ export default async function HomePage() {
           <div className="mx-auto mt-8 max-w-md">
             <SearchBar variant="hero" className="h-12 w-full text-base" />
           </div>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button size="lg" className="group" asChild>
+          <div className="mt-6 flex flex-col items-stretch justify-center gap-3 sm:mt-8 sm:flex-row sm:items-center">
+            <Button size="lg" className="group w-full sm:w-auto" asChild>
               <Link href="/sehirler">
                 <MapPin className="mr-2 h-4 w-4" />
                 Şehirleri Keşfet
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="bg-white/50 backdrop-blur" asChild>
+            <Button size="lg" variant="outline" className="w-full bg-white/50 backdrop-blur sm:w-auto" asChild>
               <Link href="/kategoriler">
                 <Compass className="mr-2 h-4 w-4" />
                 Kategorilere Göz At
@@ -184,6 +184,11 @@ export default async function HomePage() {
               <ArticleCard key={article.id} article={article} />
             ))}
           </div>
+          <div className="mt-6 sm:hidden">
+            <Button variant="outline" asChild className="w-full">
+              <Link href="/blog">Tüm Yazılar</Link>
+            </Button>
+          </div>
         </section>
       )}
 
@@ -193,7 +198,7 @@ export default async function HomePage() {
 
       {/* CTA */}
       <section className="container mx-auto px-4 py-12">
-        <div className="relative overflow-hidden rounded-3xl px-6 py-14 text-center text-white md:py-20">
+        <div className="relative overflow-hidden rounded-2xl px-4 py-10 text-center text-white sm:rounded-3xl sm:px-6 sm:py-14 md:py-20">
           <div
             aria-hidden
             className="bg-pan-tour absolute inset-0"
@@ -201,7 +206,7 @@ export default async function HomePage() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/55 to-black/40" />
           <div className="relative">
-            <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
+            <h2 className="text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">
               Türkiye'yi Keşfetmeye Başla
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-white/90">
@@ -211,7 +216,7 @@ export default async function HomePage() {
             <Button
               size="lg"
               variant="secondary"
-              className="mt-8 group"
+              className="mt-6 w-full group sm:mt-8 sm:w-auto"
               asChild
             >
               <Link href="/sehirler">

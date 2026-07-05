@@ -1,18 +1,17 @@
 import Script from "next/script";
+import { ADSENSE_CLIENT_ID } from "@/lib/ads/config";
 
 export function AdSenseScript() {
-  const clientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
-
-  if (!clientId) {
+  if (!ADSENSE_CLIENT_ID) {
     return null;
   }
 
   return (
     <Script
       async
-      src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${clientId}`}
+      src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
       crossOrigin="anonymous"
-      strategy="lazyOnload"
+      strategy="afterInteractive"
     />
   );
 }

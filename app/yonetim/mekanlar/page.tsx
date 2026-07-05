@@ -12,13 +12,26 @@ import { getAllCities } from "@/lib/data/cities";
 import { AdminPlacesList } from "@/components/admin/places-list";
 import { Plus } from "lucide-react";
 
+import type { PlaceGapFilter } from "@/lib/data/admin";
+
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 30;
 
-export default async function AdminPlacesPage() {
+const GAP_FILTERS: PlaceGapFilter[] = ["no-cover", "thin", "not-indexable"];
+
+export default async function AdminPlacesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ gap?: string }>;
+}) {
+  const { gap: gapParam } = await searchParams;
+  const initialGap = GAP_FILTERS.includes(gapParam as PlaceGapFilter)
+    ? (gapParam as PlaceGapFilter)
+    : undefined;
+
   const [initial, cities] = await Promise.all([
-    getAdminPlacesPaginated({ page: 1, limit: PAGE_SIZE }),
+    getAdminPlacesPaginated({ page: 1, limit: PAGE_SIZE, gap: initialGap }),
     getAllCities(),
   ]);
 
@@ -52,6 +65,7 @@ export default async function AdminPlacesPage() {
             initialItems={initial.items}
             initialTotal={initial.total}
             initialHasMore={initial.hasMore}
+            initialGap={initialGap ?? ""}
             cities={cities.map((c) => ({ slug: c.slug, name: c.name }))}
             pageSize={PAGE_SIZE}
           />

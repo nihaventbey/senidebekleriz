@@ -21,7 +21,10 @@ import { getAllCities } from "@/lib/data/cities";
 import { getAllCategories } from "@/lib/data/categories";
 import { SubmitButton } from "@/components/admin/submit-button";
 import { PlaceDescriptionField } from "@/components/admin/place-description-field";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { CoverImageField } from "@/components/admin/cover-image-field";
+import { MetaFields } from "@/components/admin/meta-fields";
+import { shouldIndexPlace } from "@/lib/content/place-quality";
+import { ArrowLeft, Trash2, AlertTriangle } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Mekan Düzenle",
@@ -42,6 +45,12 @@ export default async function EditPlacePage({
   if (!place) notFound();
 
   const placeCategory = await getAdminPlaceCategory(place.id);
+  const isIndexable = shouldIndexPlace({
+    description: place.description,
+    source: place.source,
+    is_featured: place.is_featured,
+  });
+  const needsCover = isIndexable && !place.cover_image;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -117,16 +126,31 @@ export default async function EditPlacePage({
 
         <PlaceDescriptionField defaultValue={place.description || ""} />
 
-        <div className="space-y-2">
-          <Label htmlFor="cover_image">Kapak Görseli URL</Label>
-          <Input
-            id="cover_image"
-            name="cover_image"
-            type="url"
-            defaultValue={place.cover_image || ""}
-            placeholder="https://..."
-          />
-        </div>
+        {needsCover && (
+          <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>
+              Bu mekan indekslenebilir durumda ancak kapak görseli yok. SEO ve
+              paylaşım kalitesi için gerçek bir kapak görseli ekleyin.
+            </p>
+          </div>
+        )}
+
+        <CoverImageField
+          defaultValue={place.cover_image}
+          source={place.cover_image_source}
+          folder="places"
+          slug={place.slug}
+        />
+
+        <MetaFields
+          type="place"
+          entityName={place.name}
+          cityName={place.cityName}
+          description={place.description || undefined}
+          defaultMetaTitle={place.meta_title}
+          defaultMetaDescription={place.meta_description}
+        />
 
         <div className="space-y-2">
           <Label htmlFor="address">Adres</Label>

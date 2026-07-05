@@ -1,0 +1,2108 @@
+[
+  {
+    "slug": "adana",
+    "name": "Adana",
+    "baseUrl": "https://www.adana.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "adiyaman",
+    "name": "Adıyaman",
+    "baseUrl": "https://www.adiyaman.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "afyonkarahisar",
+    "name": "Afyonkarahisar",
+    "baseUrl": "https://www.afyonkarahisar.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "agri",
+    "name": "Ağrı",
+    "baseUrl": "https://www.agri.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "amasya",
+    "name": "Amasya",
+    "baseUrl": "https://www.amasya.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "ankara",
+    "name": "Ankara",
+    "baseUrl": "https://www.ankara.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "antalya",
+    "name": "Antalya",
+    "baseUrl": "https://www.antalya.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "artvin",
+    "name": "Artvin",
+    "baseUrl": "https://www.artvin.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "aydin",
+    "name": "Aydın",
+    "baseUrl": "https://www.aydin.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "balikesir",
+    "name": "Balıkesir",
+    "baseUrl": "https://www.balikesir.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "bilecik",
+    "name": "Bilecik",
+    "baseUrl": "https://www.bilecik.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "bingol",
+    "name": "Bingöl",
+    "baseUrl": "https://www.bingol.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "bitlis",
+    "name": "Bitlis",
+    "baseUrl": "https://www.bitlis.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "bolu",
+    "name": "Bolu",
+    "baseUrl": "https://www.bolu.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "burdur",
+    "name": "Burdur",
+    "baseUrl": "https://www.burdur.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "bursa",
+    "name": "Bursa",
+    "baseUrl": "https://www.bursa.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "canakkale",
+    "name": "Çanakkale",
+    "baseUrl": "https://www.canakkale.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "cankiri",
+    "name": "Çankırı",
+    "baseUrl": "https://www.cankiri.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "corum",
+    "name": "Çorum",
+    "baseUrl": "https://www.corum.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "denizli",
+    "name": "Denizli",
+    "baseUrl": "https://www.denizli.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "diyarbakir",
+    "name": "Diyarbakır",
+    "baseUrl": "https://www.diyarbakir.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "edirne",
+    "name": "Edirne",
+    "baseUrl": "https://www.edirne.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "elazig",
+    "name": "Elazığ",
+    "baseUrl": "https://www.elazig.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "erzincan",
+    "name": "Erzincan",
+    "baseUrl": "https://www.erzincan.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "erzurum",
+    "name": "Erzurum",
+    "baseUrl": "https://www.erzurum.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "eskisehir",
+    "name": "Eskişehir",
+    "baseUrl": "https://www.eskisehir.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "gaziantep",
+    "name": "Gaziantep",
+    "baseUrl": "https://www.gaziantep.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "giresun",
+    "name": "Giresun",
+    "baseUrl": "https://www.giresun.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "gumushane",
+    "name": "Gümüşhane",
+    "baseUrl": "https://www.gumushane.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "hakkari",
+    "name": "Hakkari",
+    "baseUrl": "https://www.hakkari.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "hatay",
+    "name": "Hatay",
+    "baseUrl": "https://www.hatay.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "isparta",
+    "name": "Isparta",
+    "baseUrl": "https://www.isparta.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "mersin",
+    "name": "Mersin",
+    "baseUrl": "https://www.mersin.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "istanbul",
+    "name": "İstanbul",
+    "baseUrl": "https://www.istanbul.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "izmir",
+    "name": "İzmir",
+    "baseUrl": "https://www.izmir.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "kars",
+    "name": "Kars",
+    "baseUrl": "https://www.kars.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "kastamonu",
+    "name": "Kastamonu",
+    "baseUrl": "https://www.kastamonu.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "kayseri",
+    "name": "Kayseri",
+    "baseUrl": "https://www.kayseri.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "kirklareli",
+    "name": "Kırklareli",
+    "baseUrl": "https://www.kirklareli.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "kirsehir",
+    "name": "Kırşehir",
+    "baseUrl": "https://www.kirsehir.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "kocaeli",
+    "name": "Kocaeli",
+    "baseUrl": "https://www.kocaeli.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "konya",
+    "name": "Konya",
+    "baseUrl": "https://www.konya.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "kutahya",
+    "name": "Kütahya",
+    "baseUrl": "https://www.kutahya.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "malatya",
+    "name": "Malatya",
+    "baseUrl": "https://www.malatya.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "manisa",
+    "name": "Manisa",
+    "baseUrl": "https://www.manisa.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "kahramanmaras",
+    "name": "Kahramanmaraş",
+    "baseUrl": "https://www.kahramanmaras.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "mardin",
+    "name": "Mardin",
+    "baseUrl": "https://www.mardin.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "mugla",
+    "name": "Muğla",
+    "baseUrl": "https://www.mugla.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "mus",
+    "name": "Muş",
+    "baseUrl": "https://www.mus.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "nevsehir",
+    "name": "Nevşehir",
+    "baseUrl": "https://www.nevsehir.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "nigde",
+    "name": "Niğde",
+    "baseUrl": "https://www.nigde.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "ordu",
+    "name": "Ordu",
+    "baseUrl": "https://www.ordu.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "rize",
+    "name": "Rize",
+    "baseUrl": "https://www.rize.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "sakarya",
+    "name": "Sakarya",
+    "baseUrl": "https://www.sakarya.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "samsun",
+    "name": "Samsun",
+    "baseUrl": "https://www.samsun.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "siirt",
+    "name": "Siirt",
+    "baseUrl": "https://www.siirt.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "sinop",
+    "name": "Sinop",
+    "baseUrl": "https://www.sinop.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "sivas",
+    "name": "Sivas",
+    "baseUrl": "https://www.sivas.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "tekirdag",
+    "name": "Tekirdağ",
+    "baseUrl": "https://www.tekirdag.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "tokat",
+    "name": "Tokat",
+    "baseUrl": "https://www.tokat.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "trabzon",
+    "name": "Trabzon",
+    "baseUrl": "https://www.trabzon.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "tunceli",
+    "name": "Tunceli",
+    "baseUrl": "https://www.tunceli.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "sanliurfa",
+    "name": "Şanlıurfa",
+    "baseUrl": "https://www.sanliurfa.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "usak",
+    "name": "Uşak",
+    "baseUrl": "https://www.usak.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "van",
+    "name": "Van",
+    "baseUrl": "https://www.van.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "yozgat",
+    "name": "Yozgat",
+    "baseUrl": "https://www.yozgat.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "zonguldak",
+    "name": "Zonguldak",
+    "baseUrl": "https://www.zonguldak.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "aksaray",
+    "name": "Aksaray",
+    "baseUrl": "https://www.aksaray.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "bayburt",
+    "name": "Bayburt",
+    "baseUrl": "https://www.bayburt.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "karaman",
+    "name": "Karaman",
+    "baseUrl": "https://www.karaman.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "kirikkale",
+    "name": "Kırıkkale",
+    "baseUrl": "https://www.kirikkale.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "batman",
+    "name": "Batman",
+    "baseUrl": "https://www.batman.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "sirnak",
+    "name": "Şırnak",
+    "baseUrl": "https://www.sirnak.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "bartin",
+    "name": "Bartın",
+    "baseUrl": "https://www.bartin.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "ardahan",
+    "name": "Ardahan",
+    "baseUrl": "https://www.ardahan.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "igdir",
+    "name": "Iğdır",
+    "baseUrl": "https://www.igdir.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "yalova",
+    "name": "Yalova",
+    "baseUrl": "https://www.yalova.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "karabuk",
+    "name": "Karabük",
+    "baseUrl": "https://www.karabuk.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "kilis",
+    "name": "Kilis",
+    "baseUrl": "https://www.kilis.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "osmaniye",
+    "name": "Osmaniye",
+    "baseUrl": "https://www.osmaniye.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  },
+  {
+    "slug": "duzce",
+    "name": "Düzce",
+    "baseUrl": "https://www.duzce.gov.tr",
+    "introPaths": [
+      "/ilimiz",
+      "/il-hakkinda",
+      "/ilimiz-hakkinda",
+      "/tarihce",
+      "/tanitim",
+      "/kultur-ve-turizm"
+    ],
+    "discoverKeywords": [
+      "ilimiz",
+      "tanıtım",
+      "tanitim",
+      "tarihçe",
+      "tarihce",
+      "kültür",
+      "kultur",
+      "hakkında",
+      "hakkinda",
+      "turizm",
+      "gezilecek"
+    ]
+  }
+]

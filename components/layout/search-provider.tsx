@@ -194,7 +194,7 @@ function SearchOverlay({
           )}
         </div>
 
-        <div className="border-t px-4 py-2.5 text-xs text-muted-foreground">
+        <div className="border-t px-4 py-2.5 text-xs text-muted-foreground hidden sm:block">
           <kbd className="rounded border bg-background px-1.5 py-0.5">
             Enter
           </kbd>{" "}

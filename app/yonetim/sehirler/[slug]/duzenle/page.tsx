@@ -9,6 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { updateCity, deleteCity } from "@/lib/actions/admin";
 import { getAdminCityBySlug } from "@/lib/data/admin";
 import { SubmitButton } from "@/components/admin/submit-button";
+import { CoverImageField } from "@/components/admin/cover-image-field";
+import { MetaFields } from "@/components/admin/meta-fields";
 import { ArrowLeft, Trash2 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -77,6 +79,21 @@ export default async function EditCityPage({
             defaultValue={city.description}
           />
         </div>
+
+        <CoverImageField
+          defaultValue={city.cover_image}
+          source={city.cover_image_source}
+          folder="cities"
+          slug={city.slug}
+        />
+
+        <MetaFields
+          type="city"
+          entityName={city.name}
+          description={city.description || undefined}
+          defaultMetaTitle={city.meta_title}
+          defaultMetaDescription={city.meta_description}
+        />
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-2">

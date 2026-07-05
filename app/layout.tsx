@@ -6,6 +6,11 @@ import { Footer } from "@/components/layout/footer";
 import { SearchProvider } from "@/components/layout/search-provider";
 import { AppToaster } from "@/components/ui/sonner";
 import { AdSenseScript } from "@/components/ads/adsense-script";
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
+import {
+  GoogleTagManager,
+  GoogleTagManagerNoScript,
+} from "@/components/analytics/google-tag-manager";
 import { CookieConsent } from "@/components/layout/cookie-consent";
 import { WebMcpTools } from "@/components/agents/webmcp-tools";
 
@@ -53,7 +58,13 @@ export default function RootLayout({
       className={`${jakarta.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <AdSenseScript />
+        <GoogleAnalytics />
+        <GoogleTagManager />
+      </head>
       <body className="min-h-full flex flex-col bg-background">
+        <GoogleTagManagerNoScript />
         <SearchProvider>
           <Header />
           <main className="flex-1">{children}</main>
@@ -62,7 +73,6 @@ export default function RootLayout({
         </SearchProvider>
         <div id="search-portal" />
         <AppToaster />
-        <AdSenseScript />
         <WebMcpTools />
       </body>
     </html>

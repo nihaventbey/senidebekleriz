@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getAdminDashboardStats, getContentReadinessStats } from "@/lib/data/admin-stats";
+import { getContentGaps } from "@/lib/data/content-gaps";
 import { AdSenseReadiness } from "@/components/admin/adsense-readiness";
 import {
   Building2,
@@ -108,9 +109,10 @@ function formatDate(value: string) {
 }
 
 export default async function AdminDashboardPage() {
-  const [stats, readiness] = await Promise.all([
+  const [stats, readiness, gaps] = await Promise.all([
     getAdminDashboardStats(),
     getContentReadinessStats(),
+    getContentGaps(),
   ]);
 
   return (
@@ -162,6 +164,44 @@ export default async function AdminDashboardPage() {
             <CardTitle>İçerik Boşlukları</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
+            <div className="grid grid-cols-2 gap-3">
+              <Link
+                href="/yonetim/mekanlar?gap=no-cover"
+                className="rounded-xl border p-3 transition-colors hover:bg-muted/50"
+              >
+                <p className="text-2xl font-bold">
+                  {gaps.placesWithoutCover.toLocaleString("tr-TR")}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Görseli eksik mekan
+                </p>
+              </Link>
+              <Link
+                href="/yonetim/mekanlar?gap=thin"
+                className="rounded-xl border p-3 transition-colors hover:bg-muted/50"
+              >
+                <p className="text-2xl font-bold">
+                  {gaps.placesThinContent.toLocaleString("tr-TR")}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  İnce içerikli mekan
+                </p>
+              </Link>
+              <div className="rounded-xl border p-3">
+                <p className="text-2xl font-bold">
+                  {gaps.citiesWithoutCover.toLocaleString("tr-TR")}
+                </p>
+                <p className="text-xs text-muted-foreground">Kapaksız şehir</p>
+              </div>
+              <div className="rounded-xl border p-3">
+                <p className="text-2xl font-bold">
+                  {gaps.articlesMissingMeta.toLocaleString("tr-TR")}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Meta/görsel eksik yazı
+                </p>
+              </div>
+            </div>
             <div>
               <p className="font-medium">Şehir rehberi eksik</p>
               <p className="text-muted-foreground">
@@ -184,16 +224,10 @@ export default async function AdminDashboardPage() {
                 açıklama veya öne çıkan).
               </p>
               <Button variant="link" className="h-auto px-0" asChild>
-                <Link href="/yonetim/mekanlar">Mekanları düzenle</Link>
+                <Link href="/yonetim/mekanlar?gap=not-indexable">
+                  İndekslenemeyen mekanlar
+                </Link>
               </Button>
-            </div>
-            <div>
-              <p className="font-medium">Editoryal iş akışı</p>
-              <ol className="mt-2 list-decimal space-y-1 pl-4 text-muted-foreground">
-                <li>Gemini ile taslak üret</li>
-                <li>Kalite kontrol listesini tamamla</li>
-                <li>Yayınla ve şehre bağla</li>
-              </ol>
             </div>
           </CardContent>
         </Card>

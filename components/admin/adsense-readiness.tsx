@@ -30,6 +30,15 @@ export function AdSenseReadiness({ stats }: Props) {
       href: "/yonetim/mekanlar",
     },
     {
+      label: "İndekslenebilir mekanların kapak görseli",
+      passed: stats.indexablePlacesWithoutCover === 0,
+      detail:
+        stats.indexablePlacesWithoutCover === 0
+          ? "Tamam"
+          : `${stats.indexablePlacesWithoutCover} mekan kapaksız`,
+      href: "/yonetim/mekanlar?gap=no-cover",
+    },
+    {
       label: "Şehir rehberleri (81 il)",
       passed: stats.citiesWithGuide >= 81,
       detail: `${stats.citiesWithGuide} / 81 şehir`,
