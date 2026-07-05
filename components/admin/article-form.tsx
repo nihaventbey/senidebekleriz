@@ -17,10 +17,13 @@ import {
 import { SubmitButton } from "@/components/admin/submit-button";
 import { renderMarkdown } from "@/lib/markdown";
 import { toast } from "@/lib/toast";
-import { Loader2, Sparkles, ArrowLeft, Trash2 } from "lucide-react";
+import { Loader2, Sparkles, ArrowLeft, Trash2, Link2 } from "lucide-react";
 import { slugify } from "@/lib/slugify";
 import { EditorialChecklist } from "@/components/admin/editorial-checklist";
+import { ArticleImageGallery } from "@/components/admin/article-image-gallery";
+import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { evaluateArticleContent } from "@/lib/content/editorial-checklist";
+import { collectArticleImageUrls } from "@/lib/markdown/extract-images";
 
 type CityOption = { slug: string; name: string };
 
@@ -55,13 +58,20 @@ export function ArticleForm({
   const [metaDescription, setMetaDescription] = useState(
     defaultValues.meta_description || ""
   );
+  const [coverImage, setCoverImage] = useState(defaultValues.cover_image || "");
   const [preview, setPreview] = useState(false);
   const articleEvaluation = useMemo(
     () => evaluateArticleContent(content),
     [content]
   );
+  const articleImages = useMemo(
+    () => collectArticleImageUrls(content, coverImage),
+    [content, coverImage]
+  );
+  const contentPreviewHtml = useMemo(() => renderMarkdown(content), [content]);
   const [aiPending, startAiTransition] = useTransition();
   const [aiTopic, setAiTopic] = useState(defaultValues.title || "");
+  const [aiSourceUrl, setAiSourceUrl] = useState("");
   const [aiCity, setAiCity] = useState(defaultValues.city_slug || "");
   const [citySlug, setCitySlug] = useState(defaultValues.city_slug || "none");
 
@@ -73,8 +83,8 @@ export function ArticleForm({
   }
 
   function generateWithAi() {
-    if (!aiTopic.trim()) {
-      toast.error("AI için bir konu girin");
+    if (!aiTopic.trim() && !aiSourceUrl.trim()) {
+      toast.error("Konu veya kaynak URL girin");
       return;
     }
 
@@ -85,9 +95,10 @@ export function ArticleForm({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            topic: aiTopic,
+            topic: aiTopic.trim(),
             cityName,
             type: "guide",
+            sourceUrl: aiSourceUrl.trim() || undefined,
           }),
         });
         const data = await res.json();
@@ -98,9 +109,14 @@ export function ArticleForm({
         setExcerpt(data.excerpt);
         setContent(data.content);
         setMetaDescription(data.meta_description);
+        if (data.cover_image) setCoverImage(data.cover_image);
         if (!metaTitle) setMetaTitle(data.title);
         toast.success(
-          "AI taslak oluşturuldu",
+          aiSourceUrl.trim()
+            ? data.cover_image
+              ? "URL'den taslak ve kapak görseli oluşturuldu"
+              : "URL'den AI taslak oluşturuldu"
+            : "AI taslak oluşturuldu",
           "Metni düzenleyip yayınlayın."
         );
       } catch (error) {
@@ -134,31 +150,48 @@ export function ArticleForm({
       <div className="rounded-lg border bg-muted/30 p-4">
         <h2 className="font-semibold">AI Taslak Oluştur</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Google Gemini ile özgün Markdown taslak üretir. Yayınlamadan önce mutlaka
-          düzenleyin.
+          Google Gemini ile özgün Markdown taslak üretir. İsteğe bağlı kaynak
+          URL verirseniz sayfa içeriği çekilir ve buna göre zengin metin
+          oluşturulur. Yayınlamadan önce mutlaka düzenleyin.
         </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <Input
-            value={aiTopic}
-            onChange={(e) => setAiTopic(e.target.value)}
-            placeholder="Örn: Kapadokya'da 2 günlük rota"
-          />
-          <Select
-            value={aiCity || "none"}
-            onValueChange={(v) => setAiCity(!v || v === "none" ? "" : v)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Şehir (opsiyonel)" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Şehir seçilmedi</SelectItem>
-              {cities.map((city) => (
-                <SelectItem key={city.slug} value={city.slug}>
-                  {city.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="mt-4 space-y-3">
+          <div className="space-y-2">
+            <Label htmlFor="ai-source-url">Kaynak URL (opsiyonel)</Label>
+            <Input
+              id="ai-source-url"
+              type="url"
+              value={aiSourceUrl}
+              onChange={(e) => setAiSourceUrl(e.target.value)}
+              placeholder="https://www.kultur.gov.tr/... veya müze/tiyatro sayfası"
+            />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Input
+              value={aiTopic}
+              onChange={(e) => setAiTopic(e.target.value)}
+              placeholder={
+                aiSourceUrl.trim()
+                  ? "Konu (boş bırakılırsa sayfa başlığı kullanılır)"
+                  : "Örn: Kapadokya'da 2 günlük rota"
+              }
+            />
+            <Select
+              value={aiCity || "none"}
+              onValueChange={(v) => setAiCity(!v || v === "none" ? "" : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Şehir (opsiyonel)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Şehir seçilmedi</SelectItem>
+                {cities.map((city) => (
+                  <SelectItem key={city.slug} value={city.slug}>
+                    {city.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <Button
           type="button"
@@ -169,14 +202,22 @@ export function ArticleForm({
         >
           {aiPending ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : aiSourceUrl.trim() ? (
+            <Link2 className="mr-2 h-4 w-4" />
           ) : (
             <Sparkles className="mr-2 h-4 w-4" />
           )}
-          AI Taslak Oluştur
+          {aiSourceUrl.trim() ? "URL'den AI Taslak Oluştur" : "AI Taslak Oluştur"}
         </Button>
       </div>
 
       <form action={action} className="space-y-6 rounded-lg border p-6">
+        <ArticleImageGallery
+          images={articleImages}
+          coverImage={coverImage}
+          onSetCover={setCoverImage}
+        />
+
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="title">Başlık</Label>
@@ -225,9 +266,9 @@ export function ArticleForm({
             </Button>
           </div>
           {preview ? (
-            <div
-              className="prose prose-neutral min-h-[320px] max-w-none rounded-lg border bg-muted/20 p-4 dark:prose-invert"
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
+            <MarkdownContent
+              html={contentPreviewHtml}
+              className="min-h-[320px] rounded-lg border bg-muted/20 p-4"
             />
           ) : (
             <Textarea
@@ -256,8 +297,18 @@ export function ArticleForm({
             <Input
               id="cover_image"
               name="cover_image"
-              defaultValue={defaultValues.cover_image || ""}
+              value={coverImage}
+              onChange={(e) => setCoverImage(e.target.value)}
+              placeholder="Supabase media URL veya harici link"
             />
+            {coverImage && (
+              <img
+                src={coverImage}
+                alt="Kapak önizleme"
+                className="mt-2 h-40 w-full max-w-md rounded-lg border object-cover"
+                referrerPolicy="no-referrer"
+              />
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="city_slug">İlişkili Şehir</Label>

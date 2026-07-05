@@ -27,6 +27,7 @@ Supabase projesinde SQL migration dosyalarını sırayla çalıştırın:
 4. [`supabase/migrations/004_articles.sql`](supabase/migrations/004_articles.sql) — Markdown blog yazıları tablosu
 5. [`supabase/migrations/005_culture_messaging_pages.sql`](supabase/migrations/005_culture_messaging_pages.sql) — Hakkımızda, Misyon, Vizyon sayfa içerikleri
 6. [`supabase/migrations/006_cultural_events.sql`](supabase/migrations/006_cultural_events.sql) — kültür etkinlikleri, RSS kaynakları, admin onay kuyruğu
+7. [`supabase/migrations/007_storage_media.sql`](supabase/migrations/007_storage_media.sql) — public `media` bucket (blog kapak görselleri)
 
 Ardından seed:
 

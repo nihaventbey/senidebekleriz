@@ -10,6 +10,7 @@ import { getPlacesByCity } from "@/lib/data/places";
 import { getCityGuidePage } from "@/lib/data/pages";
 import { getCityArticle } from "@/lib/data/articles";
 import { renderMarkdown } from "@/lib/markdown";
+import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { CityMap } from "@/components/maps/city-map-wrapper";
 import { JsonLd } from "@/components/seo/json-ld";
 import { PlaceImageComponent } from "@/components/place/place-image";
@@ -130,11 +131,13 @@ export default async function CityPage({
             {cityArticle ? (
               <>
                 <p className="mt-3 text-muted-foreground">{cityArticle.excerpt}</p>
-                <div
-                  className="prose prose-neutral mt-4 max-w-none line-clamp-6 text-muted-foreground dark:prose-invert"
-                  dangerouslySetInnerHTML={{
-                    __html: renderMarkdown(cityArticle.content.slice(0, 1200)),
-                  }}
+                <MarkdownContent
+                  className="markdown-compact mt-4 max-h-64 overflow-hidden text-sm text-muted-foreground [mask-image:linear-gradient(to_bottom,black_60%,transparent)]"
+                  html={renderMarkdown(
+                    cityArticle.content
+                      .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+                      .slice(0, 1200)
+                  )}
                 />
                 <Link
                   href={`/blog/${cityArticle.slug}`}
@@ -146,9 +149,9 @@ export default async function CityPage({
               </>
             ) : cityGuidePage ? (
               <>
-                <div
-                  className="prose prose-neutral mt-4 max-w-none text-muted-foreground dark:prose-invert"
-                  dangerouslySetInnerHTML={{ __html: cityGuidePage.content }}
+                <MarkdownContent
+                  className="markdown-compact mt-4 text-sm text-muted-foreground"
+                  html={cityGuidePage.content}
                 />
                 <Link
                   href={`/sayfa/${cityGuidePage.slug}`}

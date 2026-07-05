@@ -151,4 +151,57 @@
   .card-hover:hover {
     @apply -translate-y-1 shadow-lg;
   }
+
+  .markdown-content {
+    @apply text-foreground leading-relaxed;
+  }
+  .markdown-content h2 {
+    @apply mt-8 mb-4 text-2xl font-bold;
+  }
+  .markdown-content h3 {
+    @apply mt-6 mb-3 text-xl font-semibold;
+  }
+  .markdown-content p {
+    @apply my-4;
+  }
+  .markdown-content ul,
+  .markdown-content ol {
+    @apply my-4 ml-6 list-outside;
+  }
+  .markdown-content ul {
+    @apply list-disc;
+  }
+  .markdown-content ol {
+    @apply list-decimal;
+  }
+  .markdown-content li {
+    @apply my-1;
+  }
+  .markdown-content a {
+    @apply text-primary underline underline-offset-2;
+  }
+  .markdown-content img {
+    @apply my-6 block h-auto max-w-full rounded-xl border border-border/60 shadow-sm;
+  }
+  .markdown-content blockquote {
+    @apply my-4 border-l-4 border-primary/30 pl-4 italic text-muted-foreground;
+  }
+
+  /* Kompakt varyant: şehir sayfası önizlemeleri gibi dar alanlar */
+  .markdown-compact h2 {
+    @apply mt-4 mb-2 text-lg font-semibold;
+  }
+  .markdown-compact h3 {
+    @apply mt-3 mb-1.5 text-base font-semibold;
+  }
+  .markdown-compact p {
+    @apply my-2;
+  }
+  .markdown-compact ul,
+  .markdown-compact ol {
+    @apply my-2;
+  }
+  .markdown-compact img {
+    @apply my-3 max-h-48 w-auto;
+  }
 }

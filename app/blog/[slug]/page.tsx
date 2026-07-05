@@ -8,6 +8,7 @@ import {
   getArticleBySlug,
 } from "@/lib/data/articles";
 import { renderMarkdown } from "@/lib/markdown";
+import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { JsonLd } from "@/components/seo/json-ld";
 import { ArrowLeft, Calendar, MapPin } from "lucide-react";
 
@@ -107,15 +108,13 @@ export default async function BlogArticlePage({
                 src={article.coverImage}
                 alt={article.title}
                 className="h-auto w-full object-cover"
+                referrerPolicy="no-referrer"
               />
             </div>
           )}
         </header>
 
-        <div
-          className="prose prose-neutral max-w-none dark:prose-invert prose-headings:scroll-mt-24"
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+        <MarkdownContent html={html} className="max-w-none" />
       </article>
     </div>
   );
