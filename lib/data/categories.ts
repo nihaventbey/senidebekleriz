@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { CATEGORY_ICON_NAMES } from "@/lib/data/category-icons";
 
 export type CategoryData = {
   id: string;
@@ -33,7 +34,7 @@ const DEFAULT_CATEGORIES: CategoryData[] = [
     id: "muzeler",
     name: "Müzeler",
     slug: "muzeler",
-    icon: "Camera",
+    icon: "LibraryBig",
     description: CATEGORY_DESCRIPTIONS.muzeler,
   },
   {
@@ -62,7 +63,7 @@ function mapCategoryRow(category: {
     id: category.id,
     name: category.name,
     slug: category.slug,
-    icon: category.icon || "Landmark",
+    icon: CATEGORY_ICON_NAMES[category.slug] || category.icon || "Landmark",
     description: CATEGORY_DESCRIPTIONS[category.slug] || "",
   };
 }

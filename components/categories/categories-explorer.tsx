@@ -2,18 +2,19 @@
 
 import { useMemo, useState, type ComponentType } from "react";
 import Link from "next/link";
-import {
-  Camera,
-  Landmark,
-  Palette,
-  Search,
-  TreePine,
-  X,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Search, X } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AdBanner } from "@/components/ads/ad-banner";
+import {
+  ExplorerHeroSection,
+  pickCategoryHeroMosaic,
+} from "@/components/explorer/explorer-hero-section";
+import {
+  getCategoryVisual,
+  getCategoryVisualFromIconName,
+} from "@/lib/data/category-icons";
 
 export type CategoryListItem = {
   slug: string;
@@ -21,34 +22,6 @@ export type CategoryListItem = {
   description: string;
   icon: string;
   coverImage: string | null;
-};
-
-const HERO_IMAGE = "/images/turkiye-kolaj.webp";
-
-const iconMap: Record<string, ComponentType<{ className?: string }>> = {
-  Landmark,
-  Camera,
-  TreePine,
-  Palette,
-};
-
-const categoryAccent: Record<string, { icon: string }> = {
-  "tarihi-yer": {
-    icon: "bg-amber-500/12 text-amber-700 dark:text-amber-400",
-  },
-  muzeler: {
-    icon: "bg-primary/12 text-primary",
-  },
-  "sanat-mekanlari": {
-    icon: "bg-violet-500/12 text-violet-700 dark:text-violet-400",
-  },
-  parklar: {
-    icon: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400",
-  },
-};
-
-const defaultAccent = {
-  icon: "bg-primary/12 text-primary",
 };
 
 function normalizeText(value: string) {
@@ -59,40 +32,41 @@ function normalizeText(value: string) {
 }
 
 function CategoryCard({ category }: { category: CategoryListItem }) {
-  const Icon = iconMap[category.icon] || Landmark;
-  const accent = categoryAccent[category.slug] ?? defaultAccent;
+  const [imageFailed, setImageFailed] = useState(false);
+  const visual =
+    getCategoryVisual(category.slug) ??
+    getCategoryVisualFromIconName(category.icon);
+  const { Icon, heroBg } = visual;
+  const showCover = Boolean(category.coverImage) && !imageFailed;
 
   return (
     <Link href={`/kategori/${category.slug}`}>
       <Card className="card-hover h-full overflow-hidden border-border/60">
-        {category.coverImage ? (
-          <div className="relative h-40 w-full overflow-hidden">
+        <div className="relative h-40 w-full overflow-hidden">
+          {showCover ? (
             <img
-              src={category.coverImage}
+              src={category.coverImage!}
               alt=""
               className="h-full w-full object-cover"
               loading="lazy"
+              onError={() => setImageFailed(true)}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
-            <div className="absolute bottom-3 left-3 right-3">
-              <p className="font-semibold text-white drop-shadow">
-                {category.name}
-              </p>
+          ) : (
+            <div
+              className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${heroBg}`}
+            >
+              <Icon className="h-16 w-16 text-foreground/75" strokeWidth={1.5} />
             </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+          <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm">
+              <Icon className="h-4 w-4 text-white" />
+            </div>
+            <p className="font-semibold text-white drop-shadow">{category.name}</p>
           </div>
-        ) : (
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${accent.icon}`}
-              >
-                <Icon className="h-5 w-5" />
-              </div>
-              <CardTitle className="text-lg">{category.name}</CardTitle>
-            </div>
-          </CardHeader>
-        )}
-        <CardContent className={category.coverImage ? "pt-4" : ""}>
+        </div>
+        <CardContent className="pt-4">
           <p className="line-clamp-3 text-sm leading-relaxed text-muted-foreground">
             {category.description}
           </p>
@@ -102,11 +76,37 @@ function CategoryCard({ category }: { category: CategoryListItem }) {
   );
 }
 
+function FilterPill({
+  active,
+  onClick,
+  label,
+  Icon,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  Icon: ComponentType<{ className?: string }>;
+}) {
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant={active ? "default" : "outline"}
+      className="rounded-full gap-1.5"
+      onClick={onClick}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {label}
+    </Button>
+  );
+}
+
 type Props = {
   categories: CategoryListItem[];
+  heroMosaic?: string[];
 };
 
-export function CategoriesExplorer({ categories }: Props) {
+export function CategoriesExplorer({ categories, heroMosaic }: Props) {
   const [query, setQuery] = useState("");
   const [slugFilter, setSlugFilter] = useState<string>("");
 
@@ -126,6 +126,11 @@ export function CategoriesExplorer({ categories }: Props) {
 
   const hasFilters = Boolean(query.trim() || slugFilter);
 
+  const mosaicImages = useMemo(
+    () => heroMosaic ?? pickCategoryHeroMosaic(categories),
+    [heroMosaic, categories]
+  );
+
   function clearFilters() {
     setQuery("");
     setSlugFilter("");
@@ -133,42 +138,24 @@ export function CategoriesExplorer({ categories }: Props) {
 
   return (
     <div>
-      <section className="relative overflow-hidden bg-hero-gradient py-14 sm:py-20 md:py-24">
-        <img
-          src={HERO_IMAGE}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black/55" />
-        <div className="absolute inset-0 bg-grid-pattern opacity-[0.07]" />
-
-        <div className="container relative mx-auto px-4 text-center">
-          <span className="inline-flex items-center rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white backdrop-blur-sm">
-            Kültür · Sanat · Tarih
-          </span>
-          <h1 className="mx-auto mt-5 max-w-3xl text-3xl font-extrabold tracking-tight text-white sm:text-4xl md:text-5xl">
-            Kategorilere Göre Keşfet
-          </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base text-white/90 md:text-lg">
-            Müzeler, tarihi yerler, sanat mekanları ve parklar — ilgi alanına
-            göre rotanı oluştur.
-          </p>
-
-          <div className="mx-auto mt-8 max-w-xl">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Kategori ara..."
-                className="h-12 rounded-xl border-white/20 bg-background/95 pl-12 pr-4 text-base shadow-lg backdrop-blur"
-                aria-label="Kategori ara"
-              />
-            </div>
-          </div>
+      <ExplorerHeroSection
+        mosaicImages={mosaicImages}
+        badge="Kültür · Sanat · Tarih"
+        title="Kategorilere Göre Keşfet"
+        description="Müzeler, tarihi yerler, sanat mekanları ve parklar — ilgi alanına göre rotanı oluştur."
+      >
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Kategori ara..."
+            className="h-12 rounded-xl border-white/20 bg-background/95 pl-12 pr-4 text-base shadow-lg backdrop-blur"
+            aria-label="Kategori ara"
+          />
         </div>
-      </section>
+      </ExplorerHeroSection>
 
       <div className="container mx-auto px-4 py-8 md:py-10">
         <div className="mb-8">
@@ -190,22 +177,22 @@ export function CategoriesExplorer({ categories }: Props) {
             >
               Tümü
             </Button>
-            {categories.map((category) => (
-              <Button
-                key={category.slug}
-                type="button"
-                size="sm"
-                variant={slugFilter === category.slug ? "default" : "outline"}
-                className="rounded-full"
-                onClick={() =>
-                  setSlugFilter(
-                    slugFilter === category.slug ? "" : category.slug
-                  )
-                }
-              >
-                {category.name}
-              </Button>
-            ))}
+            {categories.map((category) => {
+              const { Icon } = getCategoryVisual(category.slug);
+              return (
+                <FilterPill
+                  key={category.slug}
+                  active={slugFilter === category.slug}
+                  label={category.name}
+                  Icon={Icon}
+                  onClick={() =>
+                    setSlugFilter(
+                      slugFilter === category.slug ? "" : category.slug
+                    )
+                  }
+                />
+              );
+            })}
           </div>
 
           <div className="flex items-center gap-3 text-sm text-muted-foreground">

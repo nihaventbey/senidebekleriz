@@ -1,18 +1,18 @@
 {
   "tarihi-yer": {
-    "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Ephesus_Celsus_Library_Facade.jpg/1280px-Ephesus_Celsus_Library_Facade.jpg",
+    "commonsFile": "Ephesus Celsus Library Façade.jpg",
     "note": "Efes Celsus Kütüphanesi"
   },
   "muzeler": {
-    "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Istanbul_Archaeology_Museums_%282021%29.jpg/1280px-Istanbul_Archaeology_Museums_%282021%29.jpg",
+    "commonsFile": "Gate of Istanbul Archaeological Museums.jpg",
     "note": "İstanbul Arkeoloji Müzeleri"
   },
   "sanat-mekanlari": {
-    "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Istanbul_Modern_Museum.jpg/1280px-Istanbul_Modern_Museum.jpg",
+    "commonsFile": "İstanbul Modern (10072023).jpg",
     "note": "İstanbul Modern"
   },
   "parklar": {
-    "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/G%C3%BClhane_Park%2C_Istanbul.jpg/1280px-G%C3%BClhane_Park%2C_Istanbul.jpg",
+    "commonsFile": "Gülhane Park, Istanbul.jpg",
     "note": "Gülhane Parkı"
   }
 }

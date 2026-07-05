@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { Logo } from "@/components/layout/logo";
 import { DeveloperCredit } from "@/components/layout/developer-credit";
+import type { BrandSettings } from "@/lib/settings/branding";
 
-export function Footer() {
+type FooterProps = {
+  brand?: BrandSettings;
+};
+
+export function Footer({ brand }: FooterProps) {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -10,7 +15,7 @@ export function Footer() {
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
           <div className="md:col-span-1">
-            <Logo />
+            <Logo brand={brand} />
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
               Türkiye'nin müzelerini, tarihi yerlerini ve sanat mekanlarını
               keşfedin.

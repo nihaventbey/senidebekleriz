@@ -7,6 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AdBanner } from "@/components/ads/ad-banner";
+import {
+  ExplorerHeroSection,
+  pickCityHeroMosaic,
+} from "@/components/explorer/explorer-hero-section";
 import { TURKEY_REGIONS } from "@/lib/cities/regions";
 
 export type CityListItem = {
@@ -16,8 +20,6 @@ export type CityListItem = {
   description: string;
   coverImage: string | null;
 };
-
-const HERO_IMAGE = "/images/turkiye-kolaj.webp";
 
 function normalizeText(value: string) {
   return value
@@ -100,6 +102,8 @@ export function CitiesExplorer({ cities }: Props) {
 
   const hasFilters = Boolean(query.trim() || region);
 
+  const heroMosaic = useMemo(() => pickCityHeroMosaic(cities), [cities]);
+
   function clearFilters() {
     setQuery("");
     setRegion("");
@@ -107,42 +111,24 @@ export function CitiesExplorer({ cities }: Props) {
 
   return (
     <div>
-      <section className="relative overflow-hidden bg-hero-gradient py-14 sm:py-20 md:py-24">
-        <img
-          src={HERO_IMAGE}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black/55" />
-        <div className="absolute inset-0 bg-grid-pattern opacity-[0.07]" />
-
-        <div className="container relative mx-auto px-4 text-center">
-          <span className="inline-flex items-center rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white backdrop-blur-sm">
-            81 İl · Kültür Rehberi
-          </span>
-          <h1 className="mx-auto mt-5 max-w-3xl text-3xl font-extrabold tracking-tight text-white sm:text-4xl md:text-5xl">
-            Türkiye&apos;nin Şehirlerini Keşfet
-          </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base text-white/90 md:text-lg">
-            Müzeler, tarihi yerler ve sanat mekanlarıyla {cities.length} ili
-            gezmeye başla.
-          </p>
-
-          <div className="mx-auto mt-8 max-w-xl">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Şehir adı veya bölge ara..."
-                className="h-12 rounded-xl border-white/20 bg-background/95 pl-12 pr-4 text-base shadow-lg backdrop-blur"
-                aria-label="Şehir ara"
-              />
-            </div>
-          </div>
+      <ExplorerHeroSection
+        mosaicImages={heroMosaic}
+        badge="81 İl · Kültür Rehberi"
+        title="Türkiye'nin Şehirlerini Keşfet"
+        description={`Müzeler, tarihi yerler ve sanat mekanlarıyla ${cities.length} ili gezmeye başla.`}
+      >
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Şehir adı veya bölge ara..."
+            className="h-12 rounded-xl border-white/20 bg-background/95 pl-12 pr-4 text-base shadow-lg backdrop-blur"
+            aria-label="Şehir ara"
+          />
         </div>
-      </section>
+      </ExplorerHeroSection>
 
       <div className="container mx-auto px-4 py-8 md:py-10">
         <div className="mb-8">

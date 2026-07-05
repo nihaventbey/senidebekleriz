@@ -7,6 +7,7 @@ import { Logo } from "@/components/layout/logo";
 import { SearchBar } from "@/components/layout/search-bar";
 import { useSearch } from "@/components/layout/search-provider";
 import { cn } from "@/lib/utils";
+import type { BrandSettings } from "@/lib/settings/branding";
 
 const navItems = [
   { href: "/", label: "Ana Sayfa" },
@@ -15,7 +16,11 @@ const navItems = [
   { href: "/blog", label: "Gezi Rehberi" },
 ];
 
-export function Header() {
+type HeaderProps = {
+  brand?: BrandSettings;
+};
+
+export function Header({ brand }: HeaderProps) {
   const { isOpen: searchOpen } = useSearch();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -41,7 +46,7 @@ export function Header() {
       )}
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Logo />
+        <Logo brand={brand} />
 
         <nav className="hidden items-center gap-8 md:flex">
           {navItems.map((item) => (

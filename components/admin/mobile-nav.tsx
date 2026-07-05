@@ -12,7 +12,7 @@ export function AdminMobileNav() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="md:hidden">
+    <div className="md:hidden relative">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -25,10 +25,10 @@ export function AdminMobileNav() {
       {open && (
         <>
           <div
-            className="fixed inset-0 top-16 z-40 bg-black/20"
+            className="fixed inset-0 z-40 bg-black/20"
             onClick={() => setOpen(false)}
           />
-          <nav className="absolute left-0 right-0 top-16 z-50 max-h-[70vh] overflow-y-auto border-b bg-background p-3 shadow-lg">
+          <nav className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[min(70vh,24rem)] overflow-y-auto rounded-xl border bg-background p-2 shadow-lg">
             {adminNavItems.map((item) => {
               const Icon = item.icon;
               const isActive =

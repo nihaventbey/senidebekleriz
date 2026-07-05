@@ -1,46 +1,11 @@
-import type { ComponentType } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
-  Camera,
   Compass,
-  Landmark,
-  Palette,
-  TreePine,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CategoryData } from "@/lib/data/categories";
-
-const iconMap: Record<string, ComponentType<{ className?: string }>> = {
-  Landmark,
-  Camera,
-  TreePine,
-  Palette,
-};
-
-const categoryAccent: Record<string, { icon: string; glow: string }> = {
-  "tarihi-yer": {
-    icon: "bg-amber-500/12 text-amber-700 dark:text-amber-400",
-    glow: "group-hover:shadow-amber-500/10",
-  },
-  muzeler: {
-    icon: "bg-primary/12 text-primary",
-    glow: "group-hover:shadow-primary/10",
-  },
-  "sanat-mekanlari": {
-    icon: "bg-violet-500/12 text-violet-700 dark:text-violet-400",
-    glow: "group-hover:shadow-violet-500/10",
-  },
-  parklar: {
-    icon: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400",
-    glow: "group-hover:shadow-emerald-500/10",
-  },
-};
-
-const defaultAccent = {
-  icon: "bg-primary/12 text-primary",
-  glow: "group-hover:shadow-primary/10",
-};
+import { getCategoryVisual } from "@/lib/data/category-icons";
 
 type Props = {
   categories: CategoryData[];
@@ -71,17 +36,26 @@ export function DiscoverCategoriesSection({ categories }: Props) {
 
         <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
           {categories.map((category) => {
-            const Icon = iconMap[category.icon] || Landmark;
-            const accent = categoryAccent[category.slug] ?? defaultAccent;
+            const { Icon, accent } = getCategoryVisual(category.slug);
+            const glow =
+              category.slug === "tarihi-yer"
+                ? "group-hover:shadow-amber-500/10"
+                : category.slug === "muzeler"
+                  ? "group-hover:shadow-sky-500/10"
+                  : category.slug === "sanat-mekanlari"
+                    ? "group-hover:shadow-violet-500/10"
+                    : category.slug === "parklar"
+                      ? "group-hover:shadow-emerald-500/10"
+                      : "group-hover:shadow-primary/10";
 
             return (
               <Link
                 key={category.slug}
                 href={`/kategori/${category.slug}`}
-                className={`group relative flex items-center gap-2.5 overflow-hidden rounded-xl border border-border/60 bg-card/90 p-2.5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-md ${accent.glow} sm:gap-3 sm:p-3 md:flex-col md:items-start md:p-4 lg:items-center lg:text-center`}
+                className={`group relative flex items-center gap-2.5 overflow-hidden rounded-xl border border-border/60 bg-card/90 p-2.5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-md ${glow} sm:gap-3 sm:p-3 md:flex-col md:items-start md:p-4 lg:items-center lg:text-center`}
               >
                 <div
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-105 sm:h-10 sm:w-10 md:h-11 md:w-11 md:rounded-xl ${accent.icon}`}
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-105 sm:h-10 sm:w-10 md:h-11 md:w-11 md:rounded-xl ${accent}`}
                 >
                   <Icon className="h-4 w-4 sm:h-[18px] sm:w-[18px] md:h-5 md:w-5" />
                 </div>

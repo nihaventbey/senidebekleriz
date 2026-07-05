@@ -158,7 +158,7 @@
   .bg-pan-tour {
     background-size: cover;
     background-repeat: no-repeat;
-    animation: bg-pan-tour 50s ease-in-out infinite;
+    animation: bg-pan-tour 50s linear infinite;
   }
   @keyframes bg-pan-tour {
     0%   { background-position: 0% 0%; }

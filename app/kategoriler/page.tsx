@@ -25,5 +25,14 @@ export default async function CategoriesPage() {
     coverImage: covers[category.slug]?.url ?? null,
   }));
 
-  return <CategoriesExplorer categories={categoryItems} />;
+  const heroMosaic = [
+    "tarihi-yer",
+    "muzeler",
+    "sanat-mekanlari",
+    "parklar",
+  ]
+    .map((slug) => covers[slug]?.url)
+    .filter((url): url is string => Boolean(url));
+
+  return <CategoriesExplorer categories={categoryItems} heroMosaic={heroMosaic} />;
 }

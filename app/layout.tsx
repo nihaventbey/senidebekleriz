@@ -13,6 +13,8 @@ import {
 } from "@/components/analytics/google-tag-manager";
 import { CookieConsent } from "@/components/layout/cookie-consent";
 import { WebMcpTools } from "@/components/agents/webmcp-tools";
+import { getBrandSettings } from "@/lib/data/site-settings";
+import { buildBrandMetadata } from "@/lib/metadata/brand-metadata";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -20,7 +22,7 @@ const jakarta = Plus_Jakarta_Sans({
   weight: ["400", "500", "600", "700", "800"],
 });
 
-export const metadata: Metadata = {
+const BASE_METADATA: Metadata = {
   title: {
     default: "Seni de Bekleriz | Sanat, Tarih ve Kültür Rehberi",
     template: "%s | Seni de Bekleriz",
@@ -47,11 +49,18 @@ export const metadata: Metadata = {
     : {}),
 };
 
-export default function RootLayout({
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await getBrandSettings();
+  return buildBrandMetadata(brand, BASE_METADATA);
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const brand = await getBrandSettings();
+
   return (
     <html
       lang="tr"
@@ -66,9 +75,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-background">
         <GoogleTagManagerNoScript />
         <SearchProvider>
-          <Header />
+          <Header brand={brand} />
           <main className="flex-1">{children}</main>
-          <Footer />
+          <Footer brand={brand} />
           <CookieConsent />
         </SearchProvider>
         <div id="search-portal" />

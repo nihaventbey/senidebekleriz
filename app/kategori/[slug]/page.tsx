@@ -9,6 +9,7 @@ import { resolveCategoryCoverImage } from "@/lib/data/category-images";
 import { AdBanner } from "@/components/ads/ad-banner";
 import { getPlacesByCategory } from "@/lib/data/places";
 import { PlaceImageComponent } from "@/components/place/place-image";
+import { CategoryHero } from "@/components/categories/category-hero";
 
 export async function generateStaticParams() {
   const categories = await getAllCategories();
@@ -47,38 +48,12 @@ export default async function CategoryPage({
 
   return (
     <div>
-      <section className="relative overflow-hidden bg-hero-gradient py-10 sm:py-12 md:py-16">
-        {cover?.url && (
-          <>
-            <img
-              src={cover.url}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-black/50" />
-          </>
-        )}
-        <div className="container relative mx-auto px-4">
-          <div className="max-w-3xl">
-            <Badge
-              variant="secondary"
-              className={cover?.url ? "mb-4" : "mb-3"}
-            >
-              Kategori
-            </Badge>
-            <h1
-              className={`text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl ${cover?.url ? "text-white" : ""}`}
-            >
-              {category.name}
-            </h1>
-            <p
-              className={`mt-4 max-w-3xl text-base md:text-lg ${cover?.url ? "text-white/90" : "text-muted-foreground"}`}
-            >
-              {category.description}
-            </p>
-          </div>
-        </div>
-      </section>
+      <CategoryHero
+        slug={slug}
+        name={category.name}
+        description={category.description}
+        coverUrl={cover?.url ?? null}
+      />
 
       <div className="container mx-auto px-4 pb-12">
         <div className="mb-8">
