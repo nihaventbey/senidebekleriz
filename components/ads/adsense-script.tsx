@@ -6,12 +6,15 @@ export function AdSenseScript() {
     return null;
   }
 
+  // beforeInteractive: doğrulama botu ham HTML'de script etiketini görebilsin
+  // (afterInteractive yalnızca istemci tarafında enjekte eder)
   return (
     <Script
+      id="adsense"
       async
       src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
       crossOrigin="anonymous"
-      strategy="afterInteractive"
+      strategy="beforeInteractive"
     />
   );
 }
