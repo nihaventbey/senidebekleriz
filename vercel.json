@@ -1,13 +1,8 @@
 {
-  "build": {
-    "env": {
-      "VERCEL_FORCE_NO_BUILD_CACHE": "1"
-    }
-  },
   "crons": [
     {
       "path": "/api/cron/sync-events",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 5 * * *"
     },
     {
       "path": "/api/cron/discover-content",
