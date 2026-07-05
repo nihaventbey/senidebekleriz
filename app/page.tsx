@@ -17,6 +17,8 @@ import { getAllCategories } from "@/lib/data/categories";
 import { getFeaturedPlaces } from "@/lib/data/places";
 import { getPublishedArticles } from "@/lib/data/articles";
 import { getFeaturedEvents } from "@/lib/data/events";
+import { getHeroSettings } from "@/lib/data/site-settings";
+import { HeroBackground } from "@/components/home/hero-background";
 import { SearchBar } from "@/components/layout/search-bar";
 import { PlaceImageComponent } from "@/components/place/place-image";
 import { ArticleCard } from "@/components/blog/article-card";
@@ -25,31 +27,63 @@ import { CulturalEventsSlider } from "@/components/events/cultural-events-slider
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [cities, categoryList, featuredPlaces, latestArticles, featuredEvents] =
-    await Promise.all([
-      getAllCities(),
-      getAllCategories(),
-      getFeaturedPlaces(6),
-      getPublishedArticles(3),
-      getFeaturedEvents(8),
-    ]);
+  const [
+    cities,
+    categoryList,
+    featuredPlaces,
+    latestArticles,
+    featuredEvents,
+    heroSettings,
+  ] = await Promise.all([
+    getAllCities(),
+    getAllCategories(),
+    getFeaturedPlaces(6),
+    getPublishedArticles(3),
+    getFeaturedEvents(8),
+    getHeroSettings(),
+  ]);
 
   const popularCities = pickPopularCities(cities, 6);
+  const heroActive = heroSettings.enabled && Boolean(heroSettings.imageUrl);
+  const heroOnDark = heroActive && heroSettings.overlayTone === "dark";
 
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="relative overflow-hidden bg-hero-gradient py-20 md:py-28">
-        <div className="absolute inset-0 bg-grid-pattern opacity-50" />
+      <section
+        className={`relative overflow-hidden py-20 md:py-28 ${
+          heroActive ? "" : "bg-hero-gradient"
+        }`}
+      >
+        {heroActive ? (
+          <HeroBackground settings={heroSettings} />
+        ) : (
+          <div className="absolute inset-0 bg-grid-pattern opacity-50" />
+        )}
         <div className="container relative mx-auto px-4 text-center">
-          <span className="inline-flex items-center rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary">
+          <span
+            className={`inline-flex items-center rounded-full px-4 py-1.5 text-sm font-semibold ${
+              heroOnDark ? "bg-white/15 text-white" : "bg-primary/10 text-primary"
+            }`}
+          >
             Sanat · Tarih · Kültür · Müzeler
           </span>
-          <h1 className="mx-auto mt-6 max-w-4xl text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl md:text-6xl">
+          <h1
+            className={`mx-auto mt-6 max-w-4xl text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl md:text-6xl ${
+              heroOnDark ? "text-white" : ""
+            }`}
+          >
             Türkiye'nin{" "}
-            <span className="text-gradient">Kültürel Mirasını</span> Keşfet
+            <span className={heroOnDark ? "text-white" : "text-gradient"}>
+              Kültürel Mirasını
+            </span>{" "}
+            Keşfet
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground md:text-lg">
+          <p
+            className={`mx-auto mt-6 max-w-2xl text-base md:text-lg ${
+              heroOnDark ? "text-white/85" : "text-muted-foreground"
+            }`}
+          >
             Seni de Bekleriz, yeme-içme rehberi değil; müzeleri, tarihi
             yerleri, sanat mekanlarını ve kültürel durakları öne çıkaran bir
             keşif platformudur.
@@ -159,13 +193,18 @@ export default async function HomePage() {
 
       {/* CTA */}
       <section className="container mx-auto px-4 py-12">
-        <div className="relative overflow-hidden rounded-3xl bg-primary px-6 py-14 text-center text-primary-foreground md:py-20">
-          <div className="absolute inset-0 bg-grid-pattern opacity-10" />
+        <div className="relative overflow-hidden rounded-3xl px-6 py-14 text-center text-white md:py-20">
+          <div
+            aria-hidden
+            className="bg-pan-tour absolute inset-0"
+            style={{ backgroundImage: "url(/images/turkiye-kolaj.webp)" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/55 to-black/40" />
           <div className="relative">
             <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
               Türkiye'yi Keşfetmeye Başla
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-primary-foreground/90">
+            <p className="mx-auto mt-4 max-w-xl text-white/90">
               81 ilde müzeler, antik kentler, sanat mekanları ve tarihi
               duraklar sizi bekliyor.
             </p>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/layout/logo";
+import { DeveloperCredit } from "@/components/layout/developer-credit";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -83,10 +84,11 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 border-t border-border/60 pt-6">
+        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-border/60 pt-6 sm:flex-row">
           <p className="text-center text-sm text-muted-foreground sm:text-left">
             © {currentYear} Seni de Bekleriz. Tüm hakları saklıdır.
           </p>
+          <DeveloperCredit />
         </div>
       </div>
     </footer>

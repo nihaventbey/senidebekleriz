@@ -14,6 +14,7 @@ import {
   BookOpen,
   CalendarDays,
   Radar,
+  Paintbrush,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/yonetim/etkinlikler", label: "Etkinlikler", icon: CalendarDays },
   { href: "/yonetim/kesif", label: "İçerik Keşfi", icon: Radar },
   { href: "/yonetim/reklamlar", label: "Reklamlar", icon: Megaphone },
+  { href: "/yonetim/gorunum", label: "Görünüm", icon: Paintbrush },
   { href: "/yonetim/hesap", label: "Hesap", icon: UserCog },
 ];
 

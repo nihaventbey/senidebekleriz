@@ -152,6 +152,40 @@
     @apply -translate-y-1 shadow-lg;
   }
 
+  /* Görselin dört köşesini yavaşça gezdiren pan turu.
+     background-size: cover ile sığan eksen her zaman tam görünür,
+     taşan eksen 0% → 100% arasında gezilerek her piksel gösterilir. */
+  .bg-pan-tour {
+    background-size: cover;
+    background-repeat: no-repeat;
+    animation: bg-pan-tour 50s ease-in-out infinite;
+  }
+  @keyframes bg-pan-tour {
+    0%   { background-position: 0% 0%; }
+    25%  { background-position: 100% 0%; }
+    50%  { background-position: 100% 100%; }
+    75%  { background-position: 0% 100%; }
+    100% { background-position: 0% 0%; }
+  }
+
+  .bg-slow-zoom {
+    animation: bg-slow-zoom 30s ease-in-out infinite alternate;
+  }
+  @keyframes bg-slow-zoom {
+    from { transform: scale(1); }
+    to   { transform: scale(1.15); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bg-pan-tour,
+    .bg-slow-zoom {
+      animation: none;
+    }
+    .bg-pan-tour {
+      background-position: center;
+    }
+  }
+
   .markdown-content {
     @apply text-foreground leading-relaxed;
   }
