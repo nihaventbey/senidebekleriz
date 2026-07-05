@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { AdBanner } from "@/components/ads/ad-banner";
 import { getAllCities } from "@/lib/data/cities";
+import { pickPopularCities } from "@/lib/cities/popular";
+import { PopularCitiesSection } from "@/components/home/popular-cities-section";
 import { getAllCategories } from "@/lib/data/categories";
 import { getFeaturedPlaces } from "@/lib/data/places";
 import { getPublishedArticles } from "@/lib/data/articles";
@@ -26,6 +28,8 @@ import { SearchBar } from "@/components/layout/search-bar";
 import { PlaceImageComponent } from "@/components/place/place-image";
 import { ArticleCard } from "@/components/blog/article-card";
 import { CulturalEventsSlider } from "@/components/events/cultural-events-slider";
+
+export const dynamic = "force-dynamic";
 
 const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   Landmark,
@@ -44,14 +48,7 @@ export default async function HomePage() {
       getFeaturedEvents(8),
     ]);
 
-  const featuredCities = [...cities]
-    .sort((a, b) => {
-      if (Boolean(a.coverImage) !== Boolean(b.coverImage)) {
-        return a.coverImage ? -1 : 1;
-      }
-      return 0;
-    })
-    .slice(0, 6);
+  const popularCities = pickPopularCities(cities, 6);
 
   return (
     <div className="flex flex-col">
@@ -103,58 +100,7 @@ export default async function HomePage() {
         />
       </section>
 
-      {/* Popüler Şehirler */}
-      <section className="container mx-auto px-4 py-12">
-        <div className="mb-8 flex items-end justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
-              Popüler Şehirler
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground md:text-base">
-              Türkiye'nin en çok ziyaret edilen şehirlerini keşfet.
-            </p>
-          </div>
-          <Button variant="outline" asChild className="hidden sm:flex">
-            <Link href="/sehirler">Tüm Şehirler</Link>
-          </Button>
-        </div>
-
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {featuredCities.map((city) => (
-            <Link key={city.slug} href={`/sehir/${city.slug}`}>
-              <Card className="card-hover h-full overflow-hidden border-border/60 bg-gradient-to-br from-card to-muted/30">
-                {city.coverImage ? (
-                  <div className="relative h-36 w-full bg-muted">
-                    <img
-                      src={city.coverImage}
-                      alt={city.name}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-                ) : (
-                  <CardHeader className="pb-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                      <MapPin className="h-6 w-6 text-primary" />
-                    </div>
-                  </CardHeader>
-                )}
-                <CardHeader className={city.coverImage ? "pt-4 pb-3" : "pb-3"}>
-                  <CardTitle className="text-lg">{city.name}</CardTitle>
-                  <p className="text-xs font-medium text-primary/70">
-                    {city.region}
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-                    {city.description}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </section>
+      <PopularCitiesSection cities={popularCities} />
 
       {featuredPlaces.length > 0 && (
         <section className="container mx-auto px-4 py-12">
