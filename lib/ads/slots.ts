@@ -14,6 +14,8 @@ export const AD_SLOT_OPTIONS = [
   { position: "place-content-inline", label: "Mekan detay — içerik içi" },
   { position: "place-sidebar", label: "Mekan detay — kenar çubuğu" },
   { position: "event-detail-bottom", label: "Etkinlik detay — alt" },
+  { position: "article-content-top", label: "Yazı detay — üst" },
+  { position: "article-content-bottom", label: "Yazı detay — alt" },
 ] as const;
 
 export type AdSlotPosition = (typeof AD_SLOT_OPTIONS)[number]["position"];

@@ -1,8 +1,5 @@
-import Link from "next/link";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   getAllArticleSlugs,
   getArticleBySlug,
@@ -10,7 +7,9 @@ import {
 import { renderMarkdown } from "@/lib/markdown";
 import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { JsonLd } from "@/components/seo/json-ld";
-import { ArrowLeft, Calendar, MapPin } from "lucide-react";
+import { ArticleHero } from "@/components/blog/article-hero";
+import { AdBanner } from "@/components/ads/ad-banner";
+import { resolveArticleCoverImage } from "@/lib/articles/cover-from-content";
 
 export async function generateStaticParams() {
   const slugs = await getAllArticleSlugs();
@@ -38,15 +37,6 @@ export async function generateMetadata({
   };
 }
 
-function formatDate(value: string | null) {
-  if (!value) return "";
-  return new Intl.DateTimeFormat("tr-TR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
 export default async function BlogArticlePage({
   params,
 }: {
@@ -57,6 +47,10 @@ export default async function BlogArticlePage({
 
   if (!article) notFound();
 
+  const coverUrl = resolveArticleCoverImage(
+    article.coverImage,
+    article.content
+  );
   const html = renderMarkdown(article.content);
 
   const jsonLd = {
@@ -66,56 +60,53 @@ export default async function BlogArticlePage({
     description: article.excerpt,
     datePublished: article.publishedAt,
     dateModified: article.updatedAt,
-    image: article.coverImage || undefined,
+    image: coverUrl || undefined,
   };
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div>
       <JsonLd data={jsonLd} />
 
-      <Button variant="ghost" size="sm" asChild className="mb-6">
-        <Link href="/blog">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Tüm Yazılar
-        </Link>
-      </Button>
+      <ArticleHero
+        title={article.title}
+        excerpt={article.excerpt}
+        publishedAt={article.publishedAt}
+        coverUrl={coverUrl}
+        citySlug={article.citySlug}
+      />
 
-      <article className="mx-auto max-w-3xl">
-        <header className="mb-8">
-          <div className="mb-4 flex flex-wrap gap-2">
-            <Badge variant="secondary">Editör Yazısı</Badge>
-            {article.citySlug && (
-              <Link href={`/sehir/${article.citySlug}`}>
-                <Badge variant="outline" className="gap-1">
-                  <MapPin className="h-3 w-3" />
-                  Şehir rehberi
-                </Badge>
-              </Link>
-            )}
+      <div className="container mx-auto px-4 py-10 md:py-12">
+        <div className="mx-auto max-w-3xl">
+          <div className="mb-8">
+            <AdBanner
+              slot="article-content-top"
+              className="min-h-[90px] w-full"
+              style={{ display: "block", minHeight: "90px", width: "100%" }}
+            />
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl">
-            {article.title}
-          </h1>
-          {article.publishedAt && (
-            <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              {formatDate(article.publishedAt)}
-            </p>
-          )}
-          {article.coverImage && (
-            <div className="mt-8 overflow-hidden rounded-2xl">
+
+          {coverUrl && (
+            <div className="mb-8 overflow-hidden rounded-2xl border border-border/60 shadow-sm">
               <img
-                src={article.coverImage}
+                src={coverUrl}
                 alt={article.title}
                 className="h-auto w-full object-cover"
                 referrerPolicy="no-referrer"
               />
             </div>
           )}
-        </header>
 
-        <MarkdownContent html={html} className="max-w-none" />
-      </article>
+          <MarkdownContent html={html} className="max-w-none" />
+
+          <div className="mt-10">
+            <AdBanner
+              slot="article-content-bottom"
+              className="min-h-[90px] w-full"
+              style={{ display: "block", minHeight: "90px", width: "100%" }}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

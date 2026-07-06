@@ -49,16 +49,30 @@ export function DiscoveryList({ items, filter }: Props) {
   function runAction(
     id: string,
     action: "event" | "article" | "reject",
-    fn: () => Promise<void>
+    fn: () => Promise<{ slug: string } | void>
   ) {
     setPendingId(id);
     setPendingAction(action);
     startTransition(async () => {
       try {
-        await fn();
+        const result = await fn();
         if (action === "reject") {
           toast.success("Keşif reddedildi");
           router.refresh();
+          return;
+        }
+        if (result && typeof result === "object" && "slug" in result) {
+          const slug = (result as { slug: string }).slug;
+          toast.success(
+            action === "article"
+              ? "Gezi rehberi taslağı oluşturuldu"
+              : "Etkinlik taslağı oluşturuldu"
+          );
+          router.push(
+            action === "article"
+              ? `/yonetim/yazilar/${slug}/duzenle`
+              : `/yonetim/etkinlikler/${slug}/duzenle`
+          );
         }
       } catch (error) {
         toast.error(

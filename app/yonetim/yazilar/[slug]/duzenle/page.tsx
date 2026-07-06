@@ -26,6 +26,7 @@ export default async function EditArticlePage({
     <div className="space-y-4">
       <h1 className="text-3xl font-bold tracking-tight">Yazı Düzenle</h1>
       <ArticleForm
+        currentSlug={slug}
         action={updateArticle.bind(null, slug)}
         deleteAction={deleteArticle.bind(null, article.id)}
         cities={cities.map((c) => ({ slug: c.slug, name: c.name }))}

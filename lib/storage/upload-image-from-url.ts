@@ -167,12 +167,13 @@ export async function uploadImagesFromUrls(
 
 export async function uploadArticleImagesFromUrls(
   imageUrls: string[],
-  slugHint: string
+  slugHint: string,
+  options?: { maxImages?: number }
 ): Promise<UploadedArticleMedia> {
   return uploadImagesFromUrls(imageUrls, {
     folder: "articles",
     slugHint,
-    maxImages: 4,
+    maxImages: options?.maxImages ?? 6,
   });
 }
 

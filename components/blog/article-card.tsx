@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { ArticleData } from "@/lib/data/articles";
+import { getCityName } from "@/lib/cities/lookup";
 import { ArrowRight, Calendar } from "lucide-react";
 
 function formatDate(value: string | null) {
@@ -30,7 +31,7 @@ export function ArticleCard({ article }: { article: ArticleData }) {
         <CardHeader className="pb-3">
           {article.citySlug && (
             <Badge variant="secondary" className="mb-2 w-fit">
-              Şehir rehberi
+              {getCityName(article.citySlug) ?? article.citySlug} rehberi
             </Badge>
           )}
           <CardTitle className="text-lg leading-snug">{article.title}</CardTitle>

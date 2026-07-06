@@ -2,11 +2,11 @@
 
 import { useState, useTransition, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -14,22 +14,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SubmitButton } from "@/components/admin/submit-button";
+import { Loader2, Sparkles, ArrowLeft, Trash2, Link2 } from "lucide-react";
 import { renderMarkdown } from "@/lib/markdown";
 import { toast } from "@/lib/toast";
-import { Loader2, Sparkles, ArrowLeft, Trash2, Link2 } from "lucide-react";
 import { slugify } from "@/lib/slugify";
 import { EditorialChecklist } from "@/components/admin/editorial-checklist";
 import { ArticleImageGallery } from "@/components/admin/article-image-gallery";
 import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { evaluateArticleContent } from "@/lib/content/editorial-checklist";
 import { collectArticleImageUrls } from "@/lib/markdown/extract-images";
+import type { ArticleActionResult } from "@/lib/actions/articles";
 
 type CityOption = { slug: string; name: string };
 
 type ArticleFormProps = {
-  action: (formData: FormData) => Promise<void>;
+  action: (formData: FormData) => Promise<ArticleActionResult>;
   cities: CityOption[];
+  currentSlug?: string;
   deleteAction?: () => Promise<void>;
   defaultValues?: {
     title?: string;
@@ -47,9 +48,11 @@ type ArticleFormProps = {
 export function ArticleForm({
   action,
   cities,
+  currentSlug,
   deleteAction,
   defaultValues = {},
 }: ArticleFormProps) {
+  const router = useRouter();
   const [title, setTitle] = useState(defaultValues.title || "");
   const [slug, setSlug] = useState(defaultValues.slug || "");
   const [excerpt, setExcerpt] = useState(defaultValues.excerpt || "");
@@ -70,6 +73,7 @@ export function ArticleForm({
   );
   const contentPreviewHtml = useMemo(() => renderMarkdown(content), [content]);
   const [aiPending, startAiTransition] = useTransition();
+  const [savePending, startSaveTransition] = useTransition();
   const [aiTopic, setAiTopic] = useState(defaultValues.title || "");
   const [aiSourceUrl, setAiSourceUrl] = useState("");
   const [aiCity, setAiCity] = useState(defaultValues.city_slug || "");
@@ -110,6 +114,7 @@ export function ArticleForm({
         setContent(data.content);
         setMetaDescription(data.meta_description);
         if (data.cover_image) setCoverImage(data.cover_image);
+        if (aiCity) setCitySlug(aiCity);
         if (!metaTitle) setMetaTitle(data.title);
         toast.success(
           aiSourceUrl.trim()
@@ -122,6 +127,30 @@ export function ArticleForm({
       } catch (error) {
         toast.error(
           "Taslak oluşturulamadı",
+          error instanceof Error ? error.message : undefined
+        );
+      }
+    });
+  }
+
+  function handleSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+
+    startSaveTransition(async () => {
+      try {
+        const result = await action(formData);
+        toast.success(
+          result.isPublished ? "Yazı yayınlandı" : "Taslak kaydedildi"
+        );
+        if (currentSlug && result.slug !== currentSlug) {
+          router.replace(`/yonetim/yazilar/${result.slug}/duzenle`);
+        } else {
+          router.refresh();
+        }
+      } catch (error) {
+        toast.error(
+          "Kaydedilemedi",
           error instanceof Error ? error.message : undefined
         );
       }
@@ -177,7 +206,11 @@ export function ArticleForm({
             />
             <Select
               value={aiCity || "none"}
-              onValueChange={(v) => setAiCity(!v || v === "none" ? "" : v)}
+              onValueChange={(v) => {
+                const next = !v || v === "none" ? "" : v;
+                setAiCity(next);
+                if (next) setCitySlug(next);
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Şehir (opsiyonel)" />
@@ -211,7 +244,11 @@ export function ArticleForm({
         </Button>
       </div>
 
-      <form action={action} className="space-y-6 rounded-lg border p-6">
+      <form
+        onSubmit={handleSave}
+        className="space-y-6 rounded-lg border p-6"
+      >
+        <input type="hidden" name="content" value={content} />
         <ArticleImageGallery
           images={articleImages}
           coverImage={coverImage}
@@ -273,7 +310,6 @@ export function ArticleForm({
           ) : (
             <Textarea
               id="content"
-              name="content"
               rows={18}
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -354,16 +390,22 @@ export function ArticleForm({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="is_published"
+        <label className="flex cursor-pointer items-center gap-2">
+          <input
+            type="checkbox"
             name="is_published"
             defaultChecked={defaultValues.is_published ?? false}
+            className="size-4 rounded border border-input"
           />
-          <Label htmlFor="is_published">Yayında (blog ve şehir rehberi)</Label>
-        </div>
+          <span className="text-sm font-medium">
+            Yayında (blog ve şehir rehberi)
+          </span>
+        </label>
 
-        <SubmitButton>Kaydet</SubmitButton>
+        <Button type="submit" disabled={savePending}>
+          {savePending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Kaydet
+        </Button>
       </form>
     </div>
   );

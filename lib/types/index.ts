@@ -26,7 +26,7 @@ export type Category = {
   created_at: string;
 };
 
-export type PlaceSource = "osm" | "wikidata" | "google" | "manual";
+export type PlaceSource = "osm" | "wikidata" | "google" | "manual" | "belediye";
 
 export type Place = {
   id: string;

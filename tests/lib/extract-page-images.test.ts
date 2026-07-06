@@ -26,6 +26,19 @@ describe("extractPageImageUrls", () => {
     expect(urls.some((u) => u.includes("logo"))).toBe(false);
   });
 
+  it("extracts srcset and picture sources", () => {
+    const html = `
+      <picture>
+        <source srcset="https://cdn.example.com/hero-800.webp 800w, https://cdn.example.com/hero-1200.webp 1200w" />
+        <img src="https://cdn.example.com/fallback.jpg" />
+      </picture>
+    `;
+
+    const urls = extractPageImageUrls(html, "https://example.com/haber");
+    expect(urls.some((u) => u.includes("hero-1200.webp"))).toBe(true);
+    expect(urls.some((u) => u.includes("fallback.jpg"))).toBe(true);
+  });
+
   it("filters icons and data urls", () => {
     expect(isLikelyContentImage("https://x.com/favicon.ico")).toBe(false);
     expect(isLikelyMetaImage("https://cdn.site.gov.tr/path/to/image")).toBe(true);

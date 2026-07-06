@@ -1,0 +1,12 @@
+{
+  "istanbul": {
+    "baseUrl": "https://www.ibb.istanbul",
+    "listPaths": ["/turizm", "/gezilecek-yerler"]
+  },
+  "afyonkarahisar": {
+    "baseUrl": "https://www.afyon.bel.tr"
+  },
+  "kahramanmaras": {
+    "baseUrl": "https://www.kahramanmaras.bel.tr"
+  }
+}

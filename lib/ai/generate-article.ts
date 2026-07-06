@@ -1,5 +1,8 @@
 import { callGeminiJson } from "@/lib/ai/gemini-client";
 import { fetchUrlContent } from "@/lib/ai/fetch-url-content";
+import {
+  filterImageCandidatesBySize,
+} from "@/lib/ai/extract-page-images";
 import { slugify } from "@/lib/slugify";
 import { uploadArticleImagesFromUrls } from "@/lib/storage/upload-image-from-url";
 
@@ -27,6 +30,7 @@ Kurallar:
 - Kaynak metni kelimesi kelimesine kopyalama; editoryal yeniden yazım yap
 - Wikipedia veya kaynak sitesinden blok alıntı yapma
 - Uydurma açılış saatleri/ücret/bilet stoku iddiası verme; genel ipuçları kullan
+- Harici görsel URL'si ekleme; görseller editör tarafından ayrıca eklenecek
 - 1-2 cümlelik giriş, 3-5 alt başlık, pratik ipuçları ve sonunda "## Editör Notu" bölümü ekle
 Yanıt yalnızca geçerli JSON:
 {"title":"...","excerpt":"...","meta_description":"...","content":"..."}`;
@@ -44,12 +48,12 @@ function injectInlineImages(
   title: string
 ): string {
   if (imageUrls.length === 0) return content;
-  if (/!\[[^\]]*\]\([^)]+\)/.test(content.split("\n").slice(0, 8).join("\n"))) {
+  if (/!\[[^\]]*\]\([^)]+\)/.test(content.split("\n").slice(0, 12).join("\n"))) {
     return content;
   }
 
   const inlineBlocks = imageUrls
-    .slice(1, 3)
+    .slice(1, 5)
     .map((url) => `![${title}](${url})`)
     .join("\n\n");
 
@@ -63,6 +67,23 @@ function injectInlineImages(
 
   lines.splice(firstHeadingIndex + 1, 0, "", inlineBlocks, "");
   return lines.join("\n");
+}
+
+function replaceSourceImageUrls(
+  content: string,
+  sourceUrls: string[],
+  uploadedUrls: string[]
+): string {
+  let result = content;
+
+  for (let i = 0; i < sourceUrls.length && i < uploadedUrls.length; i++) {
+    const from = sourceUrls[i];
+    const to = uploadedUrls[i];
+    if (!from || !to || from === to) continue;
+    result = result.split(from).join(to);
+  }
+
+  return result;
 }
 
 export async function generateArticleDraft(
@@ -86,7 +107,7 @@ export async function generateArticleDraft(
       }
 
       slugHint = slugify(topic);
-      fetchedImages = fetched.imageUrls;
+      fetchedImages = await filterImageCandidatesBySize(fetched.imageUrls);
 
       sourceBlock = [
         `Kaynak URL: ${fetched.url}`,
@@ -132,7 +153,7 @@ export async function generateArticleDraft(
 
   const mediaPromise =
     fetchedImages.length > 0
-      ? uploadArticleImagesFromUrls(fetchedImages, slugHint)
+      ? uploadArticleImagesFromUrls(fetchedImages, slugHint, { maxImages: 8 })
       : Promise.resolve({ coverImage: null, uploadedImages: [] as string[] });
 
   const [parsed, media] = await Promise.all([
@@ -150,8 +171,14 @@ export async function generateArticleDraft(
     throw new Error("Gemini yanıtı geçersiz");
   }
 
-  const contentWithImages = injectInlineImages(
+  const contentWithMappedUrls = replaceSourceImageUrls(
     parsed.content,
+    fetchedImages,
+    media.uploadedImages
+  );
+
+  const contentWithImages = injectInlineImages(
+    contentWithMappedUrls,
     media.uploadedImages,
     parsed.title
   );

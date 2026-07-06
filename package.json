@@ -19,6 +19,8 @@
     "backfill:meta": "tsx --import ./scripts/load-env.ts scripts/backfill-meta.ts",
     "backfill:city-descriptions": "tsx --import ./scripts/load-env.ts scripts/backfill-city-descriptions.ts",
     "scrape:valilik": "tsx --import ./scripts/load-env.ts scripts/scrape-valilik-cities.ts",
+    "scrape:belediye": "tsx --import ./scripts/load-env.ts scripts/scrape-belediye-places.ts",
+    "generate:belediye-sources": "tsx scripts/generate-belediye-sources.ts",
     "db:migrate": "tsx --import ./scripts/load-env.ts scripts/apply-migrations.ts",
     "check:supabase": "tsx --import ./scripts/load-env.ts scripts/check-supabase.ts",
     "build:deploy": "node scripts/prepare-deploy.js"

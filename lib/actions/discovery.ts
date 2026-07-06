@@ -1,10 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { importEventFromUrl } from "@/lib/ai/import-event-from-url";
 import { generateArticleDraft } from "@/lib/ai/generate-article";
-import { getCityName } from "@/lib/cities/lookup";
+import { getCityName, normalizeCitySlug } from "@/lib/cities/lookup";
 import { getDiscoveredContentById } from "@/lib/data/admin-discovery";
 import { uniqueEventSlug } from "@/lib/events/slug";
 import { discoverContent } from "@/lib/discovery/sync";
@@ -132,7 +131,7 @@ export async function importDiscoveryAsEvent(id: string) {
 
   await markDiscoveryImported(id, "cultural_events", data.id);
   revalidateDiscoveryPaths();
-  redirect(`/yonetim/etkinlikler/${data.slug}/duzenle`);
+  return { slug: data.slug };
 }
 
 export async function importDiscoveryAsArticle(id: string) {
@@ -162,7 +161,7 @@ export async function importDiscoveryAsArticle(id: string) {
       excerpt: draft.excerpt,
       content: draft.content,
       cover_image: draft.cover_image,
-      city_slug: item.city_slug,
+      city_slug: normalizeCitySlug(item.city_slug),
       meta_description: draft.meta_description,
       is_published: false,
       updated_at: new Date().toISOString(),
@@ -174,5 +173,5 @@ export async function importDiscoveryAsArticle(id: string) {
 
   await markDiscoveryImported(id, "articles", data.id);
   revalidateDiscoveryPaths();
-  redirect(`/yonetim/yazilar/${data.slug}/duzenle`);
+  return { slug: data.slug };
 }

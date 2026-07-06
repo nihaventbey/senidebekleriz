@@ -1,0 +1,651 @@
+[
+  {
+    "slug": "adana",
+    "name": "Adana",
+    "baseUrl": "https://adana.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "adiyaman",
+    "name": "Adıyaman",
+    "baseUrl": "https://adiyaman.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "afyonkarahisar",
+    "name": "Afyonkarahisar",
+    "baseUrl": "https://www.afyon.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "agri",
+    "name": "Ağrı",
+    "baseUrl": "https://agri.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "amasya",
+    "name": "Amasya",
+    "baseUrl": "https://amasya.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "ankara",
+    "name": "Ankara",
+    "baseUrl": "https://ankara.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "antalya",
+    "name": "Antalya",
+    "baseUrl": "https://antalya.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "artvin",
+    "name": "Artvin",
+    "baseUrl": "https://artvin.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "aydin",
+    "name": "Aydın",
+    "baseUrl": "https://aydin.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "balikesir",
+    "name": "Balıkesir",
+    "baseUrl": "https://balikesir.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "bilecik",
+    "name": "Bilecik",
+    "baseUrl": "https://bilecik.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "bingol",
+    "name": "Bingöl",
+    "baseUrl": "https://bingol.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "bitlis",
+    "name": "Bitlis",
+    "baseUrl": "https://bitlis.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "bolu",
+    "name": "Bolu",
+    "baseUrl": "https://bolu.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "burdur",
+    "name": "Burdur",
+    "baseUrl": "https://burdur.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "bursa",
+    "name": "Bursa",
+    "baseUrl": "https://bursa.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "canakkale",
+    "name": "Çanakkale",
+    "baseUrl": "https://canakkale.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "cankiri",
+    "name": "Çankırı",
+    "baseUrl": "https://cankiri.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "corum",
+    "name": "Çorum",
+    "baseUrl": "https://corum.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "denizli",
+    "name": "Denizli",
+    "baseUrl": "https://denizli.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "diyarbakir",
+    "name": "Diyarbakır",
+    "baseUrl": "https://diyarbakir.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "edirne",
+    "name": "Edirne",
+    "baseUrl": "https://edirne.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "elazig",
+    "name": "Elazığ",
+    "baseUrl": "https://elazig.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "erzincan",
+    "name": "Erzincan",
+    "baseUrl": "https://erzincan.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "erzurum",
+    "name": "Erzurum",
+    "baseUrl": "https://erzurum.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "eskisehir",
+    "name": "Eskişehir",
+    "baseUrl": "https://eskisehir.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "gaziantep",
+    "name": "Gaziantep",
+    "baseUrl": "https://gaziantep.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "giresun",
+    "name": "Giresun",
+    "baseUrl": "https://giresun.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "gumushane",
+    "name": "Gümüşhane",
+    "baseUrl": "https://gumushane.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "hakkari",
+    "name": "Hakkari",
+    "baseUrl": "https://hakkari.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "hatay",
+    "name": "Hatay",
+    "baseUrl": "https://hatay.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "isparta",
+    "name": "Isparta",
+    "baseUrl": "https://isparta.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "mersin",
+    "name": "Mersin",
+    "baseUrl": "https://mersin.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "istanbul",
+    "name": "İstanbul",
+    "baseUrl": "https://www.ibb.istanbul",
+    "listPaths": [
+      "/turizm",
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "izmir",
+    "name": "İzmir",
+    "baseUrl": "https://izmir.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "kars",
+    "name": "Kars",
+    "baseUrl": "https://kars.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "kastamonu",
+    "name": "Kastamonu",
+    "baseUrl": "https://kastamonu.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "kayseri",
+    "name": "Kayseri",
+    "baseUrl": "https://kayseri.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "kirklareli",
+    "name": "Kırklareli",
+    "baseUrl": "https://kirklareli.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "kirsehir",
+    "name": "Kırşehir",
+    "baseUrl": "https://kirsehir.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "kocaeli",
+    "name": "Kocaeli",
+    "baseUrl": "https://kocaeli.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "konya",
+    "name": "Konya",
+    "baseUrl": "https://konya.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "kutahya",
+    "name": "Kütahya",
+    "baseUrl": "https://kutahya.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "malatya",
+    "name": "Malatya",
+    "baseUrl": "https://malatya.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "manisa",
+    "name": "Manisa",
+    "baseUrl": "https://manisa.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "kahramanmaras",
+    "name": "Kahramanmaraş",
+    "baseUrl": "https://www.kahramanmaras.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "mardin",
+    "name": "Mardin",
+    "baseUrl": "https://mardin.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "mugla",
+    "name": "Muğla",
+    "baseUrl": "https://mugla.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "mus",
+    "name": "Muş",
+    "baseUrl": "https://mus.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "nevsehir",
+    "name": "Nevşehir",
+    "baseUrl": "https://nevsehir.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "nigde",
+    "name": "Niğde",
+    "baseUrl": "https://nigde.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "ordu",
+    "name": "Ordu",
+    "baseUrl": "https://ordu.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "rize",
+    "name": "Rize",
+    "baseUrl": "https://rize.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "sakarya",
+    "name": "Sakarya",
+    "baseUrl": "https://sakarya.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "samsun",
+    "name": "Samsun",
+    "baseUrl": "https://samsun.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "siirt",
+    "name": "Siirt",
+    "baseUrl": "https://siirt.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "sinop",
+    "name": "Sinop",
+    "baseUrl": "https://sinop.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "sivas",
+    "name": "Sivas",
+    "baseUrl": "https://sivas.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "tekirdag",
+    "name": "Tekirdağ",
+    "baseUrl": "https://tekirdag.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "tokat",
+    "name": "Tokat",
+    "baseUrl": "https://tokat.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "trabzon",
+    "name": "Trabzon",
+    "baseUrl": "https://trabzon.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "tunceli",
+    "name": "Tunceli",
+    "baseUrl": "https://tunceli.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "sanliurfa",
+    "name": "Şanlıurfa",
+    "baseUrl": "https://sanliurfa.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "usak",
+    "name": "Uşak",
+    "baseUrl": "https://usak.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "van",
+    "name": "Van",
+    "baseUrl": "https://van.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "yozgat",
+    "name": "Yozgat",
+    "baseUrl": "https://yozgat.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "zonguldak",
+    "name": "Zonguldak",
+    "baseUrl": "https://zonguldak.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "aksaray",
+    "name": "Aksaray",
+    "baseUrl": "https://aksaray.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "bayburt",
+    "name": "Bayburt",
+    "baseUrl": "https://bayburt.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "karaman",
+    "name": "Karaman",
+    "baseUrl": "https://karaman.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "kirikkale",
+    "name": "Kırıkkale",
+    "baseUrl": "https://kirikkale.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "batman",
+    "name": "Batman",
+    "baseUrl": "https://batman.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "sirnak",
+    "name": "Şırnak",
+    "baseUrl": "https://sirnak.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "bartin",
+    "name": "Bartın",
+    "baseUrl": "https://bartin.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "ardahan",
+    "name": "Ardahan",
+    "baseUrl": "https://ardahan.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "igdir",
+    "name": "Iğdır",
+    "baseUrl": "https://igdir.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "yalova",
+    "name": "Yalova",
+    "baseUrl": "https://yalova.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "karabuk",
+    "name": "Karabük",
+    "baseUrl": "https://karabuk.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "kilis",
+    "name": "Kilis",
+    "baseUrl": "https://kilis.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "osmaniye",
+    "name": "Osmaniye",
+    "baseUrl": "https://osmaniye.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  },
+  {
+    "slug": "duzce",
+    "name": "Düzce",
+    "baseUrl": "https://duzce.bel.tr",
+    "listPaths": [
+      "/gezilecek-yerler"
+    ]
+  }
+]

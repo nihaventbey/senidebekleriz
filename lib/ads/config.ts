@@ -19,6 +19,10 @@ export const AD_SLOT_IDS: Record<string, string> = {
   "place-sidebar": process.env.NEXT_PUBLIC_ADSENSE_SLOT_PLACE_SIDEBAR || "",
   "event-detail-bottom":
     process.env.NEXT_PUBLIC_ADSENSE_SLOT_EVENT_DETAIL_BOTTOM || "",
+  "article-content-top":
+    process.env.NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_CONTENT_TOP || "",
+  "article-content-bottom":
+    process.env.NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_CONTENT_BOTTOM || "",
 };
 
 export function getAdSlotId(slot: string): string | undefined {
