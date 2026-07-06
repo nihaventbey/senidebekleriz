@@ -2,12 +2,9 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { updateAdPlacement, deleteAdPlacement } from "@/lib/actions/admin";
 import { getAdminAdPlacementById } from "@/lib/data/admin";
-import { SubmitButton } from "@/components/admin/submit-button";
+import { AdPlacementForm } from "@/components/admin/ad-placement-form";
 import { ArrowLeft, Trash2 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -46,45 +43,18 @@ export default async function EditAdPlacementPage({
         </form>
       </div>
 
-      <form
+      <AdPlacementForm
         action={updateAdPlacement.bind(null, placement.id)}
-        className="space-y-6 rounded-lg border p-6"
-      >
-        <div className="space-y-2">
-          <Label htmlFor="name">Birim Adı</Label>
-          <Input id="name" name="name" defaultValue={placement.name} required />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="position">Pozisyon</Label>
-          <Input
-            id="position"
-            name="position"
-            defaultValue={placement.position}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="ad_unit_id">Ad Unit ID (AdSense slot ID)</Label>
-          <Input
-            id="ad_unit_id"
-            name="ad_unit_id"
-            defaultValue={placement.ad_unit_id || ""}
-          />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="is_active"
-            name="is_active"
-            defaultChecked={placement.is_active}
-          />
-          <Label htmlFor="is_active">Aktif</Label>
-        </div>
-
-        <SubmitButton>Güncelle</SubmitButton>
-      </form>
+        positionReadOnly
+        defaultValues={{
+          name: placement.name,
+          position: placement.position,
+          ad_unit_id: placement.ad_unit_id,
+          ad_format: placement.ad_format,
+          ad_layout_key: placement.ad_layout_key,
+          is_active: placement.is_active,
+        }}
+      />
     </div>
   );
 }

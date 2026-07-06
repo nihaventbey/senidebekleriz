@@ -15,6 +15,8 @@ import { CookieConsent } from "@/components/layout/cookie-consent";
 import { WebMcpTools } from "@/components/agents/webmcp-tools";
 import { getBrandSettings } from "@/lib/data/site-settings";
 import { buildBrandMetadata } from "@/lib/metadata/brand-metadata";
+import { getActiveAdSlotMap } from "@/lib/data/ad-placements";
+import { AdPlacementsProvider } from "@/components/ads/ad-placements-provider";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -60,6 +62,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const brand = await getBrandSettings();
+  const adSlots = await getActiveAdSlotMap();
 
   return (
     <html
@@ -75,10 +78,12 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col bg-background">
         <GoogleTagManagerNoScript />
         <SearchProvider>
-          <Header brand={brand} />
-          <main className="flex-1">{children}</main>
-          <Footer brand={brand} />
-          <CookieConsent />
+          <AdPlacementsProvider slots={adSlots}>
+            <Header brand={brand} />
+            <main className="flex-1">{children}</main>
+            <Footer brand={brand} />
+            <CookieConsent />
+          </AdPlacementsProvider>
         </SearchProvider>
         <div id="search-portal" />
         <AppToaster />

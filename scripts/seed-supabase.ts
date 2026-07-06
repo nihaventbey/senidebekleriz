@@ -18,14 +18,13 @@ const categories = [
   { name: "Parklar", slug: "parklar", icon: "TreePine", color: "#10B981", is_active: true },
 ];
 
-const adPlacements = [
-  { name: "Header Banner", position: "header", is_active: true },
-  { name: "Hero Altı", position: "hero-bottom", is_active: true },
-  { name: "Liste Arası", position: "list-inline", is_active: true },
-  { name: "İçerik İçi", position: "content-inline", is_active: true },
-  { name: "Sidebar", position: "sidebar", is_active: true },
-  { name: "Footer Öncesi", position: "footer-top", is_active: true },
-];
+import { AD_SLOT_OPTIONS } from "../lib/ads/slots";
+
+const adPlacements = AD_SLOT_OPTIONS.map((option) => ({
+  name: option.label,
+  position: option.position,
+  is_active: true,
+}));
 
 async function seedCities() {
   const cityData = turkeyCities.map((c) => ({

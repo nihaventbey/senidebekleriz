@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { hasAdConfig, getAdSlotId, ADSENSE_CLIENT_ID } from "@/lib/ads/config";
+import { usePathname } from "next/navigation";
+import {
+  ADSENSE_CLIENT_ID,
+  getAdSlotId,
+  hasAdConfig,
+} from "@/lib/ads/config";
+import { useAdPlacement } from "@/components/ads/ad-placements-provider";
 
 type AdBannerProps = {
   slot: string;
@@ -10,8 +16,11 @@ type AdBannerProps = {
 };
 
 export function AdBanner({ slot, className, style }: AdBannerProps) {
+  const pathname = usePathname();
   const insRef = useRef<HTMLModElement>(null);
-  const adSlotId = getAdSlotId(slot);
+  const placement = useAdPlacement(slot);
+  const envSlotId = getAdSlotId(slot);
+  const adSlotId = placement?.adUnitId || envSlotId;
   const isConfigured = hasAdConfig() && Boolean(adSlotId);
 
   useEffect(() => {
@@ -22,13 +31,16 @@ export function AdBanner({ slot, className, style }: AdBannerProps) {
       win.adsbygoogle = win.adsbygoogle || [];
       win.adsbygoogle.push({});
     } catch {
-      // Ignore AdSense errors in development
+      // Ad blocker veya AdSense henüz hazır değil
     }
-  }, [isConfigured]);
+  }, [isConfigured, adSlotId, pathname]);
 
   if (!isConfigured) {
     return null;
   }
+
+  const adFormat = placement?.adFormat || "auto";
+  const isFluid = adFormat === "fluid";
 
   return (
     <ins
@@ -37,8 +49,11 @@ export function AdBanner({ slot, className, style }: AdBannerProps) {
       style={style || { display: "block" }}
       data-ad-client={ADSENSE_CLIENT_ID}
       data-ad-slot={adSlotId}
-      data-ad-format="auto"
-      data-full-width-responsive="true"
+      data-ad-format={adFormat}
+      {...(isFluid && placement?.adLayoutKey
+        ? { "data-ad-layout-key": placement.adLayoutKey }
+        : {})}
+      {...(!isFluid ? { "data-full-width-responsive": "true" } : {})}
     />
   );
 }

@@ -330,36 +330,61 @@ export async function deletePage(id: string) {
 }
 
 // Ad Placements
-export async function createAdPlacement(formData: FormData) {
-  const data = {
-    name: formData.get("name") as string,
-    position: formData.get("position") as string,
-    ad_unit_id: formData.get("ad_unit_id") as string,
-    is_active: formData.get("is_active") === "on",
+function parseAdPlacementForm(formData: FormData) {
+  const adUnitId = (formData.get("ad_unit_id") as string)?.trim() || null;
+  const adFormat = (formData.get("ad_format") as string)?.trim() || "auto";
+  const adLayoutKey = (formData.get("ad_layout_key") as string)?.trim() || null;
+
+  return {
+    name: (formData.get("name") as string).trim(),
+    position: (formData.get("position") as string).trim(),
+    ad_unit_id: adUnitId,
+    ad_format: adFormat,
+    ad_layout_key: adLayoutKey,
+    is_active: formData.has("is_active"),
   };
+}
 
-  const { error } = await supabaseAdmin.from("ad_placements").insert(data);
-  if (error) throw new Error(error.message);
-
+function revalidateAdPaths() {
+  revalidatePath("/", "layout");
   revalidatePath("/yonetim/reklamlar");
-  redirect("/yonetim/reklamlar");
 }
 
 export async function updateAdPlacement(id: string, formData: FormData) {
-  const data = {
-    name: formData.get("name") as string,
-    position: formData.get("position") as string,
-    ad_unit_id: formData.get("ad_unit_id") as string,
-    is_active: formData.get("is_active") === "on",
-  };
+  const data = parseAdPlacementForm(formData);
 
-  const { error } = await supabaseAdmin
+  let { error } = await supabaseAdmin
     .from("ad_placements")
     .update(data)
     .eq("id", id);
+
+  if (error?.message?.includes("ad_format")) {
+    const { ad_format: _f, ad_layout_key: _k, ...basic } = data;
+    ({ error } = await supabaseAdmin
+      .from("ad_placements")
+      .update(basic)
+      .eq("id", id));
+  }
+
   if (error) throw new Error(error.message);
 
-  revalidatePath("/yonetim/reklamlar");
+  revalidateAdPaths();
+  redirect("/yonetim/reklamlar");
+}
+
+export async function createAdPlacement(formData: FormData) {
+  const data = parseAdPlacementForm(formData);
+
+  let { error } = await supabaseAdmin.from("ad_placements").insert(data);
+
+  if (error?.message?.includes("ad_format")) {
+    const { ad_format: _f, ad_layout_key: _k, ...basic } = data;
+    ({ error } = await supabaseAdmin.from("ad_placements").insert(basic));
+  }
+
+  if (error) throw new Error(error.message);
+
+  revalidateAdPaths();
   redirect("/yonetim/reklamlar");
 }
 
@@ -370,5 +395,5 @@ export async function deleteAdPlacement(id: string) {
     .eq("id", id);
   if (error) throw new Error(error.message);
 
-  revalidatePath("/yonetim/reklamlar");
+  revalidateAdPaths();
 }

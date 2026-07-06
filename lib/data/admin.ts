@@ -414,6 +414,8 @@ export type AdminAdPlacementData = {
   name: string;
   position: string;
   ad_unit_id: string | null;
+  ad_format: string | null;
+  ad_layout_key: string | null;
   is_active: boolean;
 };
 
@@ -436,6 +438,8 @@ export async function getAdminAdPlacementById(
     name: data.name,
     position: data.position,
     ad_unit_id: data.ad_unit_id,
+    ad_format: data.ad_format,
+    ad_layout_key: data.ad_layout_key,
     is_active: data.is_active ?? true,
   };
 }
@@ -456,6 +460,8 @@ export async function getAdminAdPlacements(): Promise<AdminAdPlacementData[]> {
     name: p.name,
     position: p.position,
     ad_unit_id: p.ad_unit_id,
+    ad_format: p.ad_format,
+    ad_layout_key: p.ad_layout_key,
     is_active: p.is_active ?? true,
   }));
 }
