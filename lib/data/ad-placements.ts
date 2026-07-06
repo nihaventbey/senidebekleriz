@@ -6,6 +6,31 @@ export type AdPlacementConfig = {
   adLayoutKey: string | null;
 };
 
+type AdPlacementRowBasic = {
+  position: string;
+  ad_unit_id: string | null;
+};
+
+type AdPlacementRowFull = AdPlacementRowBasic & {
+  ad_format: string | null;
+  ad_layout_key: string | null;
+};
+
+function toConfig(
+  row: AdPlacementRowBasic,
+  format: string | null = null,
+  layoutKey: string | null = null
+): AdPlacementConfig | null {
+  const unitId = row.ad_unit_id?.trim();
+  if (!unitId) return null;
+
+  return {
+    adUnitId: unitId,
+    adFormat: format,
+    adLayoutKey: layoutKey,
+  };
+}
+
 export async function getActiveAdSlotMap(): Promise<
   Record<string, AdPlacementConfig>
 > {
@@ -15,32 +40,36 @@ export async function getActiveAdSlotMap(): Promise<
     .eq("is_active", true)
     .not("ad_unit_id", "is", null);
 
-  const result =
-    full.error?.message?.includes("ad_format")
-      ? await supabaseAdmin
-          .from("ad_placements")
-          .select("position, ad_unit_id")
-          .eq("is_active", true)
-          .not("ad_unit_id", "is", null)
-      : full;
+  const map: Record<string, AdPlacementConfig> = {};
 
-  if (result.error) {
-    console.error("getActiveAdSlotMap error:", result.error.message);
+  if (full.error?.message?.includes("ad_format")) {
+    const basic = await supabaseAdmin
+      .from("ad_placements")
+      .select("position, ad_unit_id")
+      .eq("is_active", true)
+      .not("ad_unit_id", "is", null);
+
+    if (basic.error) {
+      console.error("getActiveAdSlotMap error:", basic.error.message);
+      return {};
+    }
+
+    for (const row of (basic.data || []) as AdPlacementRowBasic[]) {
+      const config = toConfig(row);
+      if (config) map[row.position] = config;
+    }
+
+    return map;
+  }
+
+  if (full.error) {
+    console.error("getActiveAdSlotMap error:", full.error.message);
     return {};
   }
 
-  const map: Record<string, AdPlacementConfig> = {};
-
-  for (const row of result.data || []) {
-    const unitId = row.ad_unit_id?.trim();
-    if (!unitId) continue;
-
-    map[row.position] = {
-      adUnitId: unitId,
-      adFormat: "ad_format" in row ? (row.ad_format ?? null) : null,
-      adLayoutKey:
-        "ad_layout_key" in row ? (row.ad_layout_key ?? null) : null,
-    };
+  for (const row of (full.data || []) as AdPlacementRowFull[]) {
+    const config = toConfig(row, row.ad_format, row.ad_layout_key);
+    if (config) map[row.position] = config;
   }
 
   return map;
