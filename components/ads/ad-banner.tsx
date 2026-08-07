@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   ADSENSE_CLIENT_ID,
@@ -8,6 +8,10 @@ import {
   hasAdConfig,
 } from "@/lib/ads/config";
 import { useAdPlacement } from "@/components/ads/ad-placements-provider";
+import {
+  CONSENT_KEY,
+  getCookieConsent,
+} from "@/components/layout/cookie-consent";
 
 type AdBannerProps = {
   slot: string;
@@ -21,7 +25,23 @@ export function AdBanner({ slot, className, style }: AdBannerProps) {
   const placement = useAdPlacement(slot);
   const envSlotId = getAdSlotId(slot);
   const adSlotId = placement?.adUnitId || envSlotId;
-  const isConfigured = hasAdConfig() && Boolean(adSlotId);
+  const [consentAccepted, setConsentAccepted] = useState(false);
+  const isConfigured =
+    hasAdConfig() && Boolean(adSlotId) && consentAccepted;
+
+  useEffect(() => {
+    function sync() {
+      setConsentAccepted(getCookieConsent() === "accepted");
+    }
+    sync();
+    window.addEventListener("sdb-cookie-consent-changed", sync);
+    window.addEventListener("storage", (event) => {
+      if (event.key === CONSENT_KEY) sync();
+    });
+    return () => {
+      window.removeEventListener("sdb-cookie-consent-changed", sync);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isConfigured || !insRef.current) return;

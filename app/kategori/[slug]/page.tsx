@@ -10,6 +10,11 @@ import { AdBanner } from "@/components/ads/ad-banner";
 import { getPlacesByCategory } from "@/lib/data/places";
 import { PlaceImageComponent } from "@/components/place/place-image";
 import { CategoryHero } from "@/components/categories/category-hero";
+import { shouldIndexCategoryHub } from "@/lib/content/hub-quality";
+import {
+  getPlaceCardExcerpt,
+  shouldIndexPlace,
+} from "@/lib/content/place-quality";
 
 export async function generateStaticParams() {
   const categories = await getAllCategories();
@@ -25,9 +30,27 @@ export async function generateMetadata({
   const category = await getCategoryBySlug(slug);
   if (!category) return {};
 
+  const places = await getPlacesByCategory(slug);
+  const indexablePlaceCount = places.filter((place) =>
+    shouldIndexPlace({
+      description: place.description,
+      source: place.source,
+      is_featured: place.is_featured,
+      cover_image: place.cover_image,
+    })
+  ).length;
+  const indexable = shouldIndexCategoryHub({
+    placeCount: places.length,
+    indexablePlaceCount,
+    descriptionLength: category.description?.length ?? 0,
+  });
+
   return {
     title: `${category.name} Mekanları`,
     description: `Türkiye'deki ${category.name.toLowerCase()} mekanlarını keşfedin.`,
+    robots: indexable
+      ? { index: true, follow: true }
+      : { index: false, follow: true },
   };
 }
 
@@ -45,6 +68,19 @@ export default async function CategoryPage({
 
   const places = await getPlacesByCategory(slug);
   const cover = await resolveCategoryCoverImage(slug);
+  const indexablePlaceCount = places.filter((place) =>
+    shouldIndexPlace({
+      description: place.description,
+      source: place.source,
+      is_featured: place.is_featured,
+      cover_image: place.cover_image,
+    })
+  ).length;
+  const indexable = shouldIndexCategoryHub({
+    placeCount: places.length,
+    indexablePlaceCount,
+    descriptionLength: category.description?.length ?? 0,
+  });
 
   return (
     <div>
@@ -56,13 +92,15 @@ export default async function CategoryPage({
       />
 
       <div className="container mx-auto px-4 pb-12">
-        <div className="mb-8">
-          <AdBanner
-            slot="category-content-top"
-            className="min-h-[90px] w-full"
-            style={{ display: "block", minHeight: "90px", width: "100%" }}
-          />
-        </div>
+        {indexable && (
+          <div className="mb-8">
+            <AdBanner
+              slot="category-content-top"
+              className="min-h-[90px] w-full"
+              style={{ display: "block", minHeight: "90px", width: "100%" }}
+            />
+          </div>
+        )}
 
         {places.length === 0 ? (
           <p className="text-muted-foreground">
@@ -70,53 +108,54 @@ export default async function CategoryPage({
           </p>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {places.map((place, index) => (
-            <div key={place.slug}>
-              <Link href={`/mekan/${place.slug}`}>
-                <Card className="h-full overflow-hidden transition-shadow hover:shadow-lg">
-                  <div className="relative h-40 w-full bg-muted">
-                    {place.is_featured && (
-                      <Badge className="absolute left-3 top-3 z-10">Öne Çıkan</Badge>
-                    )}
-                    <PlaceImageComponent
-                      wikidataId={place.wikidata_id}
-                      placeName={place.name}
-                      cityName={place.cityName}
-                      coverImage={place.cover_image}
-                      className="h-full w-full"
+            {places.map((place, index) => (
+              <div key={place.slug}>
+                <Link href={`/mekan/${place.slug}`}>
+                  <Card className="h-full overflow-hidden transition-shadow hover:shadow-lg">
+                    <div className="relative h-40 w-full bg-muted">
+                      {place.is_featured && (
+                        <Badge className="absolute left-3 top-3 z-10">
+                          Öne Çıkan
+                        </Badge>
+                      )}
+                      <PlaceImageComponent
+                        wikidataId={place.wikidata_id}
+                        placeName={place.name}
+                        cityName={place.cityName}
+                        coverImage={place.cover_image}
+                        className="h-full w-full"
+                      />
+                    </div>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">{place.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="line-clamp-3 text-sm text-muted-foreground">
+                        {getPlaceCardExcerpt(place.name, place.description)}
+                      </p>
+                      <div className="mt-4 flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="h-3 w-3" />
+                        {place.cityName}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+
+                {indexable && (index + 1) % 6 === 0 && (
+                  <div className="mt-6">
+                    <AdBanner
+                      slot="category-list-inline"
+                      className="min-h-[250px] w-full"
+                      style={{
+                        display: "block",
+                        minHeight: "250px",
+                        width: "100%",
+                      }}
                     />
                   </div>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">{place.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="line-clamp-3 text-sm text-muted-foreground">
-                      {place.description ||
-                        `${place.name}, ${place.cityName}'da görülmeye değer bir mekandır.`}
-                    </p>
-                    <div className="mt-4 flex items-center gap-1 text-xs text-muted-foreground">
-                      <MapPin className="h-3 w-3" />
-                      {place.cityName}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-
-              {(index + 1) % 6 === 0 && (
-                <div className="mt-6">
-                  <AdBanner
-                    slot="category-list-inline"
-                    className="min-h-[250px] w-full"
-                    style={{
-                      display: "block",
-                      minHeight: "250px",
-                      width: "100%",
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>

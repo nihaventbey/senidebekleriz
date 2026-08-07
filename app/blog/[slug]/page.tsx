@@ -11,6 +11,9 @@ import { ArticleHero } from "@/components/blog/article-hero";
 import { AdBanner } from "@/components/ads/ad-banner";
 import { resolveArticleCoverImage } from "@/lib/articles/cover-from-content";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function generateStaticParams() {
   const slugs = await getAllArticleSlugs();
   return slugs.map((slug) => ({ slug }));

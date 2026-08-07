@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { shouldIndexPlace } from "@/lib/content/place-quality";
+import { hasEditorialContent } from "@/lib/content/place-quality";
 
 const MIN_DESCRIPTION_LENGTH = 150;
 
@@ -51,10 +51,11 @@ export async function getContentGaps(): Promise<ContentGaps> {
     }
     if (
       !hasCover &&
-      shouldIndexPlace({
+      hasEditorialContent({
         description: place.description,
         source: place.source,
         is_featured: place.is_featured,
+        cover_image: place.cover_image,
       })
     ) {
       placesIndexableWithoutCover++;

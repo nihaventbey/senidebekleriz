@@ -280,6 +280,7 @@ async function getPlacesByContentGap(
       description: p.description,
       source: p.source,
       is_featured: p.is_featured,
+      cover_image: p.cover_image,
     });
   });
 

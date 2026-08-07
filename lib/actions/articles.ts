@@ -6,6 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { slugify } from "@/lib/slugify";
 import { getAdminArticleBySlug } from "@/lib/data/admin-articles";
 import { isValidCitySlug } from "@/lib/cities/lookup";
+import { evaluateArticleContent } from "@/lib/content/editorial-checklist";
 
 export type ArticleActionResult = {
   success: true;
@@ -24,6 +25,19 @@ function articleFromForm(formData: FormData) {
   }
   if (!content.trim()) {
     throw new Error("İçerik boş olamaz");
+  }
+
+  if (isPublished) {
+    const evaluation = evaluateArticleContent(content);
+    if (!evaluation.isReady) {
+      const failed = evaluation.checks
+        .filter((c) => !c.passed)
+        .map((c) => c.hint || c.label)
+        .join("; ");
+      throw new Error(
+        `Yayın için içerik hazır değil (${evaluation.wordCount} kelime): ${failed}`
+      );
+    }
   }
 
   const resolvedCitySlug =

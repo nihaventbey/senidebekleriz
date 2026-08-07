@@ -5,7 +5,10 @@ export const dynamic = "force-static";
 export async function GET() {
   const baseUrl = getSiteUrl();
 
-  const body = `User-agent: *
+  const body = `User-agent: Mediapartners-Google
+Allow: /
+
+User-agent: *
 Allow: /
 Disallow: /yonetim
 Disallow: /yonetim/

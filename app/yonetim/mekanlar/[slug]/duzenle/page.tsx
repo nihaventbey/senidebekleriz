@@ -49,8 +49,15 @@ export default async function EditPlacePage({
     description: place.description,
     source: place.source,
     is_featured: place.is_featured,
+    cover_image: place.cover_image,
   });
-  const needsCover = isIndexable && !place.cover_image;
+  const needsCover =
+    !place.cover_image &&
+    Boolean(
+      place.description &&
+        place.description.trim().split(/\s+/).filter(Boolean).length >= 150 &&
+        (place.source === "manual" || place.source === "belediye")
+    );
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">

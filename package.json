@@ -12,6 +12,7 @@
     "fetch:istanbul": "tsx --import ./scripts/load-env.ts scripts/fetch-istanbul.ts",
     "seed": "tsx --import ./scripts/load-env.ts scripts/seed-supabase.ts",
     "seed:admin": "tsx --import ./scripts/load-env.ts scripts/seed-admin.ts",
+    "seed:articles": "tsx --import ./scripts/load-env.ts scripts/seed-30-articles.ts",
     "fetch-places": "tsx --import ./scripts/load-env.ts scripts/fetch-places.ts",
     "enrich": "tsx --import ./scripts/load-env.ts scripts/enrich-wikipedia.ts",
     "enrich:city-covers": "tsx --import ./scripts/load-env.ts scripts/enrich-city-covers.ts",

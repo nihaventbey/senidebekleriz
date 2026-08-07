@@ -302,7 +302,7 @@ export async function getIndexablePlacesForSitemap(): Promise<
 > {
   const { data, error } = await supabaseAdmin
     .from("places")
-    .select("slug, updated_at, description, source, is_featured")
+    .select("slug, updated_at, description, source, is_featured, cover_image")
     .eq("is_active", true);
 
   if (error) {
@@ -316,10 +316,61 @@ export async function getIndexablePlacesForSitemap(): Promise<
         description: place.description,
         source: place.source,
         is_featured: place.is_featured,
+        cover_image: place.cover_image,
       })
     )
     .map((place) => ({
       slug: place.slug,
       updatedAt: place.updated_at,
     }));
+}
+
+export async function countIndexablePlacesByCitySlug(
+  citySlug: string
+): Promise<number> {
+  const places = await getPlacesByCity(citySlug);
+  return places.filter((place) =>
+    shouldIndexPlace({
+      description: place.description,
+      source: place.source,
+      is_featured: place.is_featured,
+      cover_image: place.cover_image,
+    })
+  ).length;
+}
+
+export async function getIndexablePlaceCountsByCity(): Promise<
+  Map<string, number>
+> {
+  const { data, error } = await supabaseAdmin
+    .from("places")
+    .select("description, source, is_featured, cover_image, cities!inner(slug)")
+    .eq("is_active", true);
+
+  const counts = new Map<string, number>();
+  if (error) {
+    console.error("getIndexablePlaceCountsByCity error:", error.message);
+    return counts;
+  }
+
+  for (const row of data || []) {
+    const city = Array.isArray(row.cities)
+      ? (row.cities[0] as { slug: string } | undefined)
+      : (row.cities as { slug: string } | undefined);
+    const citySlug = city?.slug;
+    if (!citySlug) continue;
+    if (
+      !shouldIndexPlace({
+        description: row.description,
+        source: row.source,
+        is_featured: row.is_featured,
+        cover_image: row.cover_image,
+      })
+    ) {
+      continue;
+    }
+    counts.set(citySlug, (counts.get(citySlug) || 0) + 1);
+  }
+
+  return counts;
 }

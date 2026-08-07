@@ -1,0 +1,52 @@
+import fs from "fs";
+import path from "path";
+
+const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background Shield/Rounded Box -->
+  <rect x="16" y="16" width="480" height="480" rx="100" fill="url(#bgGrad)" stroke="url(#goldGrad)" stroke-width="12" />
+  
+  <!-- Monument Column / Compass Star Icon -->
+  <g transform="translate(256, 230) scale(1.1)">
+    <!-- Column Top Arch -->
+    <path d="M-80,-60 Q0,-120 80,-60 L70,-40 L-70,-40 Z" fill="url(#goldGrad)" />
+    
+    <!-- Pillars -->
+    <rect x="-65" y="-30" width="22" height="130" rx="6" fill="#f8fafc" opacity="0.95" />
+    <rect x="-25" y="-30" width="22" height="130" rx="6" fill="#f8fafc" opacity="0.95" />
+    <rect x="15" y="-30" width="22" height="130" rx="6" fill="#f8fafc" opacity="0.95" />
+    <rect x="55" y="-30" width="22" height="130" rx="6" fill="#f8fafc" opacity="0.95" />
+    
+    <!-- Base -->
+    <rect x="-85" y="100" width="170" height="24" rx="6" fill="url(#goldGrad)" />
+    <rect x="-100" y="124" width="200" height="20" rx="6" fill="#f8fafc" opacity="0.9" />
+  </g>
+
+  <!-- Glowing Sun / Star Compass -->
+  <circle cx="256" cy="100" r="28" fill="url(#goldGrad)" />
+  <path d="M256,55 L260,85 L290,100 L260,115 L256,145 L252,115 L222,100 L252,85 Z" fill="#ffffff" />
+</svg>`;
+
+async function makeFavicons() {
+  const publicDir = path.join(process.cwd(), "public");
+  const appDir = path.join(process.cwd(), "app");
+
+  fs.writeFileSync(path.join(publicDir, "favicon.svg"), svgContent);
+  fs.writeFileSync(path.join(publicDir, "icon.svg"), svgContent);
+  fs.writeFileSync(path.join(appDir, "icon.svg"), svgContent);
+
+  console.log("✅ Custom brand SVG favicons created in public/ and app/");
+}
+
+makeFavicons().catch(console.error);

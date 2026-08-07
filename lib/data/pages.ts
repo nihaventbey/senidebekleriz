@@ -57,6 +57,23 @@ export async function getCityGuidePage(
   return getPageBySlug(`rehber-${citySlug}`);
 }
 
+export async function getCityGuidePageSlugs(): Promise<string[]> {
+  const { data, error } = await supabaseAdmin
+    .from("pages")
+    .select("slug")
+    .eq("is_published", true)
+    .like("slug", "rehber-%");
+
+  if (error) {
+    console.error("getCityGuidePageSlugs error:", error.message);
+    return [];
+  }
+
+  return (data || [])
+    .map((row) => row.slug.replace(/^rehber-/, ""))
+    .filter(Boolean);
+}
+
 export async function getAllPageSlugs(): Promise<string[]> {
   const pages = await getAllPages();
   return pages.map((page) => page.slug);

@@ -6,11 +6,7 @@ import { Footer } from "@/components/layout/footer";
 import { SearchProvider } from "@/components/layout/search-provider";
 import { AppToaster } from "@/components/ui/sonner";
 import { AdSenseScript } from "@/components/ads/adsense-script";
-import { GoogleAnalytics } from "@/components/analytics/google-analytics";
-import {
-  GoogleTagManager,
-  GoogleTagManagerNoScript,
-} from "@/components/analytics/google-tag-manager";
+import { ConsentAwareAnalytics } from "@/components/analytics/consent-aware-analytics";
 import { CookieConsent } from "@/components/layout/cookie-consent";
 import { WebMcpTools } from "@/components/agents/webmcp-tools";
 import { getBrandSettings } from "@/lib/data/site-settings";
@@ -42,13 +38,17 @@ const BASE_METADATA: Metadata = {
     "İzmir",
     "Ankara",
   ],
-  ...(process.env.GOOGLE_SITE_VERIFICATION
-    ? {
-        verification: {
-          google: process.env.GOOGLE_SITE_VERIFICATION,
-        },
-      }
-    : {}),
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico" },
+    ],
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || "a4LojGVvce1ZqWaOA-v7vrTrPWGafr09UL2xkZiE-zw",
+  },
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -72,11 +72,9 @@ export default async function RootLayout({
     >
       <head>
         <AdSenseScript />
-        <GoogleAnalytics />
-        <GoogleTagManager />
       </head>
       <body className="min-h-full flex flex-col bg-background">
-        <GoogleTagManagerNoScript />
+        <ConsentAwareAnalytics />
         <SearchProvider>
           <AdPlacementsProvider slots={adSlots}>
             <Header brand={brand} />

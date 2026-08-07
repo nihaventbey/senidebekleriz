@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, ChevronDown, Loader2 } from "lucide-react";
 import { PlaceImageComponent } from "@/components/place/place-image";
+import { getPlaceCardExcerpt } from "@/lib/content/place-quality";
 
 type Place = {
   id: string;
@@ -77,8 +78,7 @@ export function PlacesLoadMore({ citySlug, cityName, initialCount, totalCount }:
                 </CardHeader>
                 <CardContent>
                   <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-                    {place.description ||
-                      `${place.name}, ${cityName}'da görülmeye değer bir mekandır.`}
+                    {getPlaceCardExcerpt(place.name, place.description)}
                   </p>
                   <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
                     <MapPin className="h-3 w-3" />

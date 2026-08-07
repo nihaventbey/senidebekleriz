@@ -153,8 +153,7 @@ export default async function HomePage() {
                   </CardHeader>
                   <CardContent>
                     <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-                      {place.description ||
-                        `${place.name}, ${place.cityName}'da görülmeye değer bir mekandır.`}
+                      {place.description?.trim() || place.name}
                     </p>
                   </CardContent>
                 </Card>

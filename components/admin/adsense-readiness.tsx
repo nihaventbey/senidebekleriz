@@ -16,6 +16,9 @@ type CheckItem = {
 };
 
 export function AdSenseReadiness({ stats }: Props) {
+  const coverPassed =
+    stats.indexablePlaces >= 200 && stats.indexablePlacesWithoutCover === 0;
+
   const checks: CheckItem[] = [
     {
       label: "En az 30 yayında blog yazısı",
@@ -30,12 +33,16 @@ export function AdSenseReadiness({ stats }: Props) {
       href: "/yonetim/mekanlar",
     },
     {
-      label: "İndekslenebilir mekanların kapak görseli",
-      passed: stats.indexablePlacesWithoutCover === 0,
+      label: "Editöryal mekanların kapak görseli",
+      passed: coverPassed,
       detail:
-        stats.indexablePlacesWithoutCover === 0
-          ? "Tamam"
-          : `${stats.indexablePlacesWithoutCover} mekan kapaksız`,
+        stats.indexablePlacesWithoutCover > 0
+          ? `${stats.indexablePlacesWithoutCover} mekan kapaksız`
+          : stats.indexablePlaces === 0
+            ? "Önce premium mekan üretin"
+            : coverPassed
+              ? "Tamam"
+              : `${stats.indexablePlaces} / 200 (kapak tamam)`,
       href: "/yonetim/mekanlar?gap=no-cover",
     },
     {
@@ -46,8 +53,8 @@ export function AdSenseReadiness({ stats }: Props) {
     },
     {
       label: "Çerez onay banner'ı",
-      passed: true,
-      detail: "Aktif",
+      passed: stats.hasCookieConsent,
+      detail: stats.hasCookieConsent ? "Aktif (kabul/red)" : "Eksik",
     },
     {
       label: "Gizlilik politikası",
@@ -56,9 +63,20 @@ export function AdSenseReadiness({ stats }: Props) {
       href: "/yonetim/sayfalar",
     },
     {
-      label: "Sitemap (ince mekanlar hariç)",
-      passed: true,
-      detail: `${stats.indexablePlaces} mekan + blog`,
+      label: "Hakkımızda sayfası",
+      passed: stats.hasAboutPage,
+      detail: stats.hasAboutPage ? "Yayında" : "Eksik",
+      href: "/yonetim/sayfalar",
+    },
+    {
+      label: "ads.txt dosyası",
+      passed: stats.hasAdsTxt,
+      detail: stats.hasAdsTxt ? "public/ads.txt" : "Eksik",
+    },
+    {
+      label: "Sitemap ince mekanları hariç tutar",
+      passed: stats.sitemapExcludesThinPlaces,
+      detail: `${stats.indexablePlaces} premium mekan`,
     },
     {
       label: "Search Console doğrulama",
@@ -115,10 +133,14 @@ export function AdSenseReadiness({ stats }: Props) {
           ))}
         </ul>
         {!ready && (
-          <p className="mt-4 text-xs text-muted-foreground">
-            Önce özgün blog yazıları ve premium mekan açıklamaları üretin.
-            İnce OSM/Wikipedia sayfaları otomatik noindex&apos;lenir.
-          </p>
+          <div className="mt-4 rounded-lg bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
+            <p className="font-semibold">⚠️ AdSense Onay İpuçları:</p>
+            <ul className="mt-1 space-y-1 list-disc pl-4 text-muted-foreground">
+              <li>Özgün blog yazısı sayınızı en az 30&apos;a ve kaliteli mekan sayınızı en az 200&apos;e çıkarın.</li>
+              <li>Google Search Console&apos;a kaydolun ve <code className="font-mono text-xs">sitemap.xml</code> gönderin.</li>
+              <li>Google&apos;da <code className="font-mono text-xs">site:senidebekleriz.com</code> yazarak en az 30+ sayfanın indekslendiğini doğruladıktan sonra başvuru yapın.</li>
+            </ul>
+          </div>
         )}
       </CardContent>
     </Card>

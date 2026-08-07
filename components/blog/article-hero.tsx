@@ -43,6 +43,7 @@ export function ArticleHero({
             src={coverUrl!}
             alt=""
             className="absolute inset-0 h-full w-full object-cover"
+            referrerPolicy="no-referrer"
             onError={() => setImageFailed(true)}
           />
           <div

@@ -6,7 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, ArrowRight } from "lucide-react";
 import { getCityBySlug, getAllCities } from "@/lib/data/cities";
 import { AdBanner } from "@/components/ads/ad-banner";
-import { getPlacesByCity } from "@/lib/data/places";
+import {
+  countIndexablePlacesByCitySlug,
+  getPlacesByCity,
+} from "@/lib/data/places";
 import { getCityGuidePage } from "@/lib/data/pages";
 import { getCityArticle } from "@/lib/data/articles";
 import { renderMarkdown } from "@/lib/markdown";
@@ -15,6 +18,8 @@ import { CityMap } from "@/components/maps/city-map-wrapper";
 import { JsonLd } from "@/components/seo/json-ld";
 import { PlaceImageComponent } from "@/components/place/place-image";
 import { PlacesLoadMore } from "@/components/place/places-load-more";
+import { shouldIndexCityHub } from "@/lib/content/hub-quality";
+import { getPlaceCardExcerpt } from "@/lib/content/place-quality";
 
 export async function generateStaticParams() {
   const cities = await getAllCities();
@@ -30,6 +35,16 @@ export async function generateMetadata({
   const city = await getCityBySlug(slug);
   if (!city) return {};
 
+  const [cityArticle, cityGuidePage, indexablePlaceCount] = await Promise.all([
+    getCityArticle(slug),
+    getCityGuidePage(slug),
+    countIndexablePlacesByCitySlug(slug),
+  ]);
+  const indexable = shouldIndexCityHub({
+    hasGuide: Boolean(cityArticle || cityGuidePage),
+    indexablePlaceCount,
+  });
+
   const title = city.metaTitle || `${city.name} Gezilecek Yerler`;
   const description =
     city.metaDescription ||
@@ -40,6 +55,9 @@ export async function generateMetadata({
   return {
     title,
     description,
+    robots: indexable
+      ? { index: true, follow: true }
+      : { index: false, follow: true },
     openGraph: {
       title,
       description,
@@ -62,10 +80,16 @@ export default async function CityPage({
   }
 
   const allPlaces = await getPlacesByCity(slug);
-  const [cityArticle, cityGuidePage] = await Promise.all([
+  const [cityArticle, cityGuidePage, indexablePlaceCount] = await Promise.all([
     getCityArticle(slug),
     getCityGuidePage(slug),
+    countIndexablePlacesByCitySlug(slug),
   ]);
+  const hasGuide = Boolean(cityArticle || cityGuidePage);
+  const indexable = shouldIndexCityHub({
+    hasGuide,
+    indexablePlaceCount,
+  });
   const firstPage = allPlaces.slice(0, 20);
   const hasMore = allPlaces.length > 20;
 
@@ -90,7 +114,6 @@ export default async function CityPage({
     <div>
       <JsonLd data={cityJsonLd} />
 
-      {/* Hero */}
       <section className="relative overflow-hidden bg-hero-gradient py-10 sm:py-12 md:py-16">
         {city.coverImage && (
           <>
@@ -107,10 +130,14 @@ export default async function CityPage({
             <Badge variant="secondary" className="mb-4">
               {city.region}
             </Badge>
-            <h1 className={`text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl ${city.coverImage ? "text-white" : ""}`}>
+            <h1
+              className={`text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl ${city.coverImage ? "text-white" : ""}`}
+            >
               {city.name}
             </h1>
-            <p className={`mt-4 text-base md:text-lg ${city.coverImage ? "text-white/90" : "text-muted-foreground"}`}>
+            <p
+              className={`mt-4 text-base md:text-lg ${city.coverImage ? "text-white/90" : "text-muted-foreground"}`}
+            >
               {city.description}
             </p>
           </div>
@@ -118,7 +145,6 @@ export default async function CityPage({
       </section>
 
       <div className="container mx-auto px-4 py-10">
-        {/* Harita */}
         {allPlaces.length > 0 && (
           <section className="mb-10">
             <h2 className="mb-4 text-xl font-bold tracking-tight">
@@ -128,14 +154,15 @@ export default async function CityPage({
           </section>
         )}
 
-        {/* Ad */}
-        <div className="mb-10">
-          <AdBanner
-            slot="city-content-top"
-            className="min-h-[90px] w-full"
-            style={{ display: "block", minHeight: "90px", width: "100%" }}
-          />
-        </div>
+        {indexable && (
+          <div className="mb-10">
+            <AdBanner
+              slot="city-content-top"
+              className="min-h-[90px] w-full"
+              style={{ display: "block", minHeight: "90px", width: "100%" }}
+            />
+          </div>
+        )}
 
         {(cityArticle || cityGuidePage) && (
           <section className="mb-10 rounded-2xl border bg-card p-6 md:p-8">
@@ -179,11 +206,10 @@ export default async function CityPage({
           </section>
         )}
 
-        {/* Mekan Listesi */}
         <section>
           <div className="mb-6 flex items-end justify-between">
             <h2 className="text-xl font-bold tracking-tight">
-              {city.name}'da Gezilecek Yerler
+              {city.name}&apos;da Gezilecek Yerler
             </h2>
             <span className="text-sm text-muted-foreground">
               {allPlaces.length} mekan
@@ -202,7 +228,9 @@ export default async function CityPage({
                     <Card className="card-hover h-full border-border/60 overflow-hidden">
                       <div className="relative h-40 w-full bg-muted">
                         {place.is_featured && (
-                          <Badge className="absolute left-3 top-3 z-10">Öne Çıkan</Badge>
+                          <Badge className="absolute left-3 top-3 z-10">
+                            Öne Çıkan
+                          </Badge>
                         )}
                         <PlaceImageComponent
                           wikidataId={place.wikidata_id}
@@ -213,14 +241,11 @@ export default async function CityPage({
                         />
                       </div>
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-base">
-                          {place.name}
-                        </CardTitle>
+                        <CardTitle className="text-base">{place.name}</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-                          {place.description ||
-                            `${place.name}, ${city.name}'da görülmeye değer bir mekandır.`}
+                          {getPlaceCardExcerpt(place.name, place.description)}
                         </p>
                         <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
                           <MapPin className="h-3 w-3" />
@@ -244,7 +269,6 @@ export default async function CityPage({
           )}
         </section>
 
-        {/* Back link */}
         <div className="mt-12">
           <Link
             href="/sehirler"

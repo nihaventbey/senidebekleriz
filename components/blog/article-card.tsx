@@ -25,6 +25,7 @@ export function ArticleCard({ article }: { article: ArticleData }) {
               alt={article.title}
               className="h-full w-full object-cover"
               loading="lazy"
+              referrerPolicy="no-referrer"
             />
           </div>
         )}

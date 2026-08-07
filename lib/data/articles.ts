@@ -98,3 +98,61 @@ export async function getAllArticleSlugs(): Promise<string[]> {
   if (error) return [];
   return (data || []).map((row) => row.slug);
 }
+
+export async function getPublishedCityGuideSlugs(): Promise<string[]> {
+  const { data, error } = await supabaseAdmin
+    .from("articles")
+    .select("city_slug")
+    .eq("is_published", true)
+    .not("city_slug", "is", null);
+
+  if (error) return [];
+  return [
+    ...new Set(
+      (data || [])
+        .map((row) => row.city_slug)
+        .filter((slug): slug is string => Boolean(slug))
+    ),
+  ];
+}
+
+export async function countPublishedArticles(): Promise<number> {
+  const { count, error } = await supabaseAdmin
+    .from("articles")
+    .select("*", { count: "exact", head: true })
+    .eq("is_published", true);
+
+  if (error) return 0;
+  return count ?? 0;
+}
+
+export async function getPublishedArticlesPage(
+  page = 1,
+  pageSize = 24
+): Promise<{ articles: ArticleData[]; total: number; page: number; pageSize: number }> {
+  const safePage = Math.max(1, page);
+  const from = (safePage - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const [{ data, error }, total] = await Promise.all([
+    supabaseAdmin
+      .from("articles")
+      .select("*")
+      .eq("is_published", true)
+      .order("published_at", { ascending: false })
+      .range(from, to),
+    countPublishedArticles(),
+  ]);
+
+  if (error) {
+    console.error("getPublishedArticlesPage error:", error.message);
+    return { articles: [], total: 0, page: safePage, pageSize };
+  }
+
+  return {
+    articles: (data || []).map(mapArticle),
+    total,
+    page: safePage,
+    pageSize,
+  };
+}

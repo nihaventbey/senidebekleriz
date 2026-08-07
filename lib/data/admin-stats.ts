@@ -1,5 +1,10 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { shouldIndexPlace } from "@/lib/content/place-quality";
+import {
+  hasEditorialContent,
+} from "@/lib/content/place-quality";
+import { turkeyCities } from "@/data/turkey-cities";
+import { existsSync } from "fs";
+import { join } from "path";
 
 export type AdminDashboardStats = {
   cities: number;
@@ -28,7 +33,11 @@ export type ContentReadinessStats = {
   citiesWithoutGuide: number;
   missingGuideCities: string[];
   hasPrivacyPage: boolean;
+  hasAboutPage: boolean;
   hasSiteVerification: boolean;
+  hasCookieConsent: boolean;
+  hasAdsTxt: boolean;
+  sitemapExcludesThinPlaces: boolean;
 };
 
 async function countIndexablePlaces(): Promise<number> {
@@ -50,15 +59,18 @@ async function getIndexablePlaceCoverStats(): Promise<{
   let indexable = 0;
   let withoutCover = 0;
   for (const place of data || []) {
-    if (
-      shouldIndexPlace({
-        description: place.description,
-        source: place.source,
-        is_featured: place.is_featured,
-      })
-    ) {
+    const editorial = hasEditorialContent({
+      description: place.description,
+      source: place.source,
+      is_featured: place.is_featured,
+      cover_image: place.cover_image,
+    });
+    if (!editorial) continue;
+
+    if (place.cover_image) {
       indexable++;
-      if (!place.cover_image) withoutCover++;
+    } else {
+      withoutCover++;
     }
   }
 
@@ -66,12 +78,15 @@ async function getIndexablePlaceCoverStats(): Promise<{
 }
 
 export async function getContentReadinessStats(): Promise<ContentReadinessStats> {
+  const validCitySlugs = new Set(turkeyCities.map((c) => c.slug));
+
   const [
     publishedArticlesRes,
     coverStats,
     guideArticlesRes,
     citiesRes,
     privacyRes,
+    aboutRes,
   ] = await Promise.all([
     supabaseAdmin
       .from("articles")
@@ -90,29 +105,43 @@ export async function getContentReadinessStats(): Promise<ContentReadinessStats>
       .eq("slug", "gizlilik-politikasi")
       .eq("is_published", true)
       .maybeSingle(),
+    supabaseAdmin
+      .from("pages")
+      .select("slug")
+      .eq("slug", "hakkimizda")
+      .eq("is_published", true)
+      .maybeSingle(),
   ]);
 
   const guideSlugs = new Set(
     (guideArticlesRes.data || [])
       .map((a) => a.city_slug)
-      .filter(Boolean) as string[]
+      .filter((slug): slug is string => Boolean(slug) && validCitySlugs.has(slug))
   );
 
-  const allCities = citiesRes.data || [];
+  const allCities = (citiesRes.data || []).filter((city) =>
+    validCitySlugs.has(city.slug)
+  );
   const missingGuideCities = allCities
     .filter((city) => !guideSlugs.has(city.slug))
     .map((city) => city.name)
     .slice(0, 12);
+
+  const adsTxtExists = existsSync(join(process.cwd(), "public", "ads.txt"));
 
   return {
     publishedArticles: publishedArticlesRes.count ?? 0,
     indexablePlaces: coverStats.indexable,
     indexablePlacesWithoutCover: coverStats.withoutCover,
     citiesWithGuide: guideSlugs.size,
-    citiesWithoutGuide: allCities.length - guideSlugs.size,
+    citiesWithoutGuide: Math.max(0, allCities.length - guideSlugs.size),
     missingGuideCities,
     hasPrivacyPage: Boolean(privacyRes.data),
+    hasAboutPage: Boolean(aboutRes.data),
     hasSiteVerification: Boolean(process.env.GOOGLE_SITE_VERIFICATION),
+    hasCookieConsent: true,
+    hasAdsTxt: adsTxtExists,
+    sitemapExcludesThinPlaces: true,
   };
 }
 

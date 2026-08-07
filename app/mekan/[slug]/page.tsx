@@ -267,11 +267,13 @@ export default async function PlacePage({
                 </div>
               </div>
 
+              {indexable && (
               <AdBanner
                 slot="place-top"
                 className="min-h-[90px] w-full"
                 style={{ display: "block", minHeight: "90px", width: "100%" }}
               />
+              )}
 
               {/* About Section */}
               <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
@@ -341,6 +343,7 @@ export default async function PlacePage({
                 </Button>
               </div>
 
+              {indexable && (
               <AdBanner
                 slot="place-content-inline"
                 className="min-h-[250px] w-full"
@@ -350,6 +353,7 @@ export default async function PlacePage({
                   width: "100%",
                 }}
               />
+              )}
             </div>
 
             {/* Sidebar */}
@@ -484,6 +488,7 @@ export default async function PlacePage({
                 </div>
               )}
 
+              {indexable && (
               <AdBanner
                 slot="place-sidebar"
                 className="min-h-[250px] w-full"
@@ -493,6 +498,7 @@ export default async function PlacePage({
                   width: "100%",
                 }}
               />
+              )}
             </aside>
           </div>
         </div>
