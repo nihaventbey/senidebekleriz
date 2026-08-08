@@ -11,6 +11,7 @@ import { AdBanner } from "@/components/ads/ad-banner";
 import { getAllCities } from "@/lib/data/cities";
 import { pickPopularCities } from "@/lib/cities/popular";
 import { PopularCitiesSection } from "@/components/home/popular-cities-section";
+import { TurkeyInteractiveMap } from "@/components/home/turkey-map";
 import { DiscoverCategoriesSection } from "@/components/home/discover-categories-section";
 import { MissionVisionSection } from "@/components/home/mission-vision-section";
 import { getAllCategories } from "@/lib/data/categories";
@@ -121,6 +122,8 @@ export default async function HomePage() {
       </section>
 
       <PopularCitiesSection cities={popularCities} />
+
+      <TurkeyInteractiveMap />
 
       {featuredPlaces.length > 0 && (
         <section className="container mx-auto px-4 py-12">

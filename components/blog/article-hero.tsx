@@ -6,8 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Calendar, MapPin } from "lucide-react";
 import { getCityName } from "@/lib/cities/lookup";
+import { BookmarkButton } from "@/components/common/bookmark-button";
 
 type Props = {
+  id?: string;
+  slug?: string;
   title: string;
   excerpt?: string | null;
   publishedAt?: string | null;
@@ -26,6 +29,8 @@ function formatDate(value: string | null | undefined) {
 }
 
 export function ArticleHero({
+  id,
+  slug,
   title,
   excerpt,
   publishedAt,
@@ -70,21 +75,37 @@ export function ArticleHero({
       />
 
       <div className="container relative mx-auto px-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          asChild
-          className={
-            showCover
-              ? "mb-6 text-white hover:bg-white/10 hover:text-white"
-              : "mb-6"
-          }
-        >
-          <Link href="/blog">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Tüm Yazılar
-          </Link>
-        </Button>
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className={
+              showCover
+                ? "text-white hover:bg-white/10 hover:text-white"
+                : ""
+            }
+          >
+            <Link href="/blog">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Tüm Yazılar
+            </Link>
+          </Button>
+
+          {slug && (
+            <BookmarkButton
+              item={{
+                id: id || slug,
+                title,
+                slug,
+                type: "article",
+                coverImage: coverUrl,
+                cityName,
+              }}
+              className={showCover ? "bg-white/15 text-white border-white/20 hover:bg-white/25" : ""}
+            />
+          )}
+        </div>
 
         <div className="max-w-3xl">
           <div className="mb-4 flex flex-wrap gap-2">

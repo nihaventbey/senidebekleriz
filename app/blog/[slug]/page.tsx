@@ -108,6 +108,8 @@ export default async function BlogArticlePage({
       <JsonLd data={jsonLd} />
 
       <ArticleHero
+        id={article.id}
+        slug={article.slug}
         title={article.title}
         excerpt={article.excerpt}
         publishedAt={article.publishedAt}
