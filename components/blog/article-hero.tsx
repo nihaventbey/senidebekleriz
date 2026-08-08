@@ -13,6 +13,7 @@ type Props = {
   publishedAt?: string | null;
   coverUrl: string | null;
   citySlug?: string | null;
+  contentLength?: number;
 };
 
 function formatDate(value: string | null | undefined) {
@@ -30,10 +31,12 @@ export function ArticleHero({
   publishedAt,
   coverUrl,
   citySlug,
+  contentLength = 2000,
 }: Props) {
   const [imageFailed, setImageFailed] = useState(false);
   const showCover = Boolean(coverUrl) && !imageFailed;
   const cityName = citySlug ? getCityName(citySlug) : null;
+  const estimatedMinutes = Math.max(2, Math.ceil(contentLength / 600));
 
   return (
     <section className="relative overflow-hidden bg-hero-gradient py-12 sm:py-14 md:py-20">
@@ -90,6 +93,16 @@ export function ArticleHero({
               className={showCover ? "bg-white/15 text-white backdrop-blur-sm" : ""}
             >
               Editör Yazısı
+            </Badge>
+            <Badge
+              variant="outline"
+              className={`gap-1 ${
+                showCover
+                  ? "border-white/30 bg-white/10 text-white backdrop-blur-sm"
+                  : ""
+              }`}
+            >
+              ⏱️ {estimatedMinutes} dk okuma süresi
             </Badge>
             {citySlug && cityName && (
               <Link href={`/sehir/${citySlug}`}>

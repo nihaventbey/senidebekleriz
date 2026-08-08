@@ -11,6 +11,8 @@ import { ArticleHero } from "@/components/blog/article-hero";
 import { AdBanner } from "@/components/ads/ad-banner";
 import { resolveArticleCoverImage } from "@/lib/articles/cover-from-content";
 
+import { ReadingProgressBar } from "@/components/blog/reading-progress-bar";
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -56,18 +58,53 @@ export default async function BlogArticlePage({
   );
   const html = renderMarkdown(article.content);
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: article.title,
-    description: article.excerpt,
-    datePublished: article.publishedAt,
-    dateModified: article.updatedAt,
-    image: coverUrl || undefined,
-  };
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: article.title,
+      description: article.excerpt,
+      datePublished: article.publishedAt,
+      dateModified: article.updatedAt,
+      image: coverUrl || undefined,
+      publisher: {
+        "@type": "Organization",
+        name: "Seni De Bekleriz",
+        logo: {
+          "@type": "ImageObject",
+          url: "https://www.senidebekleriz.com/icon.svg",
+        },
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Ana Sayfa",
+          item: "https://www.senidebekleriz.com",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Blog",
+          item: "https://www.senidebekleriz.com/blog",
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: article.title,
+          item: `https://www.senidebekleriz.com/blog/${article.slug}`,
+        },
+      ],
+    },
+  ];
 
   return (
     <div>
+      <ReadingProgressBar />
       <JsonLd data={jsonLd} />
 
       <ArticleHero
@@ -76,6 +113,7 @@ export default async function BlogArticlePage({
         publishedAt={article.publishedAt}
         coverUrl={coverUrl}
         citySlug={article.citySlug}
+        contentLength={article.content.length}
       />
 
       <div className="container mx-auto px-4 py-10 md:py-12">

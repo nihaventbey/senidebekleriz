@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Check, EyeOff, Loader2, Pencil } from "lucide-react";
+import { Check, ExternalLink, EyeOff, Loader2, Pencil } from "lucide-react";
 import { publishArticle, unpublishArticle } from "@/lib/actions/articles";
 import { getCityName } from "@/lib/cities/lookup";
 import type { AdminArticleListItem } from "@/lib/data/admin-articles";
@@ -73,15 +73,15 @@ export function ArticlesList({ articles }: Props) {
   }
 
   return (
-    <div className="rounded-lg border">
-      <Table>
+    <div className="overflow-x-auto rounded-lg border">
+      <Table className="w-full min-w-[700px] table-fixed">
         <TableHeader>
           <TableRow>
-            <TableHead>Başlık</TableHead>
-            <TableHead>Slug</TableHead>
-            <TableHead>Şehir</TableHead>
-            <TableHead>Durum</TableHead>
-            <TableHead className="text-right">İşlemler</TableHead>
+            <TableHead className="w-[35%]">Başlık</TableHead>
+            <TableHead className="w-[30%]">Slug / Adres</TableHead>
+            <TableHead className="w-[12%]">Şehir</TableHead>
+            <TableHead className="w-[10%]">Durum</TableHead>
+            <TableHead className="w-[13%] text-right">İşlemler</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -91,11 +91,30 @@ export function ArticlesList({ articles }: Props) {
             return (
               <TableRow key={article.id}>
                 <TableCell className="font-medium">
-                  <Link href={`/yonetim/yazilar/${article.slug}/duzenle`} className="hover:underline hover:text-primary">
-                    {article.title}
-                  </Link>
+                  <div className="truncate max-w-[320px]" title={`${article.title} (Sitede Görüntüle)`}>
+                    <Link
+                      href={`/blog/${article.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline hover:text-primary flex items-center gap-1.5"
+                    >
+                      <span className="truncate">{article.title}</span>
+                      <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
+                    </Link>
+                  </div>
                 </TableCell>
-                <TableCell>{article.slug}</TableCell>
+                <TableCell>
+                  <div className="truncate max-w-[260px] font-mono text-xs text-muted-foreground" title={article.slug}>
+                    <Link
+                      href={`/blog/${article.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline"
+                    >
+                      {article.slug}
+                    </Link>
+                  </div>
+                </TableCell>
                 <TableCell>{getCityName(article.city_slug) || "—"}</TableCell>
                 <TableCell>
                   <Badge variant={article.is_published ? "default" : "outline"}>

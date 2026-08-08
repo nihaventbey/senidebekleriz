@@ -293,14 +293,43 @@ export function ArticleForm({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="content">İçerik (Markdown)</Label>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setPreview((p) => !p)}
-            >
-              {preview ? "Düzenle" : "Önizleme"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <label className="cursor-pointer text-xs font-medium text-primary hover:underline">
+                📷 İçeriğe Görsel Yükle
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    try {
+                      const res = await fetch("/api/admin/upload", {
+                        method: "POST",
+                        body: formData,
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || "Yükleme hatası");
+                      const markdownImg = `\n\n![${file.name.replace(/\.[^/.]+$/, "")}](${data.url})\n\n`;
+                      setContent((prev) => prev + markdownImg);
+                      toast.success("Görsel yüklendi ve içeriğe eklendi!");
+                    } catch (err) {
+                      toast.error("Yükleme hatası", err instanceof Error ? err.message : undefined);
+                    }
+                  }}
+                />
+              </label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setPreview((p) => !p)}
+              >
+                {preview ? "Düzenle" : "Önizleme"}
+              </Button>
+            </div>
           </div>
           {preview ? (
             <MarkdownContent
@@ -329,14 +358,41 @@ export function ArticleForm({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="cover_image">Kapak Görseli URL</Label>
-            <Input
-              id="cover_image"
-              name="cover_image"
-              value={coverImage}
-              onChange={(e) => setCoverImage(e.target.value)}
-              placeholder="Supabase media URL veya harici link"
-            />
+            <Label htmlFor="cover_image">Kapak Görseli</Label>
+            <div className="flex flex-col gap-2">
+              <Input
+                id="cover_image"
+                name="cover_image"
+                value={coverImage}
+                onChange={(e) => setCoverImage(e.target.value)}
+                placeholder="Görsel URL veya bilgisayardan seçin..."
+              />
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    try {
+                      const res = await fetch("/api/admin/upload", {
+                        method: "POST",
+                        body: formData,
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || "Yükleme hatası");
+                      setCoverImage(data.url);
+                      toast.success("Görsel başarıyla yüklendi!");
+                    } catch (err) {
+                      toast.error("Görsel yüklenemedi", err instanceof Error ? err.message : undefined);
+                    }
+                  }}
+                  className="cursor-pointer text-xs"
+                />
+              </div>
+            </div>
             {coverImage && (
               <img
                 src={coverImage}
