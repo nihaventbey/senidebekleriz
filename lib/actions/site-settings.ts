@@ -105,15 +105,21 @@ async function resolveBrandAsset(options: {
   kind: "logo" | "favicon" | "apple-touch" | "og";
   allowed: Set<string>;
 }): Promise<string | null> {
-  if (options.formData.get(options.clearKey) === "on") return null;
+  const clearVal = options.formData.get(options.clearKey);
+  if (clearVal === "on" || clearVal === "true" || clearVal === "1") return null;
 
   const file = options.formData.get(options.fileKey);
   if (file instanceof File && file.size > 0) {
     return uploadBrandAsset(file, options.kind, options.allowed);
   }
 
-  const url = ((options.formData.get(options.urlKey) as string) || "").trim();
-  if (url) return url;
+  const urlInput = options.formData.get(options.urlKey);
+  if (typeof urlInput === "string") {
+    const trimmed = urlInput.trim();
+    if (trimmed) return trimmed;
+    // If the input was explicitly submitted as empty string, clear it!
+    if (urlInput === "" && options.current) return null;
+  }
 
   return options.current;
 }

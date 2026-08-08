@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ function BrandAssetField({
 
   return (
     <div className="space-y-3 rounded-lg border p-4">
+      <input type="hidden" name={clearName} value={clear ? "true" : "false"} />
       <div>
         <h3 className="font-semibold">{title}</h3>
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
@@ -50,12 +52,18 @@ function BrandAssetField({
           <p className="text-xs text-muted-foreground break-all">{previewUrl}</p>
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">Henüz yüklenmedi.</p>
+        <p className="text-sm text-muted-foreground">Henüz yüklenmedi veya kaldırıldı.</p>
       )}
 
       <div className="space-y-2">
         <Label htmlFor={fileName}>Dosya yükle</Label>
-        <Input id={fileName} name={fileName} type="file" accept={accept} />
+        <Input
+          id={fileName}
+          name={fileName}
+          type="file"
+          accept={accept}
+          onChange={() => setClear(false)}
+        />
       </div>
 
       <div className="space-y-2">
@@ -66,18 +74,20 @@ function BrandAssetField({
           type="url"
           placeholder="https://..."
           defaultValue={previewUrl ?? ""}
+          onChange={() => setClear(false)}
         />
       </div>
 
       {previewUrl ? (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 pt-1">
           <Checkbox
             id={clearName}
-            name={clearName}
             checked={clear}
             onCheckedChange={(checked) => setClear(checked === true)}
           />
-          <Label htmlFor={clearName}>Mevcut görseli kaldır</Label>
+          <Label htmlFor={clearName} className="cursor-pointer text-sm text-destructive font-medium">
+            Mevcut görseli tamamen kaldır
+          </Label>
         </div>
       ) : null}
     </div>
@@ -85,6 +95,7 @@ function BrandAssetField({
 }
 
 export function BrandingSettingsForm({ settings }: { settings: BrandSettings }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -97,6 +108,7 @@ export function BrandingSettingsForm({ settings }: { settings: BrandSettings }) 
         return;
       }
       toast.success("Kaydedildi", result.success);
+      router.refresh();
     });
   }
 
