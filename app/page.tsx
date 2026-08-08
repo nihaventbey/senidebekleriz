@@ -12,6 +12,7 @@ import { getAllCities } from "@/lib/data/cities";
 import { pickPopularCities } from "@/lib/cities/popular";
 import { PopularCitiesSection } from "@/components/home/popular-cities-section";
 import { TurkeyInteractiveMap } from "@/components/home/turkey-map";
+import { PremiumHeroSection } from "@/components/home/hero-section";
 import { DiscoverCategoriesSection } from "@/components/home/discover-categories-section";
 import { MissionVisionSection } from "@/components/home/mission-vision-section";
 import { getAllCategories } from "@/lib/data/categories";
@@ -50,57 +51,7 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col">
-      {/* Hero */}
-      <section
-        className={`relative overflow-hidden py-14 sm:py-20 md:py-28 ${
-          heroActive ? "" : "bg-hero-gradient"
-        }`}
-      >
-        {heroActive ? (
-          <HeroBackground settings={heroSettings} />
-        ) : (
-          <div className="absolute inset-0 bg-grid-pattern opacity-50" />
-        )}
-        <div className="container relative mx-auto px-4 text-center">
-          <h1
-            className={`mx-auto max-w-5xl text-4xl font-black leading-[1.15] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl ${
-              heroOnDark ? "text-white" : "text-foreground"
-            }`}
-          >
-            Türkiye'nin{" "}
-            <span className="bg-gradient-to-r from-amber-600 via-teal-600 to-emerald-600 bg-clip-text text-transparent drop-shadow-sm">
-              Kültürel Mirasını
-            </span>{" "}
-            Keşfet
-          </h1>
-          <p
-            className={`mx-auto mt-6 max-w-3xl text-lg sm:text-xl leading-relaxed font-normal ${
-              heroOnDark ? "text-white/90" : "text-muted-foreground/90"
-            }`}
-          >
-            Türkiye'nin 81 ilindeki görkemli müzeleri, bin yıllık antik kentleri, 
-            gizemli mabetleri ve editoryal gezi rehberlerini tek bir platformda keşfedin.
-          </p>
-          <div className="mx-auto mt-10 max-w-xl rounded-2xl bg-background/80 p-2 shadow-xl ring-1 ring-border/80 backdrop-blur-md sm:p-2.5">
-            <SearchBar variant="hero" className="h-12 w-full border-0 bg-transparent text-base focus-visible:ring-0" />
-          </div>
-          <div className="mt-8 flex flex-col items-stretch justify-center gap-3.5 sm:flex-row sm:items-center">
-            <Button size="lg" className="group w-full sm:w-auto text-base px-8 h-12 shadow-md rounded-xl" asChild>
-              <Link href="/sehirler">
-                <MapPin className="mr-2 h-5 w-5" />
-                Şehirleri Keşfet
-                <ArrowRight className="ml-2.5 h-4 w-4 transition-transform group-hover:translate-x-1.5" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" className="w-full bg-background/80 backdrop-blur sm:w-auto text-base px-8 h-12 rounded-xl border-border/80" asChild>
-              <Link href="/kategoriler">
-                <Compass className="mr-2 h-5 w-5 text-primary" />
-                Kategorilere Göz At
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+      <PremiumHeroSection heroSettings={heroSettings} />
 
       <CulturalEventsSlider events={featuredEvents} />
 
