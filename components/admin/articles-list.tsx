@@ -90,7 +90,11 @@ export function ArticlesList({ articles }: Props) {
 
             return (
               <TableRow key={article.id}>
-                <TableCell className="font-medium">{article.title}</TableCell>
+                <TableCell className="font-medium">
+                  <Link href={`/yonetim/yazilar/${article.slug}/duzenle`} className="hover:underline hover:text-primary">
+                    {article.title}
+                  </Link>
+                </TableCell>
                 <TableCell>{article.slug}</TableCell>
                 <TableCell>{getCityName(article.city_slug) || "—"}</TableCell>
                 <TableCell>
@@ -129,9 +133,10 @@ export function ArticlesList({ articles }: Props) {
                         )}
                       </Button>
                     )}
-                    <Button variant="ghost" size="sm" asChild>
+                    <Button variant="outline" size="sm" asChild className="gap-1.5">
                       <Link href={`/yonetim/yazilar/${article.slug}/duzenle`}>
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-3.5 w-3.5 text-amber-600" />
+                        <span>Düzenle</span>
                       </Link>
                     </Button>
                   </div>
