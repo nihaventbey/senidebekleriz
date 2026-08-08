@@ -28,10 +28,9 @@ export function hasEditorialContent(place: PlaceQualityInput): boolean {
   return isEditorialSource(place.source);
 }
 
-/** Arama motoruna açılabilir mi? Editöryal metin + kapak zorunlu */
+/** Arama motoruna tüm mekanlar açılsın */
 export function shouldIndexPlace(place: PlaceQualityInput): boolean {
-  if (!place.cover_image?.trim()) return false;
-  return hasEditorialContent(place);
+  return true;
 }
 
 export function getPlaceDescriptionFallback(

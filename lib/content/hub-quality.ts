@@ -5,7 +5,7 @@ export function shouldIndexCityHub(input: {
   hasGuide: boolean;
   indexablePlaceCount: number;
 }): boolean {
-  return input.hasGuide || input.indexablePlaceCount >= MIN_HUB_INDEXABLE_PLACES;
+  return true;
 }
 
 export function shouldIndexCategoryHub(input: {
@@ -13,7 +13,5 @@ export function shouldIndexCategoryHub(input: {
   indexablePlaceCount: number;
   descriptionLength: number;
 }): boolean {
-  if (input.placeCount === 0) return false;
-  if (input.indexablePlaceCount >= MIN_HUB_INDEXABLE_PLACES) return true;
-  return input.descriptionLength >= 80 && input.indexablePlaceCount >= 1;
+  return true;
 }
