@@ -71,9 +71,12 @@ export async function generateMetadata({
   return {
     title,
     description,
-    robots: indexable
-      ? { index: true, follow: true }
-      : { index: false, follow: true },
+    robots: { index: true, follow: true },
+    alternates: {
+      canonical: indexable
+        ? `https://www.senidebekleriz.com/mekan/${place.slug}`
+        : `https://www.senidebekleriz.com/sehir/${place.citySlug}`,
+    },
     openGraph: {
       title,
       description,

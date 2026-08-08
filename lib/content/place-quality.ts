@@ -7,6 +7,10 @@ export type PlaceQualityInput = {
   source: string | null;
   is_featured?: boolean | null;
   cover_image?: string | null;
+  wikidata_id?: string | null;
+  phone?: string | null;
+  website?: string | null;
+  rating?: number | null;
 };
 
 function countWords(text: string): number {
@@ -21,16 +25,25 @@ function isEditorialSource(source: string | null | undefined): boolean {
   return EDITORIAL_SOURCES.has(source);
 }
 
-/** Özgün editöryal açıklama var mı? (featured tek başına yetmez) */
+/** Özgün editöryal açıklama var mı? */
 export function hasEditorialContent(place: PlaceQualityInput): boolean {
   const description = place.description?.trim() ?? "";
   if (countWords(description) < MIN_EDITORIAL_WORDS) return false;
   return isEditorialSource(place.source);
 }
 
-/** Arama motoruna tüm mekanlar açılsın */
+/** Akıllı SEO İndeksleme Mantığı: Kültürel değeri veya zengin verisi olan tüm mekanlar Google'a açılır */
 export function shouldIndexPlace(place: PlaceQualityInput): boolean {
-  return true;
+  if (place.is_featured) return true;
+  if (place.cover_image?.trim()) return true;
+  if (place.wikidata_id?.trim()) return true;
+  if (place.phone?.trim() || place.website?.trim()) return true;
+  
+  const desc = place.description?.trim() ?? "";
+  if (countWords(desc) >= 15) return true;
+
+  // İçi tamamen boş olan tek kelimelik mahalle parkları ana şehir rehberine kanonik bağlanır
+  return false;
 }
 
 export function getPlaceDescriptionFallback(
