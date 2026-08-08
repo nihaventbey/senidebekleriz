@@ -38,7 +38,7 @@ export function Logo({ className = "", brand }: LogoProps) {
         <img
           src={brand!.logoUrl!}
           alt="Seni de Bekleriz"
-          className="h-12 sm:h-16 md:h-20 w-auto max-w-[280px] sm:max-w-[360px] md:max-w-[420px] object-contain transition-transform group-hover:scale-[1.02]"
+          className="h-10 sm:h-11 w-auto max-w-[240px] sm:max-w-[320px] object-contain object-left transition-transform group-hover:scale-[1.02]"
         />
       ) : (
         <>

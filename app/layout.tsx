@@ -72,6 +72,20 @@ export default async function RootLayout({
     >
       <head>
         <AdSenseScript />
+        {brand.faviconUrl ? (
+          <>
+            <link rel="icon" href={brand.faviconUrl} key="dynamic-favicon" />
+            <link rel="shortcut icon" href={brand.faviconUrl} key="dynamic-shortcut-favicon" />
+          </>
+        ) : (
+          <>
+            <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+            <link rel="shortcut icon" href="/icon.svg" />
+          </>
+        )}
+        {brand.appleTouchIconUrl && (
+          <link rel="apple-touch-icon" href={brand.appleTouchIconUrl} key="dynamic-apple-icon" />
+        )}
       </head>
       <body className="min-h-full flex flex-col bg-background">
         <ConsentAwareAnalytics />

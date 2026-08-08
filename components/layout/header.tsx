@@ -45,7 +45,7 @@ export function Header({ brand }: HeaderProps) {
           : "bg-background/80 backdrop-blur-md"
       )}
     >
-      <div className="container mx-auto flex min-h-16 md:min-h-20 py-2 sm:py-3 items-center justify-between px-4">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Logo brand={brand} />
 
         <nav className="hidden items-center gap-8 md:flex">
