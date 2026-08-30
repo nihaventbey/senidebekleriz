@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Building2,
   MapPinned,
+  Images,
   Tags,
   FileText,
   Megaphone,
@@ -40,6 +41,7 @@ export const adminNavSections: NavSection[] = [
     items: [
       { href: "/yonetim/sehirler", label: "Şehirler", icon: Building2 },
       { href: "/yonetim/mekanlar", label: "Mekanlar", icon: MapPinned },
+      { href: "/yonetim/gorseller", label: "Görsel Stüdyosu", icon: Images },
       { href: "/yonetim/kategoriler", label: "Kategoriler", icon: Tags },
       { href: "/yonetim/sayfalar", label: "Sayfalar", icon: FileText },
       { href: "/yonetim/yazilar", label: "Blog Yazıları", icon: BookOpen },
@@ -47,6 +49,7 @@ export const adminNavSections: NavSection[] = [
       { href: "/yonetim/kesif", label: "İçerik Keşfi", icon: Radar },
     ],
   },
+
   {
     title: "Site",
     items: [
