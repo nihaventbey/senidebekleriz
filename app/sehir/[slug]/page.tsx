@@ -3,8 +3,9 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, ArrowRight } from "lucide-react";
+import { MapPin, ArrowRight, Compass } from "lucide-react";
 import { getCityBySlug, getAllCities } from "@/lib/data/cities";
+import { getCityCultureData } from "@/lib/data/city-culture";
 import { AdBanner } from "@/components/ads/ad-banner";
 import {
   countIndexablePlacesByCitySlug,
@@ -21,6 +22,8 @@ import { PlaceImageComponent } from "@/components/place/place-image";
 import { PlacesLoadMore } from "@/components/place/places-load-more";
 import { shouldIndexCityHub } from "@/lib/content/hub-quality";
 import { getPlaceCardExcerpt } from "@/lib/content/place-quality";
+import { CityQuickNav } from "@/components/cities/city-quick-nav";
+import { CityCultureSection } from "@/components/cities/city-culture-section";
 
 export const revalidate = 604800;
 
@@ -98,6 +101,7 @@ export default async function CityPage({
   });
   const firstPage = allPlaces.slice(0, 20);
   const hasMore = allPlaces.length > 20;
+  const cultureData = getCityCultureData(slug, city.name);
 
   const cityJsonLd = [
     {
@@ -127,48 +131,105 @@ export default async function CityPage({
     <div>
       <JsonLd data={cityJsonLd} />
 
-      <section className="relative overflow-hidden bg-hero-gradient py-10 sm:py-12 md:py-16">
-        {city.coverImage && (
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-hero-gradient py-12 sm:py-16 md:py-20">
+        {city.coverImage ? (
           <>
             <img
               src={city.coverImage}
               alt={city.name}
               className="absolute inset-0 h-full w-full object-cover"
             />
-            <div className="absolute inset-0 bg-black/50" />
+            <div className="absolute inset-0 bg-black/65 backdrop-blur-[1px]" />
           </>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-background to-background" />
         )}
         <div className="container relative mx-auto px-4">
           <div className="max-w-3xl">
-            <Badge variant="secondary" className="mb-4">
-              {city.region}
-            </Badge>
-            <h1
-              className={`text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl ${city.coverImage ? "text-white" : ""}`}
-            >
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <Badge
+                variant="secondary"
+                className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm"
+              >
+                {city.region} Bölgesi
+              </Badge>
+              {allPlaces.length > 0 && (
+                <Badge
+                  variant="outline"
+                  className="border-white/30 bg-black/20 text-white/90 backdrop-blur-sm"
+                >
+                  {allPlaces.length} Kültürel Durak
+                </Badge>
+              )}
+            </div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
               {city.name}
             </h1>
-            <p
-              className={`mt-4 text-base md:text-lg ${city.coverImage ? "text-white/90" : "text-muted-foreground"}`}
-            >
-              {city.description}
+            <p className="mt-4 text-base font-normal leading-relaxed text-white/90 sm:text-lg md:text-xl">
+              {cultureData.tagline}
             </p>
           </div>
         </div>
       </section>
 
-      <div className="container mx-auto px-4 py-10">
-        {allPlaces.length > 0 && (
-          <section className="mb-10">
-            <h2 className="mb-4 text-xl font-bold tracking-tight">
-              Harita Üzerinde
-            </h2>
-            <CityMap places={allPlaces} center={[city.lat, city.lng]} zoom={11} />
-          </section>
-        )}
+      {/* Quick Navigation Bar */}
+      <CityQuickNav
+        hasPlaces={allPlaces.length > 0}
+        hasGuide={hasGuide}
+        hasCulture={Boolean(cultureData)}
+      />
+
+      <div className="container mx-auto px-4 pb-16 space-y-12">
+        {/* Şehir Hakkında / Genel Bakış */}
+        <section
+          id="genel-bakis"
+          className="scroll-mt-24 rounded-2xl border bg-card p-6 shadow-sm md:p-8"
+        >
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Compass className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold tracking-tight md:text-2xl">
+                {city.name} Hakkında & Kültürel Miras
+              </h2>
+              <p className="text-xs text-muted-foreground sm:text-sm">
+                Tarih, coğrafya ve kentin kültürel kimliğine genel bakış.
+              </p>
+            </div>
+          </div>
+          <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-line md:text-base">
+            {city.description}
+          </p>
+          <div className="mt-6 flex flex-wrap items-center gap-4 border-t border-border/60 pt-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5 text-primary" />
+              <span>
+                Koordinatlar: {city.lat.toFixed(4)}, {city.lng.toFixed(4)}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span>
+                Bölge:{" "}
+                <strong className="font-medium text-foreground">
+                  {city.region}
+                </strong>
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span>
+                Kültürel Mekan:{" "}
+                <strong className="font-medium text-foreground">
+                  {allPlaces.length}
+                </strong>
+              </span>
+            </div>
+          </div>
+        </section>
 
         {indexable && (
-          <div className="mb-10">
+          <div>
             <AdBanner
               slot="city-content-top"
               className="min-h-[90px] w-full"
@@ -177,60 +238,24 @@ export default async function CityPage({
           </div>
         )}
 
-        {(cityArticle || cityGuidePage) && (
-          <section className="mb-10 rounded-2xl border bg-card p-6 md:p-8">
-            <h2 className="text-xl font-bold tracking-tight md:text-2xl">
-              {cityArticle?.title || cityGuidePage?.title}
-            </h2>
-            {cityArticle ? (
-              <>
-                <p className="mt-3 text-muted-foreground">{cityArticle.excerpt}</p>
-                <MarkdownContent
-                  className="markdown-compact mt-4 max-h-64 overflow-hidden text-sm text-muted-foreground [mask-image:linear-gradient(to_bottom,black_60%,transparent)]"
-                  html={renderMarkdown(
-                    cityArticle.content
-                      .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
-                      .slice(0, 1200)
-                  )}
-                />
-                <Link
-                  href={`/blog/${cityArticle.slug}`}
-                  className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-                >
-                  Tam rehberi oku
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </>
-            ) : cityGuidePage ? (
-              <>
-                <MarkdownContent
-                  className="markdown-compact mt-4 text-sm text-muted-foreground"
-                  html={cityGuidePage.content}
-                />
-                <Link
-                  href={`/sayfa/${cityGuidePage.slug}`}
-                  className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-                >
-                  Tam rehberi oku
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </>
-            ) : null}
-          </section>
-        )}
-
-        <section>
+        {/* Gezilecek Mekanlar */}
+        <section id="mekanlar" className="scroll-mt-24">
           <div className="mb-6 flex items-end justify-between">
-            <h2 className="text-xl font-bold tracking-tight">
-              {city.name}&apos;da Gezilecek Yerler
-            </h2>
-            <span className="text-sm text-muted-foreground">
+            <div>
+              <h2 className="text-xl font-bold tracking-tight md:text-2xl">
+                {city.name}&apos;da Gezilecek Yerler
+              </h2>
+              <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
+                Müzeler, tarihi yapılar, anıtlar ve sanat durakları.
+              </p>
+            </div>
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary/80">
               {allPlaces.length} mekan
             </span>
           </div>
 
           {allPlaces.length === 0 ? (
-            <p className="py-12 text-center text-muted-foreground">
+            <p className="rounded-2xl border border-dashed py-12 text-center text-muted-foreground">
               Henüz bu şehir için mekan eklenmemiş.
             </p>
           ) : (
@@ -282,12 +307,91 @@ export default async function CityPage({
           )}
         </section>
 
-        <div className="mt-12">
+        {/* Harita */}
+        {allPlaces.length > 0 && (
+          <section id="harita" className="scroll-mt-24">
+            <div className="mb-4">
+              <h2 className="text-xl font-bold tracking-tight md:text-2xl">
+                Harita Üzerinde {city.name}
+              </h2>
+              <p className="text-xs text-muted-foreground sm:text-sm">
+                Tüm mekanların şehir genelindeki coğrafi konumları.
+              </p>
+            </div>
+            <div className="overflow-hidden rounded-2xl border">
+              <CityMap
+                places={allPlaces}
+                center={[city.lat, city.lng]}
+                zoom={11}
+              />
+            </div>
+          </section>
+        )}
+
+        {/* Kültür, Sanat, Edebiyat, Sinema & Tarih Modülü */}
+        <CityCultureSection data={cultureData} cityName={city.name} />
+
+        {/* Gezi Rehberi / Blog */}
+        {(cityArticle || cityGuidePage) && (
+          <section
+            id="rehber"
+            className="scroll-mt-24 rounded-2xl border bg-card p-6 md:p-8"
+          >
+            <h2 className="text-xl font-bold tracking-tight md:text-2xl">
+              {cityArticle?.title || cityGuidePage?.title}
+            </h2>
+            {cityArticle ? (
+              <>
+                <p className="mt-3 text-muted-foreground">
+                  {cityArticle.excerpt}
+                </p>
+                <MarkdownContent
+                  className="markdown-compact mt-4 max-h-64 overflow-hidden text-sm text-muted-foreground [mask-image:linear-gradient(to_bottom,black_60%,transparent)]"
+                  html={renderMarkdown(
+                    cityArticle.content
+                      .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+                      .slice(0, 1200)
+                  )}
+                />
+                <Link
+                  href={`/blog/${cityArticle.slug}`}
+                  className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                >
+                  Tam rehberi oku
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </>
+            ) : cityGuidePage ? (
+              <>
+                <MarkdownContent
+                  className="markdown-compact mt-4 text-sm text-muted-foreground"
+                  html={cityGuidePage.content}
+                />
+                <Link
+                  href={`/sayfa/${cityGuidePage.slug}`}
+                  className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                >
+                  Tam rehberi oku
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </>
+            ) : null}
+          </section>
+        )}
+
+        <div className="mt-12 pt-6 border-t border-border/60 flex items-center justify-between">
           <Link
             href="/sehirler"
             className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            Tüm şehirler
+            <ArrowRight className="h-4 w-4 rotate-180" />
+            Tüm Şehirler
+          </Link>
+          <Link
+            href="/blog"
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+          >
+            Gezi Rehberi Yazıları
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -295,3 +399,4 @@ export default async function CityPage({
     </div>
   );
 }
+
