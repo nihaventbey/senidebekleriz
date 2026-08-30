@@ -5,14 +5,24 @@ import { ArticleCard } from "@/components/blog/article-card";
 import { BlogHero } from "@/components/blog/blog-hero";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { BreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 
 export const metadata: Metadata = {
   title: "Gezi Rehberi ve Yazılar",
   description:
     "Türkiye şehirleri için özgün gezi rehberleri, rota önerileri ve kültür yazıları.",
+  alternates: {
+    canonical: "/blog",
+  },
+  openGraph: {
+    title: "Gezi Rehberi ve Yazılar | Seni de Bekleriz",
+    description:
+      "Türkiye şehirleri için özgün gezi rehberleri, rota önerileri ve kültür yazıları.",
+    type: "website",
+  },
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400;
 
 const PAGE_SIZE = 24;
 
@@ -33,6 +43,12 @@ export default async function BlogPage({
 
   return (
     <div>
+      <BreadcrumbsJsonLd
+        items={[
+          { name: "Ana Sayfa", path: "/" },
+          { name: "Gezi Rehberi", path: "/blog" },
+        ]}
+      />
       <BlogHero articles={heroArticles} totalCount={total} />
 
       <div className="container mx-auto px-4 py-10 md:py-12">

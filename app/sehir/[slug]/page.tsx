@@ -16,10 +16,13 @@ import { renderMarkdown } from "@/lib/markdown";
 import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { CityMap } from "@/components/maps/city-map-wrapper";
 import { JsonLd } from "@/components/seo/json-ld";
+import { buildBreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import { PlaceImageComponent } from "@/components/place/place-image";
 import { PlacesLoadMore } from "@/components/place/places-load-more";
 import { shouldIndexCityHub } from "@/lib/content/hub-quality";
 import { getPlaceCardExcerpt } from "@/lib/content/place-quality";
+
+export const revalidate = 604800;
 
 export async function generateStaticParams() {
   const cities = await getAllCities();
@@ -58,6 +61,9 @@ export async function generateMetadata({
     robots: indexable
       ? { index: true, follow: true }
       : { index: false, follow: true },
+    alternates: {
+      canonical: `/sehir/${slug}`,
+    },
     openGraph: {
       title,
       description,
@@ -93,22 +99,29 @@ export default async function CityPage({
   const firstPage = allPlaces.slice(0, 20);
   const hasMore = allPlaces.length > 20;
 
-  const cityJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "City",
-    name: city.name,
-    description: city.description,
-    image: city.coverImage || undefined,
-    geo: {
-      "@type": "GeoCoordinates",
-      latitude: city.lat,
-      longitude: city.lng,
+  const cityJsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "City",
+      name: city.name,
+      description: city.description,
+      image: city.coverImage || undefined,
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: city.lat,
+        longitude: city.lng,
+      },
+      containedInPlace: {
+        "@type": "Country",
+        name: "Türkiye",
+      },
     },
-    containedInPlace: {
-      "@type": "Country",
-      name: "Türkiye",
-    },
-  };
+    buildBreadcrumbsJsonLd([
+      { name: "Ana Sayfa", path: "/" },
+      { name: "Şehirler", path: "/sehirler" },
+      { name: city.name, path: `/sehir/${city.slug}` },
+    ]),
+  ];
 
   return (
     <div>

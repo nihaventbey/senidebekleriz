@@ -25,8 +25,10 @@ import { SearchBar } from "@/components/layout/search-bar";
 import { PlaceImageComponent } from "@/components/place/place-image";
 import { ArticleCard } from "@/components/blog/article-card";
 import { CulturalEventsSlider } from "@/components/events/cultural-events-slider";
+import { JsonLd } from "@/components/seo/json-ld";
+import { getSiteUrl } from "@/lib/agents/site";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400;
 
 export default async function HomePage() {
   const [
@@ -45,12 +47,41 @@ export default async function HomePage() {
     getHeroSettings(),
   ]);
 
+  const siteUrl = getSiteUrl();
+
+  const websiteJsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "Seni de Bekleriz",
+      url: siteUrl,
+      description:
+        "Türkiye'nin müzeleri, tarihi yerleri, sanat mekanları ve kültürel durakları.",
+      potentialAction: {
+        "@type": "SearchAction",
+        target: {
+          "@type": "EntryPoint",
+          urlTemplate: `${siteUrl}/sehirler?q={search_term_string}`,
+        },
+        "query-input": "required name=search_term_string",
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "Seni de Bekleriz",
+      url: siteUrl,
+      logo: `${siteUrl}/icon.svg`,
+    },
+  ];
+
   const popularCities = pickPopularCities(cities, 6);
   const heroActive = heroSettings.enabled && Boolean(heroSettings.imageUrl);
   const heroOnDark = heroActive && heroSettings.overlayTone === "dark";
 
   return (
     <div className="flex flex-col">
+      <JsonLd data={websiteJsonLd} />
       <PremiumHeroSection heroSettings={heroSettings} />
 
       <CulturalEventsSlider events={featuredEvents} />

@@ -14,13 +14,21 @@ import { buildBrandMetadata } from "@/lib/metadata/brand-metadata";
 import { getActiveAdSlotMap } from "@/lib/data/ad-placements";
 import { AdPlacementsProvider } from "@/components/ads/ad-placements-provider";
 
+import { getSiteUrl } from "@/lib/agents/site";
+
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-sans",
   subsets: ["latin", "latin-ext"],
   weight: ["400", "500", "600", "700", "800"],
 });
 
+const siteUrl = getSiteUrl();
+
 const BASE_METADATA: Metadata = {
+  metadataBase: new URL(siteUrl),
+  alternates: {
+    canonical: "/",
+  },
   title: {
     default: "Seni de Bekleriz | Sanat, Tarih ve Kültür Rehberi",
     template: "%s | Seni de Bekleriz",
@@ -38,6 +46,21 @@ const BASE_METADATA: Metadata = {
     "İzmir",
     "Ankara",
   ],
+  openGraph: {
+    type: "website",
+    locale: "tr_TR",
+    url: siteUrl,
+    siteName: "Seni de Bekleriz",
+    title: "Seni de Bekleriz | Sanat, Tarih ve Kültür Rehberi",
+    description:
+      "Türkiye'nin müzeleri, tarihi yerleri, sanat mekanları ve kültürel durakları. Sanat ve tarihe yönelen keşif platformu.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Seni de Bekleriz | Sanat, Tarih ve Kültür Rehberi",
+    description:
+      "Türkiye'nin müzeleri, tarihi yerleri, sanat mekanları ve kültürel durakları.",
+  },
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },

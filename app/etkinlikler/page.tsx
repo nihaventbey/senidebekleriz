@@ -4,14 +4,24 @@ import { getPublishedEvents } from "@/lib/data/events";
 import { getAllCities } from "@/lib/data/cities";
 import { EventListCard } from "@/components/events/event-card";
 import { Badge } from "@/components/ui/badge";
+import { BreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 
 export const metadata: Metadata = {
   title: "Kültür Etkinlikleri",
   description:
     "Türkiye genelinde tiyatro, konser, sergi, festival ve kültür duyuruları.",
+  alternates: {
+    canonical: "/etkinlikler",
+  },
+  openGraph: {
+    title: "Kültür Etkinlikleri | Seni de Bekleriz",
+    description:
+      "Türkiye genelinde tiyatro, konser, sergi, festival ve kültür duyuruları.",
+    type: "website",
+  },
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400;
 
 const TYPE_FILTERS = [
   { slug: "", label: "Tümü" },
@@ -41,6 +51,12 @@ export default async function EventsPage({ searchParams }: Props) {
 
   return (
     <div className="container mx-auto px-4 py-12">
+      <BreadcrumbsJsonLd
+        items={[
+          { name: "Ana Sayfa", path: "/" },
+          { name: "Etkinlikler", path: "/etkinlikler" },
+        ]}
+      />
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
           Kültür Etkinlikleri

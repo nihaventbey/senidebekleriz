@@ -33,10 +33,15 @@ import {
   hasEditorialContent,
   shouldIndexPlace,
 } from "@/lib/content/place-quality";
+import { buildBreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
+import { NearbyPlaces } from "@/components/place/nearby-places";
+
+export const revalidate = 2592000;
+export const dynamicParams = true;
 
 export async function generateStaticParams() {
   const slugs = await getAllPlaceSlugs();
-  return slugs.map((slug) => ({ slug }));
+  return slugs.slice(0, 100).map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
@@ -71,11 +76,11 @@ export async function generateMetadata({
   return {
     title,
     description,
-    robots: { index: true, follow: true },
+    robots: indexable
+      ? { index: true, follow: true }
+      : { index: false, follow: true },
     alternates: {
-      canonical: indexable
-        ? `https://www.senidebekleriz.com/mekan/${place.slug}`
-        : `https://www.senidebekleriz.com/sehir/${place.citySlug}`,
+      canonical: `/mekan/${place.slug}`,
     },
     openGraph: {
       title,
@@ -142,26 +147,54 @@ export default async function PlacePage({
       place.description ||
       getPlaceThinContentFallback(place.name, cityData.name);
 
-  const placeJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "TouristAttraction",
-    name: place.name,
-    description: aboutText,
-    image: image?.url || undefined,
-    address: {
-      "@type": "PostalAddress",
-      addressLocality: cityData.name,
-      addressCountry: "TR",
-      streetAddress: place.address || undefined,
+  const placeImages = [
+    ...(image?.url ? [image.url] : []),
+    ...(place.photos || []),
+  ].filter(Boolean);
+
+  const placeJsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "TouristAttraction",
+      name: place.name,
+      description: aboutText,
+      image: placeImages.length > 0 ? placeImages : undefined,
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: cityData.name,
+        addressCountry: "TR",
+        streetAddress: place.address || undefined,
+      },
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: place.lat,
+        longitude: place.lng,
+      },
+      containedInPlace: {
+        "@type": "City",
+        name: cityData.name,
+      },
+      ...(place.rating
+        ? {
+            aggregateRating: {
+              "@type": "AggregateRating",
+              ratingValue: place.rating,
+              bestRating: "5",
+              worstRating: "1",
+              ratingCount: 1,
+            },
+          }
+        : {}),
+      telephone: place.phone || undefined,
+      url: place.website || undefined,
     },
-    geo: {
-      "@type": "GeoCoordinates",
-      latitude: place.lat,
-      longitude: place.lng,
-    },
-    telephone: place.phone || undefined,
-    url: place.website || undefined,
-  };
+    buildBreadcrumbsJsonLd([
+      { name: "Ana Sayfa", path: "/" },
+      { name: "Şehirler", path: "/sehirler" },
+      { name: cityData.name, path: `/sehir/${cityData.slug}` },
+      { name: place.name, path: `/mekan/${place.slug}` },
+    ]),
+  ];
 
   return (
     <div className="min-h-screen">
@@ -357,6 +390,12 @@ export default async function PlacePage({
                 }}
               />
               )}
+
+              <NearbyPlaces
+                currentPlaceSlug={place.slug}
+                citySlug={cityData.slug}
+                cityName={cityData.name}
+              />
             </div>
 
             {/* Sidebar */}

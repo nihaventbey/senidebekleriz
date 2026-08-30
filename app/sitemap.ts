@@ -15,18 +15,44 @@ import { getPublishedEventSlugs } from "@/lib/data/events";
 import { shouldIndexCategoryHub, shouldIndexCityHub } from "@/lib/content/hub-quality";
 import { shouldIndexPlace } from "@/lib/content/place-quality";
 
-export const dynamic = "force-dynamic";
+import { getSiteUrl } from "@/lib/agents/site";
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://senidebekleriz.com";
+export const revalidate = 86400;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const baseUrl = getSiteUrl();
+
   const routes: MetadataRoute.Sitemap = [
-    { url: `${BASE_URL}/`, lastModified: new Date() },
-    { url: `${BASE_URL}/sehirler`, lastModified: new Date() },
-    { url: `${BASE_URL}/kategoriler`, lastModified: new Date() },
-    { url: `${BASE_URL}/blog`, lastModified: new Date() },
-    { url: `${BASE_URL}/etkinlikler`, lastModified: new Date() },
+    {
+      url: `${baseUrl}/`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/sehirler`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/kategoriler`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/blog`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/etkinlikler`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
   ];
 
   const [
@@ -61,15 +87,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (!indexable) continue;
 
     routes.push({
-      url: `${BASE_URL}/sehir/${city.slug}`,
+      url: `${baseUrl}/sehir/${city.slug}`,
       lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
     });
   }
 
   for (const place of indexablePlaces) {
     routes.push({
-      url: `${BASE_URL}/mekan/${place.slug}`,
+      url: `${baseUrl}/mekan/${place.slug}`,
       lastModified: new Date(place.updatedAt),
+      changeFrequency: "monthly",
+      priority: 0.7,
     });
   }
 
@@ -91,33 +121,42 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (!indexable) continue;
 
     routes.push({
-      url: `${BASE_URL}/kategori/${category.slug}`,
+      url: `${baseUrl}/kategori/${category.slug}`,
       lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
     });
   }
 
   for (const slug of pageSlugs) {
     routes.push({
-      url: `${BASE_URL}/sayfa/${slug}`,
+      url: `${baseUrl}/sayfa/${slug}`,
       lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.5,
     });
   }
 
   for (const article of articles) {
     routes.push({
-      url: `${BASE_URL}/blog/${article.slug}`,
+      url: `${baseUrl}/blog/${article.slug}`,
       lastModified: article.publishedAt
         ? new Date(article.publishedAt)
         : new Date(article.updatedAt),
+      changeFrequency: "weekly",
+      priority: 0.8,
     });
   }
 
   for (const event of eventSlugs) {
     routes.push({
-      url: `${BASE_URL}/etkinlik/${event.slug}`,
+      url: `${baseUrl}/etkinlik/${event.slug}`,
       lastModified: new Date(event.updatedAt),
+      changeFrequency: "daily",
+      priority: 0.7,
     });
   }
 
   return routes;
 }
+

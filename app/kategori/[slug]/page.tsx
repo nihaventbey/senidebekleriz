@@ -15,6 +15,10 @@ import {
   getPlaceCardExcerpt,
   shouldIndexPlace,
 } from "@/lib/content/place-quality";
+import { JsonLd } from "@/components/seo/json-ld";
+import { buildBreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
+
+export const revalidate = 604800;
 
 export async function generateStaticParams() {
   const categories = await getAllCategories();
@@ -51,6 +55,14 @@ export async function generateMetadata({
     robots: indexable
       ? { index: true, follow: true }
       : { index: false, follow: true },
+    alternates: {
+      canonical: `/kategori/${slug}`,
+    },
+    openGraph: {
+      title: `${category.name} Mekanları`,
+      description: `Türkiye'deki ${category.name.toLowerCase()} mekanlarını keşfedin.`,
+      type: "website",
+    },
   };
 }
 
@@ -82,8 +94,23 @@ export default async function CategoryPage({
     descriptionLength: category.description?.length ?? 0,
   });
 
+  const categoryJsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: `${category.name} Mekanları`,
+      description: category.description || `Türkiye'deki ${category.name} mekanları.`,
+    },
+    buildBreadcrumbsJsonLd([
+      { name: "Ana Sayfa", path: "/" },
+      { name: "Kategoriler", path: "/kategoriler" },
+      { name: category.name, path: `/kategori/${category.slug}` },
+    ]),
+  ];
+
   return (
     <div>
+      <JsonLd data={categoryJsonLd} />
       <CategoryHero
         slug={slug}
         name={category.name}

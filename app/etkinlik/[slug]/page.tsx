@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { JsonLd } from "@/components/seo/json-ld";
 import { AdBanner } from "@/components/ads/ad-banner";
-import { getEventBySlug } from "@/lib/data/events";
+import { getEventBySlug, getPublishedEventSlugs } from "@/lib/data/events";
+import { buildBreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import {
   ArrowLeft,
   Calendar,
@@ -13,6 +14,13 @@ import {
   MapPin,
   Ticket,
 } from "lucide-react";
+
+export const revalidate = 86400;
+
+export async function generateStaticParams() {
+  const events = await getPublishedEventSlugs();
+  return events.map((e) => ({ slug: e.slug }));
+}
 
 const TYPE_LABELS: Record<string, string> = {
   tiyatro: "Tiyatro",
@@ -49,6 +57,9 @@ export async function generateMetadata({
   return {
     title,
     description,
+    alternates: {
+      canonical: `/etkinlik/${slug}`,
+    },
     openGraph: {
       title,
       description,
@@ -71,24 +82,31 @@ export default async function EventDetailPage({
   const dateLabel = formatDate(event.startsAt);
   const ctaUrl = event.ticketUrl || event.sourceUrl;
 
-  const eventJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Event",
-    name: event.title,
-    description: event.metaDescription || event.summary,
-    image: event.coverImage || undefined,
-    startDate: event.startsAt || undefined,
-    endDate: event.endsAt || undefined,
-    eventStatus: "https://schema.org/EventScheduled",
-    location: event.venueName
-      ? {
-          "@type": "Place",
-          name: event.venueName,
-          address: event.cityName || undefined,
-        }
-      : undefined,
-    url: ctaUrl || undefined,
-  };
+  const eventJsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Event",
+      name: event.title,
+      description: event.metaDescription || event.summary,
+      image: event.coverImage || undefined,
+      startDate: event.startsAt || undefined,
+      endDate: event.endsAt || undefined,
+      eventStatus: "https://schema.org/EventScheduled",
+      location: event.venueName
+        ? {
+            "@type": "Place",
+            name: event.venueName,
+            address: event.cityName || undefined,
+          }
+        : undefined,
+      url: ctaUrl || undefined,
+    },
+    buildBreadcrumbsJsonLd([
+      { name: "Ana Sayfa", path: "/" },
+      { name: "Etkinlikler", path: "/etkinlikler" },
+      { name: event.title, path: `/etkinlik/${event.slug}` },
+    ]),
+  ];
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-10">

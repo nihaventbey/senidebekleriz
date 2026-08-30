@@ -12,9 +12,10 @@ import { AdBanner } from "@/components/ads/ad-banner";
 import { resolveArticleCoverImage } from "@/lib/articles/cover-from-content";
 
 import { ReadingProgressBar } from "@/components/blog/reading-progress-bar";
+import { getSiteUrl } from "@/lib/agents/site";
+import { buildBreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 604800;
 
 export async function generateStaticParams() {
   const slugs = await getAllArticleSlugs();
@@ -33,6 +34,9 @@ export async function generateMetadata({
   return {
     title: article.metaTitle,
     description: article.metaDescription,
+    alternates: {
+      canonical: `/blog/${slug}`,
+    },
     openGraph: {
       title: article.metaTitle,
       description: article.metaDescription,
@@ -52,6 +56,7 @@ export default async function BlogArticlePage({
 
   if (!article) notFound();
 
+  const siteUrl = getSiteUrl();
   const coverUrl = resolveArticleCoverImage(
     article.coverImage,
     article.content
@@ -69,37 +74,18 @@ export default async function BlogArticlePage({
       image: coverUrl || undefined,
       publisher: {
         "@type": "Organization",
-        name: "Seni De Bekleriz",
+        name: "Seni de Bekleriz",
         logo: {
           "@type": "ImageObject",
-          url: "https://www.senidebekleriz.com/icon.svg",
+          url: `${siteUrl}/icon.svg`,
         },
       },
     },
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        {
-          "@type": "ListItem",
-          position: 1,
-          name: "Ana Sayfa",
-          item: "https://www.senidebekleriz.com",
-        },
-        {
-          "@type": "ListItem",
-          position: 2,
-          name: "Blog",
-          item: "https://www.senidebekleriz.com/blog",
-        },
-        {
-          "@type": "ListItem",
-          position: 3,
-          name: article.title,
-          item: `https://www.senidebekleriz.com/blog/${article.slug}`,
-        },
-      ],
-    },
+    buildBreadcrumbsJsonLd([
+      { name: "Ana Sayfa", path: "/" },
+      { name: "Gezi Rehberi", path: "/blog" },
+      { name: article.title, path: `/blog/${article.slug}` },
+    ]),
   ];
 
   return (
