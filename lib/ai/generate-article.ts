@@ -37,8 +37,10 @@ Yanıt yalnızca geçerli JSON:
 
 const URL_SYSTEM_APPEND = `
 URL kaynağı verildiğinde:
-- Sayfadaki gerçek bilgileri (mekan, etkinlik, tarih, konum) doğru yansıt
-- Ton: kültür, tarih, sanat ve müze odaklı Seni de Bekleriz editoryal stili
+- Sayfadaki gerçek bilgileri (mekan, mimari, tarihi dönem, etkinlik, tarih, konum) doğru yansıt
+- Eğer kaynak "kulturportali.gov.tr" veya valilik/bakanlık sitesi ise: Resmi kuru bürokratik dilden tamamen arındır; samimi, sürükleyici ve rehber niteliğinde zengin bir Türkçe gezi/kültür makalesine dönüştür. Tarihçe, mimari detaylar ve ziyaret ipuçlarını akıcı anlat.
+- Eğer kaynak "kulturyolufestivali.com" veya festival duyurusu ise: Festivalin düzenlendiği şehrin kültürel atmosferini, etkinliğin sanat değerini ve katılımcı deneyimini öne çıkar.
+- Ton: Kültür, tarih, sanat ve gezi odaklı Seni de Bekleriz editoryal stili
 - Editör Notu'nda kaynak URL'yi "Kaynak: ..." şeklinde belirt
 - Kaynak kültür/tarih dışıysa yine de nötr özet yap; yeme-içme reklam tonu kullanma`;
 

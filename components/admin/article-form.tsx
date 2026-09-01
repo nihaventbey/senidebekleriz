@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Sparkles, ArrowLeft, Trash2, Link2 } from "lucide-react";
+import { Loader2, Sparkles, ArrowLeft, Trash2, Link2, ExternalLink } from "lucide-react";
 import { renderMarkdown } from "@/lib/markdown";
 import { toast } from "@/lib/toast";
 import { slugify } from "@/lib/slugify";
@@ -191,9 +191,31 @@ export function ArticleForm({
               type="url"
               value={aiSourceUrl}
               onChange={(e) => setAiSourceUrl(e.target.value)}
-              placeholder="https://www.kultur.gov.tr/... veya müze/tiyatro sayfası"
+              placeholder="https://www.kulturportali.gov.tr/... veya resmi müze/gezi sayfası"
             />
+            <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] text-muted-foreground">
+              <span>Hızlı Kaynaklar:</span>
+              <a
+                href="https://www.kulturportali.gov.tr/turkiye/genel/gezilecekyer"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-0.5 rounded-md bg-muted px-2 py-0.5 text-primary hover:underline font-medium"
+              >
+                🏛️ Kültür Portalı Gezilecek Yerler
+                <ExternalLink className="h-2.5 w-2.5 ml-0.5" />
+              </a>
+              <a
+                href="https://www.kulturportali.gov.tr/turkiye/genel/kulturatlasi"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-0.5 rounded-md bg-muted px-2 py-0.5 text-primary hover:underline font-medium"
+              >
+                📜 Kültür Atlası
+                <ExternalLink className="h-2.5 w-2.5 ml-0.5" />
+              </a>
+            </div>
           </div>
+
           <div className="grid gap-3 sm:grid-cols-2">
             <Input
               value={aiTopic}

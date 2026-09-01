@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Link2 } from "lucide-react";
+import { Loader2, Link2, ExternalLink } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 export function EventUrlImport() {
@@ -48,8 +48,7 @@ export function EventUrlImport() {
     <div className="rounded-lg border bg-muted/30 p-4">
       <h2 className="font-semibold">URL&apos;den İçe Aktar</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Biletinial, Devlet Tiyatro, Biletix vb. link yapıştırın. AI metadata
-        çıkarır; scraping yapmaz, yalnızca sayfa özeti okunur.
+        Kültür Yolu Festivali, Kültür Portalı, Biletinial, Biletix veya tiyatro/konser linki yapıştırın. AI etkinlik tarihi, mekanı ve görselini otomatik çıkarır.
       </p>
       <div className="mt-4 flex flex-col gap-3 sm:flex-row">
         <div className="flex-1 space-y-2">
@@ -59,7 +58,7 @@ export function EventUrlImport() {
           <Input
             id="import-url"
             type="url"
-            placeholder="https://..."
+            placeholder="https://kulturyolufestivali.com/... veya https://www.kulturportali.gov.tr/..."
             value={url}
             onChange={(e) => setUrl(e.target.value)}
           />
@@ -78,6 +77,29 @@ export function EventUrlImport() {
           İçe Aktar
         </Button>
       </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <span>Önerilen Resmi Kaynaklar:</span>
+        <a
+          href="https://kulturyolufestivali.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-primary hover:underline font-medium"
+        >
+          🎭 Kültür Yolu Festivali (kulturyolufestivali.com)
+          <ExternalLink className="h-3 w-3" />
+        </a>
+        <a
+          href="https://www.kulturportali.gov.tr/etkinlikler"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-primary hover:underline font-medium"
+        >
+          🏛️ Kültür Portalı Etkinlikleri
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      </div>
     </div>
   );
 }
+

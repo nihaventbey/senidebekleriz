@@ -7,7 +7,7 @@ const DENY_URL_PATTERN =
 const IMAGE_EXT_PATTERN = /\.(jpe?g|png|webp|gif|avif)(\?|$)/i;
 
 const IMAGE_PATH_PATTERN =
-  /(\/image|\/images|\/img|\/media|\/upload|\/uploads|\/wp-content|\/static\/|hurimg|wikimedia|cloudinary|ggpht)/i;
+  /(\/image|\/images|\/img|\/media|\/upload|\/uploads|\/contents|\/wp-content|\/static\/|hurimg|wikimedia|cloudinary|ggpht|kulturportali|kulturyolu|ktb)/i;
 
 const IMG_SRC_ATTRS =
   "src|data-src|data-lazy-src|data-original|data-url|data-image|data-iesrc|data-full-url";
