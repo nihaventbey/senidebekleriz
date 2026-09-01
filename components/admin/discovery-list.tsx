@@ -19,10 +19,13 @@ import {
   ExternalLink,
   Loader2,
   X,
+  Newspaper,
+  Sparkles,
 } from "lucide-react";
 import {
   importDiscoveryAsArticle,
   importDiscoveryAsEvent,
+  importDiscoveryAsNews,
   rejectDiscovery,
 } from "@/lib/actions/discovery";
 import { getCityName } from "@/lib/cities/lookup";
@@ -30,8 +33,9 @@ import type { AdminDiscoveryListItem } from "@/lib/data/admin-discovery";
 import { toast } from "@/lib/toast";
 
 const TYPE_LABELS: Record<string, string> = {
-  event: "Etkinlik",
-  article: "Gezi / Yazı",
+  news: "📰 Haber",
+  event: "🎭 Etkinlik",
+  article: "🗺️ Gezi / Rehber",
   unknown: "Belirsiz",
 };
 
@@ -48,7 +52,7 @@ export function DiscoveryList({ items, filter }: Props) {
 
   function runAction(
     id: string,
-    action: "event" | "article" | "reject",
+    action: "news" | "event" | "article" | "reject",
     fn: () => Promise<{ slug: string } | void>
   ) {
     setPendingId(id);
@@ -57,22 +61,22 @@ export function DiscoveryList({ items, filter }: Props) {
       try {
         const result = await fn();
         if (action === "reject") {
-          toast.success("Keşif reddedildi");
+          toast.success("Keşif kaydı reddedildi");
           router.refresh();
           return;
         }
         if (result && typeof result === "object" && "slug" in result) {
           const slug = (result as { slug: string }).slug;
-          toast.success(
-            action === "article"
-              ? "Gezi rehberi taslağı oluşturuldu"
-              : "Etkinlik taslağı oluşturuldu"
-          );
-          router.push(
-            action === "article"
-              ? `/yonetim/yazilar/${slug}/duzenle`
-              : `/yonetim/etkinlikler/${slug}/duzenle`
-          );
+          if (action === "news") {
+            toast.success("Kültür haberi taslağı oluşturuldu! 📰");
+            router.push(`/yonetim/haberler/${slug}/duzenle`);
+          } else if (action === "article") {
+            toast.success("Gezi rehberi taslağı oluşturuldu! 🗺️");
+            router.push(`/yonetim/yazilar/${slug}/duzenle`);
+          } else {
+            toast.success("Etkinlik taslağı oluşturuldu! 🎭");
+            router.push(`/yonetim/etkinlikler/${slug}/duzenle`);
+          }
         }
       } catch (error) {
         toast.error(
@@ -88,24 +92,27 @@ export function DiscoveryList({ items, filter }: Props) {
 
   if (items.length === 0) {
     return (
-      <div className="rounded-lg border py-12 text-center text-muted-foreground">
-        {filter === "pending_review"
-          ? "Onay bekleyen keşif yok. Günlük tarama veya manuel sync deneyin."
-          : "Henüz keşfedilen içerik yok."}
+      <div className="rounded-2xl border border-dashed py-16 text-center text-muted-foreground">
+        <Sparkles className="h-10 w-10 mx-auto opacity-40 mb-2 text-primary" />
+        <p className="text-sm font-medium">
+          {filter === "pending_review"
+            ? "Onay bekleyen keşif bulunmuyor. 'Şimdi Tara & Keşfet' butonunu kullanarak yeni içerik çekebilirsiniz."
+            : "Henüz keşfedilen içerik yok."}
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border">
-      <Table>
+    <div className="overflow-x-auto rounded-2xl border bg-card shadow-xs">
+      <Table className="w-full min-w-[850px]">
         <TableHeader>
           <TableRow>
-            <TableHead>Başlık</TableHead>
-            <TableHead>Tip</TableHead>
-            <TableHead>Şehir</TableHead>
-            <TableHead>Kaynak</TableHead>
-            <TableHead className="text-right">İşlemler</TableHead>
+            <TableHead className="w-[38%]">Başlık & Özet</TableHead>
+            <TableHead className="w-[12%]">Önerilen Tür</TableHead>
+            <TableHead className="w-[12%]">Şehir</TableHead>
+            <TableHead className="w-[14%]">Kaynak</TableHead>
+            <TableHead className="w-[24%] text-right">AI İle İçe Aktar</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -113,9 +120,9 @@ export function DiscoveryList({ items, filter }: Props) {
             const busy = isPending && pendingId === item.id;
 
             return (
-              <TableRow key={item.id}>
-                <TableCell className="max-w-sm">
-                  <span className="line-clamp-2 font-medium">{item.title}</span>
+              <TableRow key={item.id} className="hover:bg-muted/40">
+                <TableCell>
+                  <span className="line-clamp-2 font-bold text-sm leading-snug">{item.title}</span>
                   {item.snippet && (
                     <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                       {item.snippet}
@@ -123,81 +130,118 @@ export function DiscoveryList({ items, filter }: Props) {
                   )}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="text-[11px] font-medium">
                     {TYPE_LABELS[item.content_type] || item.content_type}
                   </Badge>
                 </TableCell>
-                <TableCell>{getCityName(item.city_slug) || "—"}</TableCell>
+                <TableCell>
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {getCityName(item.city_slug) || "—"}
+                  </span>
+                </TableCell>
                 <TableCell>
                   <a
                     href={item.source_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center text-xs text-primary hover:underline"
+                    className="inline-flex items-center text-xs text-primary hover:underline truncate max-w-[120px]"
+                    title={item.source_name || item.source_url}
                   >
-                    {item.source_name || "Kaynak"}
-                    <ExternalLink className="ml-1 h-3 w-3" />
+                    <span className="truncate">{item.source_name || "Kaynak"}</span>
+                    <ExternalLink className="ml-1 h-3 w-3 shrink-0" />
                   </a>
                 </TableCell>
                 <TableCell className="text-right">
                   {item.status === "pending_review" ? (
-                    <div className="flex justify-end gap-1">
+                    <div className="flex justify-end items-center gap-1.5">
+                      {/* 1. News Button */}
                       <Button
                         size="sm"
                         variant="default"
+                        disabled={busy}
+                        onClick={() =>
+                          runAction(item.id, "news", () =>
+                            importDiscoveryAsNews(item.id)
+                          )
+                        }
+                        className="h-7 px-2 text-[11px] font-semibold gap-1 bg-blue-600 hover:bg-blue-700 text-white"
+                        title="Kültür Haberi Olarak AI ile Üret"
+                      >
+                        {busy && pendingAction === "news" ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Newspaper className="h-3.5 w-3.5" />
+                        )}
+                        <span>Haber</span>
+                      </Button>
+
+                      {/* 2. Event Button */}
+                      <Button
+                        size="sm"
+                        variant="secondary"
                         disabled={busy}
                         onClick={() =>
                           runAction(item.id, "event", () =>
                             importDiscoveryAsEvent(item.id)
                           )
                         }
-                        title="Etkinlik olarak içe aktar"
+                        className="h-7 px-2 text-[11px] font-semibold gap-1"
+                        title="Etkinlik Olarak AI ile Aktar"
                       >
                         {busy && pendingAction === "event" ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         ) : (
-                          <CalendarDays className="h-4 w-4" />
+                          <CalendarDays className="h-3.5 w-3.5" />
                         )}
+                        <span>Etkinlik</span>
                       </Button>
+
+                      {/* 3. Article / Guide Button */}
                       <Button
                         size="sm"
-                        variant="secondary"
+                        variant="outline"
                         disabled={busy}
                         onClick={() =>
                           runAction(item.id, "article", () =>
                             importDiscoveryAsArticle(item.id)
                           )
                         }
-                        title="Gezi rehberi / yazı olarak içe aktar"
+                        className="h-7 px-2 text-[11px] font-semibold gap-1"
+                        title="Gezi Rehberi / Blog Olarak AI ile Üret"
                       >
                         {busy && pendingAction === "article" ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         ) : (
-                          <BookOpen className="h-4 w-4" />
+                          <BookOpen className="h-3.5 w-3.5" />
                         )}
+                        <span>Rehber</span>
                       </Button>
+
+                      {/* 4. Reject Button */}
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant="ghost"
                         disabled={busy}
                         onClick={() =>
                           runAction(item.id, "reject", () =>
                             rejectDiscovery(item.id)
                           )
                         }
-                        title="Reddet"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        title="Reddet / Yoksay"
                       >
-                        {busy && pendingAction === "reject" ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <X className="h-4 w-4" />
-                        )}
+                        <X className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                  ) : item.status === "imported" ? (
-                    <Badge variant="secondary">İçe aktarıldı</Badge>
                   ) : (
-                    <Badge variant="outline">Reddedildi</Badge>
+                    <div className="flex justify-end">
+                      <Badge
+                        variant={item.status === "imported" ? "default" : "secondary"}
+                        className="text-[10px]"
+                      >
+                        {item.status === "imported" ? "İçe Aktarıldı" : "Reddedildi"}
+                      </Badge>
+                    </div>
                   )}
                 </TableCell>
               </TableRow>

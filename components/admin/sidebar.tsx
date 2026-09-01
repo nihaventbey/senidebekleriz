@@ -16,6 +16,7 @@ import {
   CalendarDays,
   Radar,
   Paintbrush,
+  Newspaper,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -44,11 +45,13 @@ export const adminNavSections: NavSection[] = [
       { href: "/yonetim/gorseller", label: "Görsel Stüdyosu", icon: Images },
       { href: "/yonetim/kategoriler", label: "Kategoriler", icon: Tags },
       { href: "/yonetim/sayfalar", label: "Sayfalar", icon: FileText },
+      { href: "/yonetim/haberler", label: "Kültür Haberleri", icon: Newspaper },
       { href: "/yonetim/yazilar", label: "Blog Yazıları", icon: BookOpen },
       { href: "/yonetim/etkinlikler", label: "Etkinlikler", icon: CalendarDays },
       { href: "/yonetim/kesif", label: "İçerik Keşfi", icon: Radar },
     ],
   },
+
 
   {
     title: "Site",

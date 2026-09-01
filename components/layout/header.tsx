@@ -11,11 +11,13 @@ import type { BrandSettings } from "@/lib/settings/branding";
 
 const navItems = [
   { href: "/", label: "Ana Sayfa" },
+  { href: "/haberler", label: "Haberler" },
+  { href: "/etkinlikler", label: "Etkinlikler" },
   { href: "/sehirler", label: "Şehirler" },
   { href: "/kategoriler", label: "Kategoriler" },
   { href: "/blog", label: "Gezi Rehberi" },
-  { href: "/etkinlikler", label: "Etkinlikler" },
 ];
+
 
 type HeaderProps = {
   brand?: BrandSettings;

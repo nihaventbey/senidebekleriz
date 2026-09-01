@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { importEventFromUrl } from "@/lib/ai/import-event-from-url";
+import { generateNewsDraft } from "@/lib/ai/generate-news";
 import { generateArticleDraft } from "@/lib/ai/generate-article";
 import { getCityName, normalizeCitySlug } from "@/lib/cities/lookup";
 import { getDiscoveredContentById } from "@/lib/data/admin-discovery";
@@ -175,3 +176,47 @@ export async function importDiscoveryAsArticle(id: string) {
   revalidateDiscoveryPaths();
   return { slug: data.slug };
 }
+
+export async function importDiscoveryAsNews(id: string) {
+  const item = await getDiscoveredContentById(id);
+  if (!item) throw new Error("Keşif kaydı bulunamadı");
+  if (item.status !== "pending_review") {
+    throw new Error("Bu kayıt zaten işlendi");
+  }
+
+  const publisherUrl = await resolveDiscoveryUrl(item);
+  const cityName = getCityName(item.city_slug) || undefined;
+  const draft = await generateNewsDraft({
+    topic: item.title,
+    sourceUrl: publisherUrl,
+    fallbackText: item.snippet || undefined,
+    cityName,
+  });
+
+  const slug = slugify(draft.title || item.title);
+
+  const { data, error } = await supabaseAdmin
+    .from("cultural_news")
+    .insert({
+      title: draft.title || item.title,
+      slug,
+      summary: draft.summary,
+      content: draft.content,
+      cover_image: draft.cover_image,
+      category: draft.category || "genel",
+      city_slug: normalizeCitySlug(item.city_slug),
+      source_name: item.source_name,
+      source_url: publisherUrl,
+      is_published: false,
+      updated_at: new Date().toISOString(),
+    })
+    .select("id, slug")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  await markDiscoveryImported(id, "cultural_news", data.id);
+  revalidateDiscoveryPaths();
+  return { slug: data.slug };
+}
+
