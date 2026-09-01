@@ -14,6 +14,7 @@ const navItems = [
   { href: "/sehirler", label: "Şehirler" },
   { href: "/kategoriler", label: "Kategoriler" },
   { href: "/blog", label: "Gezi Rehberi" },
+  { href: "/etkinlikler", label: "Etkinlikler" },
 ];
 
 type HeaderProps = {
