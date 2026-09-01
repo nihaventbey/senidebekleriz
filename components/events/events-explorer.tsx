@@ -6,14 +6,12 @@ import {
   Calendar,
   MapPin,
   Search,
-  SlidersHorizontal,
   Sparkles,
   Ticket,
   ExternalLink,
   ArrowRight,
   Clock,
   X,
-  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,6 +91,37 @@ function parseDateComponents(iso: string | null) {
   return { day, month, time, full, dateObj: d };
 }
 
+function sortEventsByClosestUpcoming(events: PublicEvent[]): PublicEvent[] {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayStartMs = todayStart.getTime();
+
+  return [...events].sort((a, b) => {
+    const timeA = a.startsAt ? new Date(a.startsAt).getTime() : null;
+    const timeB = b.startsAt ? new Date(b.startsAt).getTime() : null;
+
+    const isUpcomingA = timeA !== null && timeA >= todayStartMs;
+    const isUpcomingB = timeB !== null && timeB >= todayStartMs;
+
+    // 1. Both are upcoming: closest future date first (ascending)
+    if (isUpcomingA && isUpcomingB) {
+      return (timeA as number) - (timeB as number);
+    }
+    // 2. Upcoming event comes before past/null event
+    if (isUpcomingA && !isUpcomingB) return -1;
+    if (!isUpcomingA && isUpcomingB) return 1;
+
+    // 3. If neither is upcoming: most recent past event first
+    if (timeA !== null && timeB !== null) {
+      return timeB - timeA;
+    }
+    if (timeA !== null) return -1;
+    if (timeB !== null) return 1;
+
+    return 0;
+  });
+}
+
 type Props = {
   initialEvents: PublicEvent[];
   cities: City[];
@@ -138,7 +167,7 @@ export function EventsExplorer({
       list = list.filter((e) => e.citySlug === selectedCity);
     }
 
-    // 4. Date Filter & Sorting
+    // 4. Date Filter
     if (selectedDateFilter === "this_week") {
       const weekAhead = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
       list = list.filter((e) => {
@@ -153,15 +182,10 @@ export function EventsExplorer({
         const d = new Date(e.startsAt);
         return d >= now && d <= monthAhead;
       });
-    } else if (selectedDateFilter === "upcoming") {
-      list.sort((a, b) => {
-        const timeA = a.startsAt ? new Date(a.startsAt).getTime() : Infinity;
-        const timeB = b.startsAt ? new Date(b.startsAt).getTime() : Infinity;
-        return timeA - timeB;
-      });
     }
 
-    return list;
+    // Always ensure closest upcoming date is first
+    return sortEventsByClosestUpcoming(list);
   }, [initialEvents, searchQuery, selectedType, selectedCity, selectedDateFilter]);
 
   const hasActiveFilters =
@@ -176,6 +200,14 @@ export function EventsExplorer({
     setSelectedCity("all");
     setSelectedDateFilter("all");
   };
+
+  const selectedDateLabel =
+    DATE_FILTERS.find((d) => d.key === selectedDateFilter)?.label || "Tüm Tarihler";
+
+  const selectedCityLabel =
+    selectedCity === "all"
+      ? "Tüm Şehirler (81 İl)"
+      : cities.find((c) => c.slug === selectedCity)?.name || "Tüm Şehirler";
 
   return (
     <div className="space-y-8">
@@ -233,12 +265,14 @@ export function EventsExplorer({
               }}
             >
               <SelectTrigger className="h-10 text-xs sm:text-sm">
-                <SelectValue placeholder="Tarih Filtresi" />
+                <SelectValue placeholder="Tarih Filtresi">
+                  {selectedDateLabel}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {DATE_FILTERS.map((df) => (
                   <SelectItem key={df.key} value={df.key}>
-                    📅 {df.label}
+                    {df.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -254,10 +288,12 @@ export function EventsExplorer({
               }}
             >
               <SelectTrigger className="h-10 text-xs sm:text-sm">
-                <SelectValue placeholder="Tüm Şehirler" />
+                <SelectValue placeholder="Tüm Şehirler">
+                  {selectedCityLabel}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className="max-h-72">
-                <SelectItem value="all">📍 Tüm Şehirler (81 İl)</SelectItem>
+                <SelectItem value="all">Tüm Şehirler (81 İl)</SelectItem>
                 {cities.map((c) => (
                   <SelectItem key={c.slug} value={c.slug}>
                     {c.name}

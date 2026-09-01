@@ -48,6 +48,37 @@ function mapEvent(row: CulturalEventRow): PublicEvent {
   };
 }
 
+export function sortEventsByClosestUpcoming(events: PublicEvent[]): PublicEvent[] {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayStartMs = todayStart.getTime();
+
+  return [...events].sort((a, b) => {
+    const timeA = a.startsAt ? new Date(a.startsAt).getTime() : null;
+    const timeB = b.startsAt ? new Date(b.startsAt).getTime() : null;
+
+    const isUpcomingA = timeA !== null && timeA >= todayStartMs;
+    const isUpcomingB = timeB !== null && timeB >= todayStartMs;
+
+    // 1. Both are upcoming: closest future date first (ascending)
+    if (isUpcomingA && isUpcomingB) {
+      return (timeA as number) - (timeB as number);
+    }
+    // 2. Upcoming event comes before past/null event
+    if (isUpcomingA && !isUpcomingB) return -1;
+    if (!isUpcomingA && isUpcomingB) return 1;
+
+    // 3. If neither is upcoming: most recent past event first
+    if (timeA !== null && timeB !== null) {
+      return timeB - timeA;
+    }
+    if (timeA !== null) return -1;
+    if (timeB !== null) return 1;
+
+    return 0;
+  });
+}
+
 function publishedFilter() {
   const now = new Date().toISOString();
   return supabaseAdmin
@@ -61,9 +92,8 @@ export async function getFeaturedEvents(limit = 8): Promise<PublicEvent[]> {
   const { data, error } = await publishedFilter()
     .order("is_featured", { ascending: false })
     .order("sort_order", { ascending: true })
-    .order("starts_at", { ascending: true, nullsFirst: false })
     .order("published_at", { ascending: false })
-    .limit(limit * 2);
+    .limit(limit * 3);
 
   if (error) {
     console.error("getFeaturedEvents error:", error.message);
@@ -71,11 +101,15 @@ export async function getFeaturedEvents(limit = 8): Promise<PublicEvent[]> {
   }
 
   const rows = (data || []) as CulturalEventRow[];
-  const featured = rows.filter((r) => r.is_featured);
-  const rest = rows.filter((r) => !r.is_featured);
-  const merged = [...featured, ...rest].slice(0, limit);
+  const mapped = rows.map(mapEvent);
 
-  return merged.map(mapEvent);
+  const featured = mapped.filter((r) => r.isFeatured);
+  const rest = mapped.filter((r) => !r.isFeatured);
+
+  const sortedFeatured = sortEventsByClosestUpcoming(featured);
+  const sortedRest = sortEventsByClosestUpcoming(rest);
+
+  return [...sortedFeatured, ...sortedRest].slice(0, limit);
 }
 
 export async function getPublishedEvents(options?: {
@@ -84,7 +118,6 @@ export async function getPublishedEvents(options?: {
   limit?: number;
 }): Promise<PublicEvent[]> {
   let query = publishedFilter()
-    .order("starts_at", { ascending: true, nullsFirst: false })
     .order("published_at", { ascending: false });
 
   if (options?.citySlug) {
@@ -106,7 +139,8 @@ export async function getPublishedEvents(options?: {
     return [];
   }
 
-  return ((data || []) as CulturalEventRow[]).map(mapEvent);
+  const mapped = ((data || []) as CulturalEventRow[]).map(mapEvent);
+  return sortEventsByClosestUpcoming(mapped);
 }
 
 export async function getPublishedEventSlugs(): Promise<

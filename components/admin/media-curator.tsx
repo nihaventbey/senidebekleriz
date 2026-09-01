@@ -435,7 +435,13 @@ export function MediaCurator({ initialCities }: Props) {
                 }}
               >
                 <SelectTrigger className="h-9 text-xs">
-                  <SelectValue placeholder="İçerik Türü" />
+                  <SelectValue placeholder="İçerik Türü">
+                    {articleCategory === "all"
+                      ? "Tüm Yazılar"
+                      : articleCategory === "guides"
+                      ? "🗺️ Şehir Gezi Rehberleri"
+                      : "✍️ Tematik Blog Yazıları"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tüm Yazılar</SelectItem>
@@ -459,7 +465,11 @@ export function MediaCurator({ initialCities }: Props) {
                 }}
               >
                 <SelectTrigger className="h-9 text-xs">
-                  <SelectValue placeholder="Tüm Şehirler" />
+                  <SelectValue placeholder="Tüm Şehirler">
+                    {selectedCityId === "all"
+                      ? "Tüm Şehirler (81 İl)"
+                      : initialCities.find((c) => c.id === selectedCityId)?.name || "Tüm Şehirler"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="max-h-64">
                   <SelectItem value="all">Tüm Şehirler (81 İl)</SelectItem>
@@ -485,7 +495,11 @@ export function MediaCurator({ initialCities }: Props) {
                 }}
               >
                 <SelectTrigger className="h-9 text-xs">
-                  <SelectValue placeholder="Şehir Filtresi" />
+                  <SelectValue placeholder="Şehir Filtresi">
+                    {selectedCitySlug === "all"
+                      ? "Tüm Şehirler"
+                      : initialCities.find((c) => c.slug === selectedCitySlug)?.name || "Tüm Şehirler"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="max-h-64">
                   <SelectItem value="all">Tüm Şehirler</SelectItem>
@@ -511,8 +525,19 @@ export function MediaCurator({ initialCities }: Props) {
               }}
             >
               <SelectTrigger className="h-9 text-xs">
-                <SelectValue placeholder="Görsel Durumu" />
+                <SelectValue placeholder="Görsel Durumu">
+                  {statusFilter === "all"
+                    ? "Tüm Durumlar"
+                    : statusFilter === "no-cover"
+                    ? "⚠️ Görselsiz (Eksik)"
+                    : statusFilter === "auto"
+                    ? "🌐 Wikimedia / Otomatik Çekilmiş"
+                    : statusFilter === "locked"
+                    ? "🔒 Kilitli & Onaylı"
+                    : "📸 Görselli Yazılar"}
+                </SelectValue>
               </SelectTrigger>
+
               <SelectContent>
                 <SelectItem value="all">Tüm Durumlar</SelectItem>
                 <SelectItem value="no-cover">⚠️ Görselsiz (Eksik)</SelectItem>

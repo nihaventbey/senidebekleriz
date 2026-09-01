@@ -128,10 +128,14 @@ export function AdminPlacesList({
           }
         >
           <SelectTrigger className="w-full lg:w-[200px]">
-            <SelectValue placeholder="Şehir" />
+            <SelectValue placeholder="Şehir seçin">
+              {!citySlug || citySlug === "all"
+                ? "Tüm Şehirler"
+                : cities.find((c) => c.slug === citySlug)?.name || "Tüm Şehirler"}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tüm şehirler</SelectItem>
+            <SelectItem value="all">Tüm Şehirler</SelectItem>
             {cities.map((city) => (
               <SelectItem key={city.slug} value={city.slug}>
                 {city.name}
@@ -146,7 +150,17 @@ export function AdminPlacesList({
           }
         >
           <SelectTrigger className="w-full lg:w-[180px]">
-            <SelectValue placeholder="Kaynak" />
+            <SelectValue placeholder="Kaynak">
+              {!source || source === "all"
+                ? "Tüm kaynaklar"
+                : source === "manual"
+                ? "Manuel"
+                : source === "osm"
+                ? "OSM"
+                : source === "wikidata"
+                ? "Wikidata"
+                : "Google"}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tüm kaynaklar</SelectItem>
@@ -163,7 +177,15 @@ export function AdminPlacesList({
           }
         >
           <SelectTrigger className="w-full lg:w-[190px]">
-            <SelectValue placeholder="İçerik boşluğu" />
+            <SelectValue placeholder="İçerik boşluğu">
+              {!gap || gap === "all"
+                ? "Tüm mekanlar"
+                : gap === "no-cover"
+                ? "Görsel yok"
+                : gap === "thin"
+                ? "İnce içerik"
+                : "İndekslenebilir değil"}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tüm mekanlar</SelectItem>
