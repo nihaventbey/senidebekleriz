@@ -8,7 +8,6 @@ import {
   Unlock,
   Trash2,
   ExternalLink,
-  Upload,
   Link2,
   Sparkles,
   Check,
@@ -19,6 +18,7 @@ import {
   Loader2,
   Building2,
   MapPinned,
+  BookOpen,
   Image as ImageIcon,
   AlertCircle,
   X,
@@ -38,18 +38,20 @@ import { toast } from "@/lib/toast";
 
 type City = { id: string; name: string; slug: string };
 
-
 type MediaItem = {
   id: string;
   name: string;
   slug: string;
   cover_image: string | null;
-  cover_image_source: string | null;
-  cover_image_locked: boolean;
+  cover_image_source?: string | null;
+  cover_image_locked?: boolean;
   updated_at?: string;
   city_id?: string;
+  city_slug?: string | null;
   cities?: { id: string; name: string; slug: string } | null;
   region?: string;
+  excerpt?: string;
+  is_published?: boolean;
 };
 
 type Props = {
@@ -57,8 +59,10 @@ type Props = {
 };
 
 export function MediaCurator({ initialCities }: Props) {
-  const [entityType, setEntityType] = useState<"places" | "cities">("places");
+  const [entityType, setEntityType] = useState<"places" | "cities" | "articles">("places");
   const [selectedCityId, setSelectedCityId] = useState<string>("all");
+  const [selectedCitySlug, setSelectedCitySlug] = useState<string>("all");
+  const [articleCategory, setArticleCategory] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -106,6 +110,8 @@ export function MediaCurator({ initialCities }: Props) {
         const params = new URLSearchParams({
           type: entityType,
           cityId: selectedCityId,
+          citySlug: selectedCitySlug,
+          articleCategory,
           status: statusFilter,
           query: debouncedQuery,
           page: targetPage.toString(),
@@ -131,7 +137,7 @@ export function MediaCurator({ initialCities }: Props) {
         setLoading(false);
       }
     },
-    [entityType, selectedCityId, statusFilter, debouncedQuery]
+    [entityType, selectedCityId, selectedCitySlug, articleCategory, statusFilter, debouncedQuery]
   );
 
   useEffect(() => {
@@ -140,8 +146,9 @@ export function MediaCurator({ initialCities }: Props) {
 
   // Actions
   const handleToggleLock = async (item: MediaItem) => {
+    if (entityType === "articles") return;
+
     const newLock = !item.cover_image_locked;
-    // Optimistic update
     setItems((prev) =>
       prev.map((i) => (i.id === item.id ? { ...i, cover_image_locked: newLock } : i))
     );
@@ -160,7 +167,6 @@ export function MediaCurator({ initialCities }: Props) {
       if (!res.ok) throw new Error("Kilitleme güncellenemedi");
       toast.success(newLock ? "Görsel onaylandı ve kilitlendi 🔒" : "Kilit kaldırıldı 🔓");
     } catch (err: any) {
-      // Revert optimistic update
       setItems((prev) =>
         prev.map((i) => (i.id === item.id ? { ...i, cover_image_locked: !newLock } : i))
       );
@@ -171,7 +177,6 @@ export function MediaCurator({ initialCities }: Props) {
   const handleClearImage = async (item: MediaItem) => {
     if (!confirm(`"${item.name}" görselini kaldırmak istediğinize emin misiniz?`)) return;
 
-    // Optimistic update
     setItems((prev) =>
       prev.map((i) =>
         i.id === item.id
@@ -189,7 +194,7 @@ export function MediaCurator({ initialCities }: Props) {
           type: entityType,
           id: item.id,
           slug: item.slug,
-          citySlug: item.cities?.slug,
+          citySlug: item.cities?.slug || item.city_slug,
         }),
       });
       if (!res.ok) throw new Error("Görsel silinemedi");
@@ -215,7 +220,7 @@ export function MediaCurator({ initialCities }: Props) {
           type: entityType,
           id: activeItemForUrl.id,
           slug: activeItemForUrl.slug,
-          citySlug: activeItemForUrl.cities?.slug,
+          citySlug: activeItemForUrl.cities?.slug || activeItemForUrl.city_slug,
           imageUrl: url,
         }),
       });
@@ -233,69 +238,13 @@ export function MediaCurator({ initialCities }: Props) {
         )
       );
 
-      toast.success("Görsel başarıyla güncellendi ve kilitlendi! ✅");
+      toast.success("Görsel başarıyla güncellendi ve kaydedildi! ✅");
       setUrlDialogOpen(false);
       setInputImageUrl("");
     } catch (err: any) {
       toast.error(err.message || "Görsel kaydedilemedi");
     } finally {
       setSavingUrl(false);
-    }
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, item: MediaItem) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingItemId(item.id);
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("folder", entityType);
-    formData.append("slug", item.slug);
-
-    try {
-      const uploadRes = await fetch("/api/admin/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!uploadRes.ok) {
-        const errData = await uploadRes.json();
-        throw new Error(errData.error || "Yükleme başarısız");
-      }
-
-      const { url } = await uploadRes.json();
-
-      // Update item in database
-      const updateRes = await fetch("/api/admin/curate-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "update-image",
-          type: entityType,
-          id: item.id,
-          slug: item.slug,
-          citySlug: item.cities?.slug,
-          imageUrl: url,
-        }),
-      });
-
-      if (!updateRes.ok) throw new Error("Görsel mekana kaydedilemedi");
-
-      setItems((prev) =>
-        prev.map((i) =>
-          i.id === item.id
-            ? { ...i, cover_image: url, cover_image_source: "manual", cover_image_locked: true }
-            : i
-        )
-      );
-
-      toast.success("Görsel yüklendi ve kilitlendi! 📸");
-    } catch (err: any) {
-      toast.error(err.message || "Yükleme hatası");
-    } finally {
-      setUploadingItemId(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -334,7 +283,7 @@ export function MediaCurator({ initialCities }: Props) {
           type: entityType,
           id: activeItemForWiki.id,
           slug: activeItemForWiki.slug,
-          citySlug: activeItemForWiki.cities?.slug,
+          citySlug: activeItemForWiki.cities?.slug || activeItemForWiki.city_slug,
           imageUrl: url,
         }),
       });
@@ -349,7 +298,7 @@ export function MediaCurator({ initialCities }: Props) {
         )
       );
 
-      toast.success("Wikipedia görseli uygulandı ve kilitlendi! 🏛️");
+      toast.success("Wikipedia görseli uygulandı! 🏛️");
       setWikiDialogOpen(false);
     } catch (err: any) {
       toast.error(err.message || "Görsel uygulanamadı");
@@ -358,8 +307,14 @@ export function MediaCurator({ initialCities }: Props) {
 
   const getGoogleSearchUrl = (item: MediaItem) => {
     const cityName = item.cities?.name || "";
-    const q = `${item.name} ${cityName}`.trim();
+    const q = entityType === "articles" ? item.name : `${item.name} ${cityName}`.trim();
     return `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(q)}`;
+  };
+
+  const getItemViewUrl = (item: MediaItem) => {
+    if (entityType === "articles") return `/blog/${item.slug}`;
+    if (entityType === "cities") return `/sehir/${item.slug}`;
+    return `/mekan/${item.slug}`;
   };
 
   // Keyboard navigation for Focus Mode
@@ -373,7 +328,7 @@ export function MediaCurator({ initialCities }: Props) {
         setFocusIndex((prev) => (prev < items.length - 1 ? prev + 1 : prev));
       } else if (e.key === "ArrowLeft") {
         setFocusIndex((prev) => (prev > 0 ? prev - 1 : prev));
-      } else if (e.key.toLowerCase() === "l") {
+      } else if (e.key.toLowerCase() === "l" && entityType !== "articles") {
         const cur = items[focusIndex];
         if (cur) handleToggleLock(cur);
       }
@@ -381,7 +336,7 @@ export function MediaCurator({ initialCities }: Props) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [viewMode, items, focusIndex, urlDialogOpen, wikiDialogOpen]);
+  }, [viewMode, items, focusIndex, urlDialogOpen, wikiDialogOpen, entityType]);
 
   const currentFocusItem = items[focusIndex] || null;
 
@@ -390,7 +345,7 @@ export function MediaCurator({ initialCities }: Props) {
       {/* Top Filter Bar */}
       <div className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-card p-5 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          {/* Entity Selector (Places vs Cities) */}
+          {/* Entity Selector (Places vs Cities vs Articles) */}
           <div className="flex items-center gap-1 rounded-xl bg-muted/60 p-1">
             <button
               onClick={() => {
@@ -418,7 +373,21 @@ export function MediaCurator({ initialCities }: Props) {
               }`}
             >
               <Building2 className="h-4 w-4 text-primary" />
-              <span>Şehir Kapakları (81 İl)</span>
+              <span>Şehir Kapakları</span>
+            </button>
+            <button
+              onClick={() => {
+                setEntityType("articles");
+                setPage(1);
+              }}
+              className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                entityType === "articles"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <BookOpen className="h-4 w-4 text-purple-600" />
+              <span>Blog & Gezi Rehberleri</span>
             </button>
           </div>
 
@@ -453,7 +422,31 @@ export function MediaCurator({ initialCities }: Props) {
 
         {/* Filters Row */}
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-12">
-          {/* City Filter (Only for Places) */}
+          {/* Article Category Filter (Only for Articles) */}
+          {entityType === "articles" && (
+            <div className="lg:col-span-3">
+              <Select
+                value={articleCategory}
+                onValueChange={(v) => {
+                  if (v) {
+                    setArticleCategory(v);
+                    setPage(1);
+                  }
+                }}
+              >
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue placeholder="İçerik Türü" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tüm Yazılar</SelectItem>
+                  <SelectItem value="guides">🗺️ Şehir Gezi Rehberleri</SelectItem>
+                  <SelectItem value="blog">✍️ Tematik Blog Yazıları</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* City Filter (For Places & Articles) */}
           {entityType === "places" && (
             <div className="lg:col-span-3">
               <Select
@@ -480,8 +473,34 @@ export function MediaCurator({ initialCities }: Props) {
             </div>
           )}
 
+          {entityType === "articles" && (
+            <div className="lg:col-span-3">
+              <Select
+                value={selectedCitySlug}
+                onValueChange={(v) => {
+                  if (v) {
+                    setSelectedCitySlug(v);
+                    setPage(1);
+                  }
+                }}
+              >
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue placeholder="Şehir Filtresi" />
+                </SelectTrigger>
+                <SelectContent className="max-h-64">
+                  <SelectItem value="all">Tüm Şehirler</SelectItem>
+                  {initialCities.map((c) => (
+                    <SelectItem key={c.slug} value={c.slug}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Status Filter */}
-          <div className={entityType === "places" ? "lg:col-span-3" : "lg:col-span-4"}>
+          <div className={entityType === "cities" ? "lg:col-span-4" : "lg:col-span-3"}>
             <Select
               value={statusFilter}
               onValueChange={(v) => {
@@ -497,20 +516,32 @@ export function MediaCurator({ initialCities }: Props) {
               <SelectContent>
                 <SelectItem value="all">Tüm Durumlar</SelectItem>
                 <SelectItem value="no-cover">⚠️ Görselsiz (Eksik)</SelectItem>
-                <SelectItem value="auto">🌐 Wikimedia / Otomatik Çekilmiş</SelectItem>
-                <SelectItem value="locked">🔒 Kilitli & Onaylı</SelectItem>
+                {entityType !== "articles" && (
+                  <>
+                    <SelectItem value="auto">🌐 Wikimedia / Otomatik Çekilmiş</SelectItem>
+                    <SelectItem value="locked">🔒 Kilitli & Onaylı</SelectItem>
+                  </>
+                )}
+                {entityType === "articles" && (
+                  <SelectItem value="has-cover">📸 Görselli Yazılar</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
 
-
           {/* Search Input */}
-          <div className={entityType === "places" ? "lg:col-span-6" : "lg:col-span-8"}>
+          <div className={entityType === "cities" ? "lg:col-span-8" : entityType === "articles" ? "lg:col-span-3" : "lg:col-span-6"}>
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder={entityType === "places" ? "Mekan adı ile hızlı ara..." : "Şehir adı ara..."}
+                placeholder={
+                  entityType === "places"
+                    ? "Mekan adı ile hızlı ara..."
+                    : entityType === "articles"
+                    ? "Yazı başlığı ile ara..."
+                    : "Şehir adı ara..."
+                }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-9 pl-9 text-xs"
@@ -534,7 +565,7 @@ export function MediaCurator({ initialCities }: Props) {
           </span>
           {viewMode === "focus" && items.length > 0 && (
             <span className="font-medium text-foreground">
-              {focusIndex + 1} / {items.length} (Klavye: ⬅️ ➡️ Ok Tuşları, &apos;L&apos; Kilitle)
+              {focusIndex + 1} / {items.length} (Klavye: ⬅️ ➡️ Ok Tuşları)
             </span>
           )}
         </div>
@@ -554,7 +585,7 @@ export function MediaCurator({ initialCities }: Props) {
           <ImageIcon className="h-12 w-12 text-muted-foreground/40 mb-3" />
           <h3 className="text-base font-semibold">Kayıt Bulunamadı</h3>
           <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-            Seçilen filtre kriterlerine uygun mekan veya şehir görseli bulunamadı.
+            Seçilen filtre kriterlerine uygun içerik görseli bulunamadı.
           </p>
         </div>
       )}
@@ -580,7 +611,17 @@ export function MediaCurator({ initialCities }: Props) {
 
               {/* Status Badges on Image */}
               <div className="absolute left-3 top-3 flex items-center gap-2">
-                {currentFocusItem.cover_image_locked ? (
+                {entityType === "articles" ? (
+                  currentFocusItem.cities?.name || currentFocusItem.city_slug ? (
+                    <Badge className="bg-blue-600 text-white shadow-sm gap-1 text-xs">
+                      <MapPinned className="h-3 w-3" /> {currentFocusItem.cities?.name || currentFocusItem.city_slug} Gezi Rehberi
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-purple-600 text-white shadow-sm gap-1 text-xs">
+                      <BookOpen className="h-3 w-3" /> Tematik Blog
+                    </Badge>
+                  )
+                ) : currentFocusItem.cover_image_locked ? (
                   <Badge className="bg-emerald-600 text-white shadow-sm gap-1 text-xs">
                     <Lock className="h-3 w-3" /> Onaylı & Kilitli
                   </Badge>
@@ -594,7 +635,7 @@ export function MediaCurator({ initialCities }: Props) {
                   </Badge>
                 )}
 
-                {currentFocusItem.cities?.name && (
+                {entityType !== "articles" && currentFocusItem.cities?.name && (
                   <Badge variant="outline" className="bg-black/50 text-white border-white/20 text-xs">
                     {currentFocusItem.cities.name}
                   </Badge>
@@ -616,7 +657,7 @@ export function MediaCurator({ initialCities }: Props) {
 
                 <div className="flex items-center gap-2">
                   <Link
-                    href={entityType === "places" ? `/mekan/${currentFocusItem.slug}` : `/sehir/${currentFocusItem.slug}`}
+                    href={getItemViewUrl(currentFocusItem)}
                     target="_blank"
                     className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
                   >
@@ -627,7 +668,7 @@ export function MediaCurator({ initialCities }: Props) {
               </div>
 
               {/* Action Buttons Toolbar */}
-              <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-5">
+              <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {/* 1. Google Search Button */}
                 <Button
                   variant="outline"
@@ -667,25 +708,7 @@ export function MediaCurator({ initialCities }: Props) {
                   URL Yapıştır
                 </Button>
 
-                {/* 4. Lock / Approve */}
-                <Button
-                  variant={currentFocusItem.cover_image_locked ? "secondary" : "default"}
-                  size="sm"
-                  onClick={() => handleToggleLock(currentFocusItem)}
-                  className="w-full text-xs font-medium gap-1.5"
-                >
-                  {currentFocusItem.cover_image_locked ? (
-                    <>
-                      <Unlock className="h-3.5 w-3.5" /> Kilidi Aç
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="h-3.5 w-3.5" /> Onayla & Kilitle
-                    </>
-                  )}
-                </Button>
-
-                {/* 5. Clear Image */}
+                {/* 4. Clear Image */}
                 <Button
                   variant="destructive"
                   size="sm"
@@ -706,7 +729,7 @@ export function MediaCurator({ initialCities }: Props) {
                   onClick={() => setFocusIndex((prev) => prev - 1)}
                   className="gap-1.5 text-xs"
                 >
-                  <ChevronLeft className="h-4 w-4" /> Önceki Mekan
+                  <ChevronLeft className="h-4 w-4" /> Önceki İçerik
                 </Button>
 
                 <span className="text-xs text-muted-foreground">
@@ -720,7 +743,7 @@ export function MediaCurator({ initialCities }: Props) {
                   onClick={() => setFocusIndex((prev) => prev + 1)}
                   className="gap-1.5 text-xs"
                 >
-                  Sonraki Mekan <ChevronRight className="h-4 w-4" />
+                  Sonraki İçerik <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </CardContent>
@@ -756,7 +779,17 @@ export function MediaCurator({ initialCities }: Props) {
 
                 {/* Status Badges */}
                 <div className="absolute left-2.5 top-2.5 flex flex-wrap gap-1">
-                  {item.cover_image_locked ? (
+                  {entityType === "articles" ? (
+                    item.cities?.name || item.city_slug ? (
+                      <Badge className="bg-blue-600 text-white text-[10px] px-1.5 py-0.5 gap-1 shadow-xs">
+                        <MapPinned className="h-2.5 w-2.5" /> {item.cities?.name || item.city_slug} Rehberi
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-purple-600 text-white text-[10px] px-1.5 py-0.5 gap-1 shadow-xs">
+                        <BookOpen className="h-2.5 w-2.5" /> Blog
+                      </Badge>
+                    )
+                  ) : item.cover_image_locked ? (
                     <Badge className="bg-emerald-600 text-white text-[10px] px-1.5 py-0.5 gap-1 shadow-xs">
                       <Lock className="h-2.5 w-2.5" /> Kilitli
                     </Badge>
@@ -775,7 +808,7 @@ export function MediaCurator({ initialCities }: Props) {
                 </div>
 
                 {/* City Tag */}
-                {item.cities?.name && (
+                {entityType !== "articles" && item.cities?.name && (
                   <div className="absolute right-2.5 top-2.5">
                     <Badge variant="outline" className="bg-black/60 text-white/90 border-white/20 text-[10px]">
                       {item.cities.name}
@@ -787,13 +820,13 @@ export function MediaCurator({ initialCities }: Props) {
               {/* Title & Info */}
               <CardContent className="p-4 pb-3 flex-1 flex flex-col justify-between">
                 <div>
-                  <h3 className="text-sm font-bold leading-snug line-clamp-1 text-foreground" title={item.name}>
+                  <h3 className="text-sm font-bold leading-snug line-clamp-2 text-foreground" title={item.name}>
                     {item.name}
                   </h3>
                   <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span className="truncate max-w-[140px]">{item.cities?.name || item.region || item.slug}</span>
+                    <span className="truncate max-w-[140px]">{item.cities?.name || item.region || item.city_slug || item.slug}</span>
                     <Link
-                      href={entityType === "places" ? `/mekan/${item.slug}` : `/sehir/${item.slug}`}
+                      href={getItemViewUrl(item)}
                       target="_blank"
                       className="inline-flex items-center gap-0.5 text-primary hover:underline"
                     >
@@ -850,23 +883,38 @@ export function MediaCurator({ initialCities }: Props) {
                   </div>
 
                   <div className="flex items-center gap-1.5">
-                    {/* Lock / Approve Toggle */}
-                    <Button
-                      variant={item.cover_image_locked ? "secondary" : "default"}
-                      size="sm"
-                      onClick={() => handleToggleLock(item)}
-                      className="h-7 flex-1 px-2 text-[11px] font-medium"
-                    >
-                      {item.cover_image_locked ? (
-                        <>
-                          <Unlock className="h-3 w-3 mr-1" /> Kilit Aç
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="h-3 w-3 mr-1" /> Onayla
-                        </>
-                      )}
-                    </Button>
+                    {entityType !== "articles" ? (
+                      /* Lock / Approve Toggle */
+                      <Button
+                        variant={item.cover_image_locked ? "secondary" : "default"}
+                        size="sm"
+                        onClick={() => handleToggleLock(item)}
+                        className="h-7 flex-1 px-2 text-[11px] font-medium"
+                      >
+                        {item.cover_image_locked ? (
+                          <>
+                            <Unlock className="h-3 w-3 mr-1" /> Kilit Aç
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="h-3 w-3 mr-1" /> Onayla
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setActiveItemForUrl(item);
+                          setInputImageUrl(item.cover_image || "");
+                          setUrlDialogOpen(true);
+                        }}
+                        className="h-7 flex-1 px-2 text-[11px] font-medium text-primary"
+                      >
+                        <ImageIcon className="h-3 w-3 mr-1" /> Görseli Değiştir
+                      </Button>
+                    )}
 
                     {/* Clear Button */}
                     <Button
@@ -922,7 +970,7 @@ export function MediaCurator({ initialCities }: Props) {
           <div className="w-full max-w-md rounded-2xl border border-border/60 bg-background p-6 shadow-xl animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between pb-3 border-b border-border/60">
               <h3 className="text-base font-bold text-foreground">
-                Görsel URL Yapıştır & Onayla
+                Görsel URL Yapıştır & Kaydet
               </h3>
               <button
                 onClick={() => setUrlDialogOpen(false)}
@@ -981,7 +1029,7 @@ export function MediaCurator({ initialCities }: Props) {
                 ) : (
                   <>
                     <Check className="mr-1.5 h-3.5 w-3.5" />
-                    Kaydet ve Kilitle
+                    Kaydet
                   </>
                 )}
               </Button>
@@ -1023,7 +1071,7 @@ export function MediaCurator({ initialCities }: Props) {
 
               {!loadingWiki && wikiSuggestions.length === 0 && (
                 <div className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground">
-                  Bu mekan için Wikipedia&apos;da alternatif fotoğraf bulunamadı. Lütfen Google Görseller butonunu kullanarak görsel bağlantısı yapıştırın.
+                  Bu içerik için Wikipedia&apos;da alternatif fotoğraf bulunamadı. Lütfen Google Görseller butonunu kullanarak kaliteli bir görsel bağlantısı yapıştırın.
                 </div>
               )}
 
@@ -1069,4 +1117,3 @@ export function MediaCurator({ initialCities }: Props) {
     </div>
   );
 }
-
