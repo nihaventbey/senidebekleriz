@@ -36,9 +36,11 @@ import {
   Send,
   AlertCircle,
   Zap,
+  Camera,
 } from "lucide-react";
 import { AiImageModal } from "@/components/admin/ai-image-modal";
 import { UniversalUrlImportModal } from "@/components/admin/universal-url-import-modal";
+import { SocialMediaStudioModal } from "@/components/admin/social-media-studio-modal";
 import { DiscoverySyncButton } from "@/components/admin/discovery-sync-button";
 import { AdSenseReadiness } from "@/components/admin/adsense-readiness";
 import type { AdminDashboardStats, ContentReadinessStats } from "@/lib/data/admin-stats";
@@ -141,6 +143,7 @@ export function DashboardCockpit({
   const router = useRouter();
   const [isAiImageModalOpen, setIsAiImageModalOpen] = useState(false);
   const [isUniversalImportModalOpen, setIsUniversalImportModalOpen] = useState(false);
+  const [isSocialModalOpen, setIsSocialModalOpen] = useState(false);
   const [quickAiUrl, setQuickAiUrl] = useState("");
 
   // Discovery triage state
@@ -251,6 +254,15 @@ export function DashboardCockpit({
             >
               <Zap className="h-4 w-4 text-blue-100" />
               <span>URL&apos;den Çek &amp; Üret</span>
+            </Button>
+
+            <Button
+              type="button"
+              onClick={() => setIsSocialModalOpen(true)}
+              className="h-10 px-3.5 text-xs font-bold gap-1.5 bg-gradient-to-r from-rose-500 via-purple-500 to-amber-500 hover:opacity-90 text-white shadow-xs"
+            >
+              <Camera className="h-4 w-4 text-white" />
+              <span>Sosyal Medya Stüdyosu</span>
             </Button>
 
             <Button
@@ -796,6 +808,12 @@ export function DashboardCockpit({
         onClose={() => setIsUniversalImportModalOpen(false)}
         defaultTarget="auto"
         title="Kokpit Hızlı URL Çekici"
+      />
+
+      {/* Social Media & Instagram Studio Modal */}
+      <SocialMediaStudioModal
+        isOpen={isSocialModalOpen}
+        onClose={() => setIsSocialModalOpen(false)}
       />
     </div>
   );

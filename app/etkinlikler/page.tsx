@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { getPublishedEvents } from "@/lib/data/events";
 import { getAllCities } from "@/lib/data/cities";
 import { EventsExplorer } from "@/components/events/events-explorer";
+import { TurkeyCulturalHeatmap } from "@/components/maps/turkey-cultural-heatmap";
 import { BreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import { EventsJsonLd } from "@/components/seo/events-jsonld";
 
@@ -38,7 +39,7 @@ export default async function EventsPage({ searchParams }: Props) {
   ]);
 
   return (
-    <div className="container mx-auto px-4 py-8 md:py-12">
+    <div className="space-y-8 pb-16">
       {/* Schema.org SEO Breadcrumbs & Event ItemList */}
       <BreadcrumbsJsonLd
         items={[
@@ -48,13 +49,18 @@ export default async function EventsPage({ searchParams }: Props) {
       />
       <EventsJsonLd events={events} />
 
-      {/* Interactive Explorer UI */}
-      <EventsExplorer
-        initialEvents={events}
-        cities={cities}
-        initialCity={sehir || "all"}
-        initialType={tip || "all"}
-      />
+      {/* 1. Interactive Turkey Cultural Heatmap */}
+      <TurkeyCulturalHeatmap />
+
+      {/* 2. Interactive Explorer UI */}
+      <div className="container mx-auto px-4">
+        <EventsExplorer
+          initialEvents={events}
+          cities={cities}
+          initialCity={sehir || "all"}
+          initialType={tip || "all"}
+        />
+      </div>
     </div>
   );
 }
