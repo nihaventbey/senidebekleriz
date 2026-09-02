@@ -233,3 +233,34 @@ export async function importDiscoveryAsNews(id: string) {
   return { slug: data.slug };
 }
 
+export async function bulkRejectDiscovery(ids: string[]) {
+  if (!ids || ids.length === 0) return { success: true, count: 0 };
+
+  const { error } = await supabaseAdmin
+    .from("discovered_content")
+    .update({
+      status: "rejected",
+      updated_at: new Date().toISOString(),
+    })
+    .in("id", ids);
+
+  if (error) throw new Error(error.message);
+
+  revalidateDiscoveryPaths();
+  return { success: true, count: ids.length };
+}
+
+export async function bulkDeleteDiscovery(ids: string[]) {
+  if (!ids || ids.length === 0) return { success: true, count: 0 };
+
+  const { error } = await supabaseAdmin
+    .from("discovered_content")
+    .delete()
+    .in("id", ids);
+
+  if (error) throw new Error(error.message);
+
+  revalidateDiscoveryPaths();
+  return { success: true, count: ids.length };
+}
+

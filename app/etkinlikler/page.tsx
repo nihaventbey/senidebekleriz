@@ -22,8 +22,8 @@ export const metadata: Metadata = {
   },
 };
 
-// 1 hour Edge CDN caching for zero Vercel invocation quota burn
-export const revalidate = 3600;
+// 60 seconds Edge CDN caching for fast updates
+export const revalidate = 60;
 
 type Props = {
   searchParams: Promise<{ sehir?: string; tip?: string }>;

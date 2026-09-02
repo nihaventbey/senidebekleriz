@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapPin } from "lucide-react";
+import { CulturalCoverPlaceholder } from "@/components/ui/cultural-cover-placeholder";
 import type { PlaceImage as PlaceImageType } from "@/lib/data/wikimedia";
 
 type PlaceImageProps = {
@@ -12,18 +12,6 @@ type PlaceImageProps = {
   className?: string;
 };
 
-function PlaceholderImage({ placeName, cityName }: { placeName: string; cityName: string }) {
-  return (
-    <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10 p-8 text-center">
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-        <MapPin className="h-8 w-8 text-primary" />
-      </div>
-      <p className="text-lg font-semibold">{placeName}</p>
-      <p className="text-sm text-muted-foreground">{cityName}</p>
-    </div>
-  );
-}
-
 export function PlaceImageComponent({
   wikidataId,
   placeName,
@@ -32,9 +20,11 @@ export function PlaceImageComponent({
   className = "",
 }: PlaceImageProps) {
   const [image, setImage] = useState<PlaceImageType | null>(null);
+  const [hasError, setHasError] = useState(false);
   const [loading, setLoading] = useState(!coverImage);
 
   useEffect(() => {
+    setHasError(false);
     if (coverImage) {
       setImage({ url: coverImage, alt: placeName, source: "manual" });
       setLoading(false);
@@ -67,22 +57,30 @@ export function PlaceImageComponent({
     return (
       <div className={`animate-pulse bg-muted ${className}`}>
         <div className="flex h-full w-full items-center justify-center">
-          <MapPin className="h-8 w-8 text-muted-foreground/40" />
+          <span className="text-xs text-muted-foreground/40 font-semibold">Görsel Yükleniyor...</span>
         </div>
       </div>
     );
   }
 
-  if (image?.url) {
+  if (image?.url && !hasError) {
     return (
       <img
         src={image.url}
-        alt={image.alt}
+        alt={image.alt || placeName}
         className={`object-cover ${className}`}
         loading="lazy"
+        onError={() => setHasError(true)}
       />
     );
   }
 
-  return <PlaceholderImage placeName={placeName} cityName={cityName} />;
+  return (
+    <CulturalCoverPlaceholder
+      title={placeName}
+      category="Kültür & Tarih Mekanı"
+      cityName={cityName}
+      className={className}
+    />
+  );
 }

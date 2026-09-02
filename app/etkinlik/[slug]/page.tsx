@@ -7,6 +7,9 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { AdBanner } from "@/components/ads/ad-banner";
 import { getEventBySlug, getPublishedEventSlugs } from "@/lib/data/events";
 import { buildBreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
+import { getCityCoordinates } from "@/lib/cities/lookup";
+import { EventVenueMap } from "@/components/maps/event-venue-map";
+import { CulturalCoverPlaceholder } from "@/components/ui/cultural-cover-placeholder";
 import {
   ArrowLeft,
   Calendar,
@@ -81,6 +84,7 @@ export default async function EventDetailPage({
 
   const dateLabel = formatDate(event.startsAt);
   const ctaUrl = event.ticketUrl || event.sourceUrl;
+  const coordinates = getCityCoordinates(event.cityName || event.citySlug);
 
   const eventJsonLd = [
     {
@@ -119,17 +123,26 @@ export default async function EventDetailPage({
         </Link>
       </Button>
 
-      {event.coverImage && (
-        <div className="mb-6 overflow-hidden rounded-2xl border">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+      {/* Cover Image or Cultural Logo Fallback Header */}
+      <div className="mb-6 overflow-hidden rounded-2xl border">
+        {event.coverImage ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={event.coverImage}
             alt={event.title}
-            className="h-auto max-h-[420px] w-full object-cover"
+            className="h-auto max-h-[440px] w-full object-cover"
             referrerPolicy="no-referrer"
           />
-        </div>
-      )}
+        ) : (
+          <CulturalCoverPlaceholder
+            title={event.title}
+            category={TYPE_LABELS[event.eventType] || "Kültür Etkinliği"}
+            cityName={event.cityName || undefined}
+            className="h-[240px] sm:h-[300px] w-full"
+            iconSize="lg"
+          />
+        )}
+      </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Badge>{TYPE_LABELS[event.eventType] || "Kültür"}</Badge>
@@ -187,6 +200,14 @@ export default async function EventDetailPage({
           </Button>
         </div>
       )}
+
+      {/* Interactive Event Venue & Directions Map */}
+      <EventVenueMap
+        venueName={event.venueName}
+        cityName={event.cityName}
+        coordinates={coordinates}
+        className="mt-10"
+      />
 
       {event.sourceName && (
         <p className="mt-6 text-xs text-muted-foreground">

@@ -253,6 +253,32 @@ export async function deletePlace(id: string) {
   revalidatePath("/yonetim/mekanlar");
 }
 
+export async function bulkDeletePlaces(ids: string[]) {
+  if (!ids || ids.length === 0) return { success: true, count: 0 };
+
+  const { error } = await supabaseAdmin.from("places").delete().in("id", ids);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/sehirler");
+  revalidatePath("/yonetim/mekanlar");
+  return { success: true, count: ids.length };
+}
+
+export async function bulkToggleActivePlaces(ids: string[], isActive: boolean) {
+  if (!ids || ids.length === 0) return { success: true, count: 0 };
+
+  const { error } = await supabaseAdmin
+    .from("places")
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
+    .in("id", ids);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/sehirler");
+  revalidatePath("/yonetim/mekanlar");
+  return { success: true, count: ids.length };
+}
+
 // Pages
 export async function createPage(formData: FormData) {
   const data = {

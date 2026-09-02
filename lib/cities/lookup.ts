@@ -27,3 +27,10 @@ export function getCityNameOrSlug(slug: string | null | undefined): string | nul
   if (!slug) return null;
   return getCityName(slug) ?? slug;
 }
+
+export function getCityCoordinates(slugOrName: string | null | undefined): { lat: number; lng: number } | null {
+  if (!slugOrName) return null;
+  const target = slugOrName.toLowerCase().trim();
+  const city = turkeyCities.find((c) => c.slug === target || c.name.toLowerCase() === target);
+  return city ? { lat: city.lat, lng: city.lng } : null;
+}

@@ -20,8 +20,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, Loader2, Pencil, Search } from "lucide-react";
+import { ChevronDown, Loader2, Pencil, Search, CheckSquare, Square, Trash2, Eye, EyeOff } from "lucide-react";
 import type { AdminPlaceListItem } from "@/lib/data/admin";
+import { bulkDeletePlaces, bulkToggleActivePlaces } from "@/lib/actions/admin";
 import { toast } from "@/lib/toast";
 
 type CityOption = { slug: string; name: string };
@@ -56,11 +57,73 @@ export function AdminPlacesList({
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkPending, setIsBulkPending] = useState(false);
   const [query, setQuery] = useState("");
   const [citySlug, setCitySlug] = useState("");
   const [source, setSource] = useState("");
   const [gap, setGap] = useState(initialGap);
   const skipInitialFetch = useRef(true);
+
+  const isAllSelected = items.length > 0 && selectedIds.size === items.length;
+
+  function toggleSelectAll() {
+    if (isAllSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(items.map((i) => i.id)));
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  async function handleBulkDelete() {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (!confirm(`${ids.length} adet mekanı kalıcı olarak silmek istediğinize emin misiniz?`)) return;
+
+    setIsBulkPending(true);
+    try {
+      await bulkDeletePlaces(ids);
+      toast.success(`${ids.length} adet mekan kalıcı olarak silindi 🗑️`);
+      setItems((prev) => prev.filter((i) => !selectedIds.has(i.id)));
+      setTotal((prev) => Math.max(0, prev - ids.length));
+      setSelectedIds(new Set());
+    } catch (err: any) {
+      toast.error("Toplu silme hatası", err.message);
+    } finally {
+      setIsBulkPending(false);
+    }
+  }
+
+  async function handleBulkToggleActive(isActive: boolean) {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+
+    setIsBulkPending(true);
+    try {
+      await bulkToggleActivePlaces(ids, isActive);
+      toast.success(`${ids.length} adet mekan ${isActive ? "aktif" : "pasif"} yapıldı`);
+      setItems((prev) =>
+        prev.map((i) => (selectedIds.has(i.id) ? { ...i, is_active: isActive } : i))
+      );
+      setSelectedIds(new Set());
+    } catch (err: any) {
+      toast.error("Toplu güncelleme hatası", err.message);
+    } finally {
+      setIsBulkPending(false);
+    }
+  }
 
   const fetchPlaces = useCallback(
     async (nextPage: number, append: boolean) => {
@@ -196,6 +259,66 @@ export function AdminPlacesList({
         </Select>
       </div>
 
+      {/* Bulk Actions Toolbar */}
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-primary/10 border border-primary/30 shadow-xs animate-in fade-in">
+          <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-[11px]">
+              {selectedIds.size}
+            </span>
+            <span>mekan seçildi</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isBulkPending}
+              onClick={() => handleBulkToggleActive(true)}
+              className="h-8 text-xs font-semibold text-emerald-600 border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 gap-1.5"
+            >
+              <Eye className="h-3.5 w-3.5" />
+              <span>Aktif Et</span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isBulkPending}
+              onClick={() => handleBulkToggleActive(false)}
+              className="h-8 text-xs font-semibold text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 gap-1.5"
+            >
+              <EyeOff className="h-3.5 w-3.5" />
+              <span>Pasife Al</span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={isBulkPending}
+              onClick={handleBulkDelete}
+              className="h-8 text-xs font-bold gap-1.5 shadow-xs"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>Sil ({selectedIds.size})</span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+              className="h-8 text-xs text-muted-foreground"
+            >
+              Vazgeç
+            </Button>
+          </div>
+        </div>
+      )}
+
       <p className="text-sm text-muted-foreground">
         {loading && items.length === 0
           ? "Yükleniyor..."
@@ -206,6 +329,20 @@ export function AdminPlacesList({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[44px] text-center">
+                <button
+                  type="button"
+                  onClick={toggleSelectAll}
+                  className="p-1 rounded text-muted-foreground hover:text-foreground"
+                  title={isAllSelected ? "Seçimi Kaldır" : "Tümünü Seç"}
+                >
+                  {isAllSelected ? (
+                    <CheckSquare className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Square className="h-4 w-4" />
+                  )}
+                </button>
+              </TableHead>
               <TableHead>Mekan</TableHead>
               <TableHead>Şehir</TableHead>
               <TableHead>Kaynak</TableHead>
@@ -218,43 +355,63 @@ export function AdminPlacesList({
             {items.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="py-12 text-center text-muted-foreground"
                 >
                   {loading ? "Yükleniyor..." : "Mekan bulunamadı."}
                 </TableCell>
               </TableRow>
             ) : (
-              items.map((place) => (
-                <TableRow key={place.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      {place.name}
-                      {place.is_featured && (
+              items.map((place) => {
+                const isSelected = selectedIds.has(place.id);
+                return (
+                  <TableRow
+                    key={place.id}
+                    className={`hover:bg-muted/40 transition-colors ${
+                      isSelected ? "bg-primary/5" : ""
+                    }`}
+                  >
+                    <TableCell className="text-center">
+                      <button
+                        type="button"
+                        onClick={() => toggleSelect(place.id)}
+                        className="p-1 rounded text-muted-foreground hover:text-foreground"
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="h-4 w-4 text-primary" />
+                        ) : (
+                          <Square className="h-4 w-4" />
+                        )}
+                      </button>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {place.name}
+                        {place.is_featured && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            Öne çıkan
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>{place.cityName}</TableCell>
+                    <TableCell className="capitalize">{place.source}</TableCell>
+                    <TableCell>
+                      {place.hasCover ? (
                         <Badge variant="secondary" className="text-[10px]">
-                          Öne çıkan
+                          Var
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px]">
+                          Yok
                         </Badge>
                       )}
-                    </div>
-                  </TableCell>
-                  <TableCell>{place.cityName}</TableCell>
-                  <TableCell className="capitalize">{place.source}</TableCell>
-                  <TableCell>
-                    {place.hasCover ? (
-                      <Badge variant="secondary" className="text-[10px]">
-                        Var
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={place.is_active ? "default" : "outline"}>
+                        {place.is_active ? "Aktif" : "Pasif"}
                       </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-[10px]">
-                        Yok
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={place.is_active ? "default" : "outline"}>
-                      {place.is_active ? "Aktif" : "Pasif"}
-                    </Badge>
-                  </TableCell>
+                    </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" asChild>
                       <Link href={`/yonetim/mekanlar/${place.slug}/duzenle`}>
@@ -264,8 +421,9 @@ export function AdminPlacesList({
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
+              );
+            })
+          )}
           </TableBody>
         </Table>
       </div>

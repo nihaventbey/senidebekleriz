@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, ExternalLink, MapPin, Ticket } from "lucide-react";
 import type { PublicEvent } from "@/lib/data/events";
+import { CulturalCoverPlaceholder } from "@/components/ui/cultural-cover-placeholder";
 
 const TYPE_LABELS: Record<string, string> = {
   tiyatro: "Tiyatro",
@@ -128,46 +129,77 @@ export function EventListCard({ event }: { event: PublicEvent }) {
   const dateLabel = formatDate(event.startsAt);
 
   return (
-    <article className="flex h-full flex-col rounded-2xl border bg-card p-4 transition-colors hover:border-primary/40 sm:p-5">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <Badge variant="outline" className="text-xs">
-          {TYPE_LABELS[event.eventType] || "Kültür"}
-        </Badge>
-        {event.cityName && (
-          <span className="truncate text-xs text-muted-foreground">
-            {event.cityName}
-          </span>
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border bg-card transition-all hover:border-primary/50 hover:shadow-md">
+      {/* Cover Image or Cultural Logo Fallback */}
+      <Link href={`/etkinlik/${event.slug}`} className="relative block aspect-[16/9] w-full overflow-hidden bg-muted">
+        {event.coverImage ? (
+          <img
+            src={event.coverImage}
+            alt={event.title}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
+          />
+        ) : (
+          <CulturalCoverPlaceholder
+            title={event.title}
+            category={TYPE_LABELS[event.eventType] || "Etkinlik"}
+            cityName={event.cityName || undefined}
+            iconSize="sm"
+          />
         )}
-      </div>
-      <h3 className="line-clamp-2 text-base font-semibold leading-snug sm:text-lg">
-        <Link href={`/etkinlik/${event.slug}`} className="hover:underline">
-          {event.title}
-        </Link>
-      </h3>
-      <p className="mt-2 flex-1 text-sm text-muted-foreground line-clamp-3">
-        {event.summary}
-      </p>
-      {dateLabel && (
-        <p className="mt-3 text-xs text-muted-foreground">{dateLabel}</p>
-      )}
-      <div className="mt-4 flex items-center gap-4">
-        <Link
-          href={`/etkinlik/${event.slug}`}
-          className="inline-flex items-center text-sm font-medium text-primary hover:underline"
-        >
-          Detay
-        </Link>
-        {ctaUrl && (
-          <a
-            href={ctaUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center text-sm text-muted-foreground hover:underline"
+        <div className="absolute top-2.5 left-2.5">
+          <Badge className="bg-background/90 text-foreground backdrop-blur-xs text-[10px] font-bold shadow-xs">
+            {TYPE_LABELS[event.eventType] || "Kültür"}
+          </Badge>
+        </div>
+      </Link>
+
+      <div className="flex flex-1 flex-col p-4 sm:p-5">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          {event.cityName && (
+            <span className="inline-flex items-center text-xs font-semibold text-primary">
+              <MapPin className="mr-1 h-3 w-3" />
+              {event.cityName}
+            </span>
+          )}
+          {dateLabel && (
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              {dateLabel}
+            </span>
+          )}
+        </div>
+
+        <h3 className="line-clamp-2 text-base font-bold leading-snug text-foreground group-hover:text-primary transition-colors">
+          <Link href={`/etkinlik/${event.slug}`}>
+            {event.title}
+          </Link>
+        </h3>
+
+        <p className="mt-2 flex-1 text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+          {event.summary}
+        </p>
+
+        <div className="mt-4 pt-3 border-t flex items-center justify-between text-xs">
+          <Link
+            href={`/etkinlik/${event.slug}`}
+            className="font-bold text-primary hover:underline flex items-center gap-1"
           >
-            Kaynak
-            <ExternalLink className="ml-1 h-3.5 w-3.5" />
-          </a>
-        )}
+            Detay &amp; Harita →
+          </Link>
+
+          {ctaUrl && (
+            <a
+              href={ctaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-muted-foreground hover:text-foreground font-medium"
+            >
+              Kaynak
+              <ExternalLink className="ml-1 h-3 w-3" />
+            </a>
+          )}
+        </div>
       </div>
     </article>
   );

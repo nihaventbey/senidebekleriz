@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, MapPin, ExternalLink, ArrowRight, Newspaper } from "lucide-react";
 import type { PublicNewsArticle, NewsCategory } from "@/lib/data/news";
+import { CulturalCoverPlaceholder } from "@/components/ui/cultural-cover-placeholder";
 
 export const NEWS_CATEGORY_LABELS: Record<NewsCategory, string> = {
   arkeoloji: "🏛️ Arkeoloji & Kazı",
@@ -52,10 +53,12 @@ export function NewsCard({ news }: { news: PublicNewsArticle }) {
             loading="lazy"
           />
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary/10 via-muted to-purple-500/10 text-muted-foreground">
-            <Newspaper className="h-10 w-10 text-primary/40" />
-            <span className="text-xs font-medium">Kültür-Sanat Haberi</span>
-          </div>
+          <CulturalCoverPlaceholder
+            title={news.title}
+            category={categoryLabel}
+            cityName={news.cityName || undefined}
+            iconSize="sm"
+          />
         )}
 
         {/* Gradient Overlay */}
