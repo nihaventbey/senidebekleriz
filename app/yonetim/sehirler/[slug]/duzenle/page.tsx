@@ -27,8 +27,6 @@ export default async function EditCityPage({
 
   if (!city) notFound();
 
-  const valilikCover = city.cover_image_source === "valilik";
-
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
@@ -77,16 +75,6 @@ export default async function EditCityPage({
           defaultValue={city.description}
           descriptionSource={city.description_source}
         />
-
-        {valilikCover && (
-          <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <p>
-              Kapak görseli valilik kaynağından geliyor ve yanlış olabilir.
-              &quot;Wikimedia öner&quot; ile düzeltin veya manuel yükleyin.
-            </p>
-          </div>
-        )}
 
         <CoverImageField
           defaultValue={city.cover_image}

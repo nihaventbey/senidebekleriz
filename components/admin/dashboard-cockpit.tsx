@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,11 +29,16 @@ import {
   Image as ImageIcon,
   Check,
   X,
+  Flame,
+  Globe,
+  Quote,
+  Clock,
+  Send,
+  AlertCircle,
 } from "lucide-react";
 import { AiImageModal } from "@/components/admin/ai-image-modal";
 import { DiscoverySyncButton } from "@/components/admin/discovery-sync-button";
 import { AdSenseReadiness } from "@/components/admin/adsense-readiness";
-import { CityCoverRefreshButton } from "@/components/admin/city-cover-refresh-button";
 import type { AdminDashboardStats, ContentReadinessStats } from "@/lib/data/admin-stats";
 import type { ContentGaps } from "@/lib/data/content-gaps";
 import type { AdminDiscoveryListItem } from "@/lib/data/admin-discovery";
@@ -51,6 +56,65 @@ type CockpitProps = {
   gaps: ContentGaps;
   pendingDiscoveries: AdminDiscoveryListItem[];
 };
+
+const DAILY_QUOTES = [
+  {
+    quote: "Seyahat et ki, sıhhat bulasın ve rızıklanasın.",
+    author: "Evliya Çelebi",
+    tag: "Seyahatname",
+  },
+  {
+    quote: "Kültür, bir milletin hafızasıdır; geçmişi bugüne, bugünü yarına bağlar.",
+    author: "Ahmet Hamdi Tanpınar",
+    tag: "Beş Şehir",
+  },
+  {
+    quote: "Gözlerini açtığında karşında Ege'yi göreceksin; burası mavi sürgünün cennetidir.",
+    author: "Halikarnas Balıkçısı",
+    tag: "Mavi Sürgün",
+  },
+  {
+    quote: "Bir insanı sevmekle başlar her şey; bir şehri tanımakla başlar yolculuk.",
+    author: "Sait Faik Abasıyanık",
+    tag: "Edebiyat",
+  },
+  {
+    quote: "Tarih, taşların ve sütunların sessizliğinde yaşayan en büyük şiirdir.",
+    author: "Yahya Kemal Beyatlı",
+    tag: "Aziz İstanbul",
+  },
+  {
+    quote: "Anadolu; binlerce yıllık medeniyetlerin birbiri üstüne dokuduğu zengin bir kilimdir.",
+    author: "Yaşar Kemal",
+    tag: "Kültür Mirası",
+  },
+  {
+    quote: "Yollar yürümek içindir, yeni yerler görmek ve insanı yeniden keşfetmek için.",
+    author: "Sabahattin Ali",
+    tag: "Yol Notları",
+  },
+];
+
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return "☀️ Günaydın";
+  if (hour >= 12 && hour < 18) return "🌤️ İyi Günler";
+  if (hour >= 18 && hour < 22) return "🌇 İyi Akşamlar";
+  return "🌙 İyi Geceler";
+}
+
+function getTodayFormatted(): string {
+  try {
+    return new Intl.DateTimeFormat("tr-TR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(new Date());
+  } catch {
+    return "Bugün";
+  }
+}
 
 function formatDate(value?: string | null) {
   if (!value) return "—";
@@ -75,12 +139,20 @@ export function DashboardCockpit({
   const router = useRouter();
   const [isAiImageModalOpen, setIsAiImageModalOpen] = useState(false);
   const [quickAiUrl, setQuickAiUrl] = useState("");
-  const [quickAiPending, startQuickAiTransition] = useTransition();
 
   // Discovery triage state
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isTriagePending, startTriageTransition] = useTransition();
+
+  // Daily quote selection based on day of month
+  const todayQuote = useMemo(() => {
+    const day = new Date().getDate();
+    return DAILY_QUOTES[day % DAILY_QUOTES.length];
+  }, []);
+
+  const greeting = useMemo(() => getGreeting(), []);
+  const todayDateStr = useMemo(() => getTodayFormatted(), []);
 
   function runDiscoveryAction(
     id: string,
@@ -125,57 +197,69 @@ export function DashboardCockpit({
   function handleQuickAiSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!quickAiUrl.trim()) {
-      toast.error("Lütfen bir haber veya etkinlik kaynak URL'si girin");
+      toast.error("Lütfen bir haber veya etkinlik kaynak linki girin");
       return;
     }
-    // Redirect to news create page with sourceUrl prefilled
+    // Prefill news create page with sourceUrl query param
     router.push(`/yonetim/haberler/yeni?sourceUrl=${encodeURIComponent(quickAiUrl.trim())}`);
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8 max-w-7xl mx-auto">
-      {/* 1. Cockpit Header Bar */}
-      <section className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-background to-background p-5 sm:p-7 shadow-xs">
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-1.5 max-w-2xl">
+    <div className="space-y-6 sm:space-y-8 max-w-7xl mx-auto pb-10">
+      {/* 1. Cockpit Header Bar with Dynamic Greeting & Quote */}
+      <section className="relative overflow-hidden rounded-3xl border border-primary/25 bg-gradient-to-br from-primary/15 via-background to-card p-6 sm:p-8 shadow-sm">
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-2 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="bg-primary/90 text-primary-foreground font-semibold px-2.5 py-0.5 text-xs shadow-xs">
-                🎯 Kokpit & Kontrol Merkezi
-              </Badge>
-              <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                {todayDateStr}
+              </span>
+              <span className="text-muted-foreground">·</span>
+              <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Sistem Aktif
+                Sistem Canlı &amp; Hazır
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Seni de Bekleriz Yönetim Kokpiti
+
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground">
+              {greeting}, Editör! 🚀
             </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              Türkiye&apos;nin 81 ili için kültür-sanat haberleri, etkinlikler, gezi rehberleri ve yapay zeka üretim araçlarını tek ekrandan yönetin.
-            </p>
+
+            {/* Daily Cultural Inspiration */}
+            <div className="flex items-start gap-2.5 rounded-xl border border-primary/15 bg-background/60 backdrop-blur-xs p-3 text-xs text-muted-foreground mt-2">
+              <Quote className="h-4 w-4 shrink-0 text-primary mt-0.5" />
+              <div>
+                <p className="italic text-foreground font-medium">
+                  &ldquo;{todayQuote.quote}&rdquo;
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  — <strong>{todayQuote.author}</strong> ({todayQuote.tag})
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Quick Cockpit Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          {/* Quick Cockpit Action Suite */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
             <Button
               type="button"
               onClick={() => setIsAiImageModalOpen(true)}
-              className="h-9 px-3.5 text-xs font-semibold gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-xs"
+              className="h-10 px-4 text-xs font-bold gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-xs"
             >
-              <Wand2 className="h-3.5 w-3.5" />
+              <Wand2 className="h-4 w-4 text-amber-100" />
               <span>AI Görsel Üret</span>
             </Button>
 
             <DiscoverySyncButton />
 
-            <Button asChild variant="outline" size="sm" className="h-9 px-3 text-xs font-semibold gap-1">
+            <Button asChild variant="outline" size="sm" className="h-10 px-3.5 text-xs font-semibold gap-1.5 shadow-xs">
               <Link href="/yonetim/haberler/yeni">
                 <Plus className="h-3.5 w-3.5" />
                 <span>Yeni Haber</span>
               </Link>
             </Button>
 
-            <Button asChild variant="outline" size="sm" className="h-9 px-3 text-xs font-semibold gap-1">
+            <Button asChild variant="outline" size="sm" className="h-10 px-3.5 text-xs font-semibold gap-1.5 shadow-xs">
               <Link href="/yonetim/etkinlikler/yeni">
                 <Plus className="h-3.5 w-3.5" />
                 <span>Yeni Etkinlik</span>
@@ -185,40 +269,75 @@ export function DashboardCockpit({
         </div>
       </section>
 
-      {/* 2. Core Cockpit KPI Cards */}
+      {/* 2. Quick AI News Launcher Box (Kokpitten Doğrudan Linkle Haber Başlatma) */}
+      <section className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs">
+        <form onSubmit={handleQuickAiSubmit} className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-foreground shrink-0">
+            <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+            <span>Hızlı AI Haber Başlatıcı:</span>
+          </div>
+          <div className="relative flex-1 w-full">
+            <Input
+              type="url"
+              placeholder="Kültür Bakanlığı, AA, TRT veya haber sitesi linki yapıştırın (https://...)"
+              value={quickAiUrl}
+              onChange={(e) => setQuickAiUrl(e.target.value)}
+              className="h-9 text-xs pl-3 pr-8"
+            />
+            {quickAiUrl && (
+              <button
+                type="button"
+                onClick={() => setQuickAiUrl("")}
+                className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <Button type="submit" size="sm" className="h-9 text-xs font-semibold gap-1.5 w-full sm:w-auto shrink-0 shadow-xs">
+            <Send className="h-3.5 w-3.5" /> Habere Dönüştür
+          </Button>
+        </form>
+      </section>
+
+      {/* 3. Core Cockpit KPI Cards (6'lı Canlı Veri Grid) */}
       <section className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">
         {/* Card 1: Kültür Haberleri */}
         <Link
           href="/yonetim/haberler"
-          className="group rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 via-card to-card p-4 transition-all hover:shadow-md hover:border-blue-500/40"
+          className="group rounded-2xl border border-blue-500/25 bg-gradient-to-br from-blue-500/10 via-card to-card p-4 transition-all hover:shadow-md hover:border-blue-500/50"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Kültür Haberi</span>
-            <Newspaper className="h-4 w-4 text-blue-500 opacity-70 group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-bold text-blue-600 dark:text-blue-400">Kültür Haberi</span>
+            <Newspaper className="h-4 w-4 text-blue-500 opacity-80 group-hover:scale-110 transition-transform" />
           </div>
-          <div className="mt-2 text-2xl font-bold text-foreground">
+          <div className="mt-2 text-2xl font-extrabold text-foreground">
             {stats.newsTotal.toLocaleString("tr-TR")}
           </div>
-          <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
             <span className="text-emerald-600 font-semibold">{stats.newsPublished} yayında</span>
-            <span>·</span>
-            <span>{stats.newsDraft} taslak</span>
+            {stats.newsDraft > 0 && (
+              <>
+                <span>·</span>
+                <span className="text-amber-600 font-medium">{stats.newsDraft} taslak</span>
+              </>
+            )}
           </div>
         </Link>
 
         {/* Card 2: Etkinlikler */}
         <Link
           href="/yonetim/etkinlikler"
-          className="group rounded-2xl border border-purple-500/20 bg-gradient-to-br from-purple-500/10 via-card to-card p-4 transition-all hover:shadow-md hover:border-purple-500/40"
+          className="group rounded-2xl border border-purple-500/25 bg-gradient-to-br from-purple-500/10 via-card to-card p-4 transition-all hover:shadow-md hover:border-purple-500/50"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">Etkinlikler</span>
-            <CalendarDays className="h-4 w-4 text-purple-500 opacity-70 group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-bold text-purple-600 dark:text-purple-400">Etkinlikler</span>
+            <CalendarDays className="h-4 w-4 text-purple-500 opacity-80 group-hover:scale-110 transition-transform" />
           </div>
-          <div className="mt-2 text-2xl font-bold text-foreground">
+          <div className="mt-2 text-2xl font-extrabold text-foreground">
             {stats.eventsTotal.toLocaleString("tr-TR")}
           </div>
-          <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
             <span className="text-emerald-600 font-semibold">{stats.eventsPublished} yayında</span>
             {stats.eventsPending > 0 && (
               <>
@@ -234,15 +353,15 @@ export function DashboardCockpit({
           href="/yonetim/kesif"
           className={`group rounded-2xl border p-4 transition-all hover:shadow-md ${
             stats.pendingDiscoveries > 0
-              ? "border-amber-500/30 bg-gradient-to-br from-amber-500/15 via-card to-card"
-              : "border-border/60 bg-card"
+              ? "border-amber-500/40 bg-gradient-to-br from-amber-500/15 via-card to-card hover:border-amber-500/60"
+              : "border-border/60 bg-card hover:border-primary/40"
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">Keşif Kuyruğu</span>
-            <Compass className="h-4 w-4 text-amber-500 opacity-70 group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-bold text-amber-600 dark:text-amber-400">Keşif Kuyruğu</span>
+            <Compass className="h-4 w-4 text-amber-500 opacity-80 group-hover:scale-110 transition-transform" />
           </div>
-          <div className="mt-2 text-2xl font-bold text-foreground">
+          <div className="mt-2 text-2xl font-extrabold text-foreground">
             {stats.pendingDiscoveries.toLocaleString("tr-TR")}
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground truncate">
@@ -253,13 +372,13 @@ export function DashboardCockpit({
         {/* Card 4: Gezi Rehberleri / Blog */}
         <Link
           href="/yonetim/yazilar"
-          className="group rounded-2xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/10 via-card to-card p-4 transition-all hover:shadow-md hover:border-indigo-500/40"
+          className="group rounded-2xl border border-indigo-500/25 bg-gradient-to-br from-indigo-500/10 via-card to-card p-4 transition-all hover:shadow-md hover:border-indigo-500/50"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">Rehber & Yazı</span>
-            <BookOpen className="h-4 w-4 text-indigo-500 opacity-70 group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">Rehber &amp; Yazı</span>
+            <BookOpen className="h-4 w-4 text-indigo-500 opacity-80 group-hover:scale-110 transition-transform" />
           </div>
-          <div className="mt-2 text-2xl font-bold text-foreground">
+          <div className="mt-2 text-2xl font-extrabold text-foreground">
             {stats.articles.toLocaleString("tr-TR")}
           </div>
           <div className="mt-1 text-[11px] text-muted-foreground truncate">
@@ -270,13 +389,13 @@ export function DashboardCockpit({
         {/* Card 5: Mekanlar */}
         <Link
           href="/yonetim/mekanlar"
-          className="group rounded-2xl border border-teal-500/20 bg-gradient-to-br from-teal-500/10 via-card to-card p-4 transition-all hover:shadow-md hover:border-teal-500/40"
+          className="group rounded-2xl border border-teal-500/25 bg-gradient-to-br from-teal-500/10 via-card to-card p-4 transition-all hover:shadow-md hover:border-teal-500/50"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-teal-600 dark:text-teal-400">Kültür Mekanları</span>
-            <MapPinned className="h-4 w-4 text-teal-500 opacity-70 group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-bold text-teal-600 dark:text-teal-400">Kültür Mekanları</span>
+            <MapPinned className="h-4 w-4 text-teal-500 opacity-80 group-hover:scale-110 transition-transform" />
           </div>
-          <div className="mt-2 text-2xl font-bold text-foreground">
+          <div className="mt-2 text-2xl font-extrabold text-foreground">
             {stats.places.toLocaleString("tr-TR")}
           </div>
           <div className="mt-1 text-[11px] text-muted-foreground truncate">
@@ -287,13 +406,13 @@ export function DashboardCockpit({
         {/* Card 6: 81 Şehir */}
         <Link
           href="/yonetim/sehirler"
-          className="group rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-card to-card p-4 transition-all hover:shadow-md hover:border-emerald-500/40"
+          className="group rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/10 via-card to-card p-4 transition-all hover:shadow-md hover:border-emerald-500/50"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">81 İl Kapsamı</span>
-            <Building2 className="h-4 w-4 text-emerald-500 opacity-70 group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">81 İl Kapsamı</span>
+            <Building2 className="h-4 w-4 text-emerald-500 opacity-80 group-hover:scale-110 transition-transform" />
           </div>
-          <div className="mt-2 text-2xl font-bold text-foreground">
+          <div className="mt-2 text-2xl font-extrabold text-foreground">
             {stats.cities.toLocaleString("tr-TR")}
           </div>
           <p className="mt-1 text-[11px] text-emerald-600 font-semibold truncate">
@@ -302,42 +421,42 @@ export function DashboardCockpit({
         </Link>
       </section>
 
-      {/* 3. Pending Discoveries Quick Action Cockpit Stream */}
-      <div className="space-y-4 rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
+      {/* 4. Live Discovery Queue & Quick Triage Stream */}
+      <div className="space-y-4 rounded-3xl border border-border/80 bg-card p-5 sm:p-6 shadow-xs">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600">
-              <Compass className="h-4 w-4" />
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
+              <Compass className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
-                Canlı İçerik Keşfi & Hızlı Triaj Kuyruğu
+              <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                Canlı İçerik Keşfi &amp; Hızlı Triaj İstasyonu
                 {stats.pendingDiscoveries > 0 && (
-                  <Badge variant="secondary" className="text-[10px] bg-amber-500/15 text-amber-700 dark:text-amber-300">
+                  <Badge variant="secondary" className="text-[10px] bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold">
                     {stats.pendingDiscoveries} onay bekliyor
                   </Badge>
                 )}
               </h2>
               <p className="text-xs text-muted-foreground">
-                Google Haberler ve Kültür Portalı&apos;ndan taranan yeni maddeleri tek tıkla habere veya etkinliğe dönüştürün.
+                Google Haberler ve Kültür Portalı&apos;ndan taranan maddeleri tek tıkla habere veya etkinliğe dönüştürün.
               </p>
             </div>
           </div>
 
-          <Button asChild variant="outline" size="sm" className="h-8 text-xs font-semibold">
+          <Button asChild variant="outline" size="sm" className="h-8 text-xs font-semibold self-start sm:self-center">
             <Link href="/yonetim/kesif">
-              Tüm Keşifleri Gör ({stats.pendingDiscoveries})
+              Tüm Keşif Kuyruğu ({stats.pendingDiscoveries})
               <ArrowRight className="ml-1 h-3.5 w-3.5" />
             </Link>
           </Button>
         </div>
 
         {pendingDiscoveries.length === 0 ? (
-          <div className="py-8 text-center text-muted-foreground space-y-2">
-            <CheckCircle2 className="h-8 w-8 mx-auto text-emerald-500 opacity-60" />
-            <p className="text-xs sm:text-sm font-medium">Onay bekleyen keşif kaydı bulunmuyor. Her şey güncel!</p>
-            <p className="text-[11px] text-muted-foreground">
-              Yeni kültür-sanat akışlarını taramak için yukarıdaki &quot;Şimdi Tara &amp; Keşfet&quot; butonunu kullanabilirsiniz.
+          <div className="py-10 text-center text-muted-foreground space-y-2">
+            <CheckCircle2 className="h-9 w-9 mx-auto text-emerald-500 opacity-70" />
+            <p className="text-sm font-semibold text-foreground">Onay bekleyen keşif kaydı bulunmuyor. Her şey güncel!</p>
+            <p className="text-xs text-muted-foreground max-w-md mx-auto">
+              Yeni kültür-sanat akışlarını taramak için üst bardaki &quot;Şimdi Tara &amp; Keşfet&quot; butonuna basabilirsiniz.
             </p>
           </div>
         ) : (
@@ -350,15 +469,15 @@ export function DashboardCockpit({
               return (
                 <div
                   key={item.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/20 p-3.5 hover:bg-muted/40 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4 hover:bg-muted/40 transition-colors"
                 >
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-bold text-xs sm:text-sm text-foreground leading-snug line-clamp-1" title={item.title}>
+                      <span className="font-bold text-xs sm:text-sm text-foreground leading-snug" title={item.title}>
                         {formattedTitle}
                       </span>
                       {item.city_slug && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                        <Badge variant="outline" className="text-[10px] px-2 py-0 font-medium">
                           {item.city_slug}
                         </Badge>
                       )}
@@ -372,15 +491,15 @@ export function DashboardCockpit({
                       href={item.source_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center text-[11px] text-primary hover:underline gap-1"
+                      className="inline-flex items-center text-[11px] text-primary hover:underline gap-1 mt-0.5"
                     >
-                      <span className="truncate max-w-[200px]">{item.source_name || "Kaynak Linki"}</span>
+                      <span className="truncate max-w-[220px] font-medium">{item.source_name || "Kaynak Linki"}</span>
                       <ExternalLink className="h-2.5 w-2.5" />
                     </a>
                   </div>
 
                   {/* Quick Action Buttons */}
-                  <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center pt-2 sm:pt-0">
                     <Button
                       size="sm"
                       disabled={busy}
@@ -389,13 +508,13 @@ export function DashboardCockpit({
                           importDiscoveryAsNews(item.id)
                         )
                       }
-                      className="h-7 px-2.5 text-[11px] font-semibold gap-1 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                      className="h-8 px-3 text-xs font-bold gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
                       title="Kültür Haberi Yap"
                     >
                       {busy && pendingAction === "news" ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <Newspaper className="h-3 w-3" />
+                        <Newspaper className="h-3.5 w-3.5" />
                       )}
                       <span>Habere Dönüştür</span>
                     </Button>
@@ -409,13 +528,13 @@ export function DashboardCockpit({
                           importDiscoveryAsEvent(item.id)
                         )
                       }
-                      className="h-7 px-2.5 text-[11px] font-semibold gap-1"
+                      className="h-8 px-3 text-xs font-semibold gap-1.5"
                       title="Etkinlik Yap"
                     >
                       {busy && pendingAction === "event" ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <CalendarDays className="h-3 w-3" />
+                        <CalendarDays className="h-3.5 w-3.5" />
                       )}
                       <span>Etkinlik</span>
                     </Button>
@@ -429,10 +548,10 @@ export function DashboardCockpit({
                           rejectDiscovery(item.id)
                         )
                       }
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
                       title="Reddet"
                     >
-                      <X className="h-3.5 w-3.5" />
+                      <X className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -442,38 +561,40 @@ export function DashboardCockpit({
         )}
       </div>
 
-      {/* 4. Two-Column Live Activity Stream (Son Haberler & Son Etkinlikler) */}
+      {/* 5. Live Two-Column Stream (Son Haberler & Son Etkinlikler) */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Left: Son Eklenen Kültür Haberleri */}
-        <Card className="rounded-2xl border-border/80 shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <div className="flex items-center gap-2">
-              <Newspaper className="h-4 w-4 text-primary" />
-              <CardTitle className="text-sm sm:text-base font-bold">Son Kültür Haberleri</CardTitle>
+        {/* Left: Son Kültür Haberleri */}
+        <Card className="rounded-3xl border-border/80 shadow-xs">
+          <CardHeader className="flex flex-row items-center justify-between pb-3 border-b">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600">
+                <Newspaper className="h-4 w-4" />
+              </div>
+              <CardTitle className="text-base font-bold">Son Kültür Haberleri</CardTitle>
             </div>
-            <Button variant="ghost" size="sm" asChild className="h-8 text-xs">
+            <Button variant="ghost" size="sm" asChild className="h-8 text-xs font-semibold">
               <Link href="/yonetim/haberler">
-                Tümü ({stats.newsTotal}) <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                Tüm Haberler ({stats.newsTotal}) <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Link>
             </Button>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="pt-4 space-y-3">
             {stats.recentNews.length === 0 ? (
-              <p className="py-6 text-center text-xs text-muted-foreground">Henüz eklenen haber yok.</p>
+              <p className="py-8 text-center text-xs text-muted-foreground">Henüz eklenen haber bulunmuyor.</p>
             ) : (
               stats.recentNews.map((news) => (
                 <div
                   key={news.id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-card p-3 hover:bg-muted/30 transition-colors"
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-border/50 bg-card p-3 hover:bg-muted/30 transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     {news.coverImage ? (
-                      <div className="h-11 w-14 shrink-0 overflow-hidden rounded-lg border bg-muted">
+                      <div className="h-12 w-16 shrink-0 overflow-hidden rounded-xl border bg-muted">
                         <img src={news.coverImage} alt="" className="h-full w-full object-cover" />
                       </div>
                     ) : (
-                      <div className="flex h-11 w-14 shrink-0 items-center justify-center rounded-lg border bg-muted/60 text-muted-foreground">
-                        <Newspaper className="h-4 w-4 opacity-40" />
+                      <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-xl border bg-muted/60 text-muted-foreground">
+                        <Newspaper className="h-5 w-5 opacity-40" />
                       </div>
                     )}
                     <div className="min-w-0">
@@ -485,7 +606,7 @@ export function DashboardCockpit({
                         {news.title}
                       </Link>
                       <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
-                        <span>{news.cityName || "Genel"}</span>
+                        <span className="font-medium text-foreground/80">{news.cityName || "Genel"}</span>
                         <span>·</span>
                         <span>{formatDate(news.updatedAt)}</span>
                       </div>
@@ -496,7 +617,7 @@ export function DashboardCockpit({
                     <Badge variant={news.isPublished ? "default" : "secondary"} className="text-[10px]">
                       {news.isPublished ? "Yayında" : "Taslak"}
                     </Badge>
-                    <Button asChild variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-primary">
+                    <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-primary">
                       <Link href={`/yonetim/haberler/${news.slug}/duzenle`}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Link>
@@ -508,27 +629,29 @@ export function DashboardCockpit({
           </CardContent>
         </Card>
 
-        {/* Right: Son Eklenen Etkinlikler */}
-        <Card className="rounded-2xl border-border/80 shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-purple-500" />
-              <CardTitle className="text-sm sm:text-base font-bold">Son Kültür Etkinlikleri</CardTitle>
+        {/* Right: Son Etkinlikler & Festivaller */}
+        <Card className="rounded-3xl border-border/80 shadow-xs">
+          <CardHeader className="flex flex-row items-center justify-between pb-3 border-b">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600">
+                <CalendarDays className="h-4 w-4" />
+              </div>
+              <CardTitle className="text-base font-bold">Son Kültür Etkinlikleri</CardTitle>
             </div>
-            <Button variant="ghost" size="sm" asChild className="h-8 text-xs">
+            <Button variant="ghost" size="sm" asChild className="h-8 text-xs font-semibold">
               <Link href="/yonetim/etkinlikler">
-                Tümü ({stats.eventsTotal}) <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                Tüm Etkinlikler ({stats.eventsTotal}) <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Link>
             </Button>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="pt-4 space-y-3">
             {stats.recentEvents.length === 0 ? (
-              <p className="py-6 text-center text-xs text-muted-foreground">Henüz etkinlik yok.</p>
+              <p className="py-8 text-center text-xs text-muted-foreground">Henüz kayıtlı etkinlik yok.</p>
             ) : (
               stats.recentEvents.map((evt) => (
                 <div
                   key={evt.id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-card p-3 hover:bg-muted/30 transition-colors"
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-border/50 bg-card p-3 hover:bg-muted/30 transition-colors"
                 >
                   <div className="min-w-0">
                     <Link
@@ -539,7 +662,7 @@ export function DashboardCockpit({
                       {evt.title}
                     </Link>
                     <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
-                      <span className="capitalize">{evt.eventType || "Etkinlik"}</span>
+                      <span className="capitalize font-medium text-foreground/80">{evt.eventType || "Etkinlik"}</span>
                       <span>·</span>
                       <span>{evt.cityName || "Şehir yok"}</span>
                       <span>·</span>
@@ -554,7 +677,7 @@ export function DashboardCockpit({
                     >
                       {evt.status === "published" ? "Yayında" : "Onay Bekliyor"}
                     </Badge>
-                    <Button asChild variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-purple-600">
+                    <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-purple-600">
                       <Link href={`/yonetim/etkinlikler/${evt.slug}/duzenle`}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Link>
@@ -567,74 +690,79 @@ export function DashboardCockpit({
         </Card>
       </div>
 
-      {/* 5. Content Quality, Gaps & AdSense Readiness */}
+      {/* 6. Content Quality, 81 Cities Health & AdSense Readiness */}
       <div className="grid gap-6 lg:grid-cols-2">
         <AdSenseReadiness stats={readiness} />
 
-        <Card className="rounded-2xl border-border/80 shadow-xs">
-          <CardHeader>
-            <CardTitle className="text-sm sm:text-base font-bold">İçerik Kalitesi &amp; Eksiklik Takibi</CardTitle>
+        {/* 81 Cities Health & Editorial Gaps */}
+        <Card className="rounded-3xl border-border/80 shadow-xs">
+          <CardHeader className="flex flex-row items-center justify-between pb-3 border-b">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600">
+                <Globe className="h-4 w-4" />
+              </div>
+              <CardTitle className="text-base font-bold">81 İl İçerik &amp; Kalite Sağlığı</CardTitle>
+            </div>
+            <Button variant="ghost" size="sm" asChild className="h-8 text-xs font-semibold">
+              <Link href="/yonetim/sehirler">
+                İlleri Yönet <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              </Link>
+            </Button>
           </CardHeader>
-          <CardContent className="space-y-4 text-sm">
+          <CardContent className="pt-4 space-y-4 text-sm">
             <div className="grid grid-cols-2 gap-3">
               <Link
                 href="/yonetim/mekanlar?gap=no-cover"
-                className="rounded-xl border p-3 transition-colors hover:bg-muted/50"
+                className="rounded-2xl border p-3.5 transition-colors hover:bg-muted/50 bg-muted/10"
               >
-                <p className="text-2xl font-bold text-foreground">
+                <p className="text-2xl font-extrabold text-foreground">
                   {gaps.placesWithoutCover.toLocaleString("tr-TR")}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  Görseli eksik mekan
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Fotoğrafı eksik mekan
                 </p>
               </Link>
               <Link
                 href="/yonetim/mekanlar?gap=thin"
-                className="rounded-xl border p-3 transition-colors hover:bg-muted/50"
+                className="rounded-2xl border p-3.5 transition-colors hover:bg-muted/50 bg-muted/10"
               >
-                <p className="text-2xl font-bold text-foreground">
+                <p className="text-2xl font-extrabold text-foreground">
                   {gaps.placesThinContent.toLocaleString("tr-TR")}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  İnce içerikli mekan
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  İnce içerikli mekan (&lt;150 kelime)
                 </p>
               </Link>
-              <div className="rounded-xl border p-3">
-                <p className="text-2xl font-bold text-foreground">
-                  {gaps.citiesWithoutCover.toLocaleString("tr-TR")}
+              <div className="rounded-2xl border p-3.5 bg-muted/10">
+                <p className="text-2xl font-extrabold text-foreground">
+                  {readiness.citiesWithoutGuide}
                 </p>
-                <p className="text-xs text-muted-foreground">Kapaksız şehir</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Rehberi olmayan il
+                </p>
               </div>
-              <Link
-                href="/yonetim/sehirler?cover=valilik"
-                className="rounded-xl border p-3 transition-colors hover:bg-muted/50"
-              >
-                <p className="text-2xl font-bold text-foreground">
-                  {gaps.citiesValilikCover.toLocaleString("tr-TR")}
+              <div className="rounded-2xl border p-3.5 bg-muted/10">
+                <p className="text-2xl font-extrabold text-foreground">
+                  {gaps.citiesWithoutCover}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  Valilik kaynaklı kapak
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Kapaksız il
                 </p>
-              </Link>
+              </div>
             </div>
-            {gaps.citiesValilikCover > 0 && (
-              <CityCoverRefreshButton
-                count={gaps.citiesValilikCover}
-                size="sm"
-              />
-            )}
-            <div>
-              <p className="font-medium text-xs sm:text-sm">Şehir rehberi durumu</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {readiness.citiesWithoutGuide} şehirde henüz yayınlanmış gezi rehberi yok.
-              </p>
-              {readiness.missingGuideCities.length > 0 && (
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Öncelikli iller: {readiness.missingGuideCities.join(", ")}
+
+            {readiness.missingGuideCities.length > 0 && (
+              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3.5 space-y-1 text-xs">
+                <p className="font-bold text-foreground flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" />
+                  Öncelikli Rehber Yazılacak İller:
+                </p>
+                <p className="text-muted-foreground leading-relaxed">
+                  {readiness.missingGuideCities.join(", ")}
                   {readiness.citiesWithoutGuide > 12 ? "…" : ""}
                 </p>
-              )}
-            </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -644,9 +772,8 @@ export function DashboardCockpit({
         isOpen={isAiImageModalOpen}
         onClose={() => setIsAiImageModalOpen(false)}
         onSelectImage={(url) => {
-          // Open new news form or copy to clipboard
           navigator.clipboard.writeText(url).then(() => {
-            toast.success("Görsel bağlantısı panoya kopyalandı! İstediğiniz içerikte kullanabilirsiniz. 📋");
+            toast.success("Görsel URL bağlantısı panoya kopyalandı! İstediğiniz içerikte kullanabilirsiniz. 📋");
           });
         }}
       />

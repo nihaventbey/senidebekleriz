@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle, ExternalLink } from "lucide-react";
+import { CheckCircle2, Circle, ExternalLink, ShieldCheck, Sparkles, TrendingUp } from "lucide-react";
 import type { ContentReadinessStats } from "@/lib/data/admin-stats";
 
 type Props = {
@@ -21,43 +21,41 @@ export function AdSenseReadiness({ stats }: Props) {
 
   const checks: CheckItem[] = [
     {
-      label: "En az 30 yayında blog yazısı",
+      label: "En az 30 yayında gezi & kültür yazısı",
       passed: stats.publishedArticles >= 30,
       detail: `${stats.publishedArticles} / 30`,
       href: "/yonetim/yazilar",
     },
     {
-      label: "En az 200 indekslenebilir premium mekan",
+      label: "En az 200 indekslenebilir mekan",
       passed: stats.indexablePlaces >= 200,
       detail: `${stats.indexablePlaces} / 200`,
       href: "/yonetim/mekanlar",
     },
     {
-      label: "Editöryal mekanların kapak görseli",
+      label: "Editöryal mekan kapak görselleri",
       passed: coverPassed,
       detail:
         stats.indexablePlacesWithoutCover > 0
           ? `${stats.indexablePlacesWithoutCover} mekan kapaksız`
           : stats.indexablePlaces === 0
-            ? "Önce premium mekan üretin"
-            : coverPassed
-              ? "Tamam"
-              : `${stats.indexablePlaces} / 200 (kapak tamam)`,
+            ? "Mekan ekleyin"
+            : "Tamamlandı",
       href: "/yonetim/mekanlar?gap=no-cover",
     },
     {
-      label: "Şehir rehberleri (81 il)",
+      label: "81 İl Şehir Rehberi kapsamı",
       passed: stats.citiesWithGuide >= 81,
-      detail: `${stats.citiesWithGuide} / 81 şehir`,
+      detail: `${stats.citiesWithGuide} / 81 il`,
       href: "/yonetim/yazilar/yeni",
     },
     {
-      label: "Çerez onay banner'ı",
+      label: "Çerez onay mekanizması",
       passed: stats.hasCookieConsent,
-      detail: stats.hasCookieConsent ? "Aktif (kabul/red)" : "Eksik",
+      detail: stats.hasCookieConsent ? "Aktif" : "Eksik",
     },
     {
-      label: "Gizlilik politikası",
+      label: "Gizlilik politikası sayfası",
       passed: stats.hasPrivacyPage,
       detail: stats.hasPrivacyPage ? "Yayında" : "Eksik",
       href: "/yonetim/sayfalar",
@@ -71,15 +69,15 @@ export function AdSenseReadiness({ stats }: Props) {
     {
       label: "ads.txt dosyası",
       passed: stats.hasAdsTxt,
-      detail: stats.hasAdsTxt ? "public/ads.txt" : "Eksik",
+      detail: stats.hasAdsTxt ? "public/ads.txt mevcut" : "Eksik",
     },
     {
-      label: "Sitemap ince mekanları hariç tutar",
+      label: "Sitemap indeksleme optimizasyonu",
       passed: stats.sitemapExcludesThinPlaces,
       detail: `${stats.indexablePlaces} premium mekan`,
     },
     {
-      label: "Search Console doğrulama",
+      label: "Search Console site doğrulaması",
       passed: stats.hasSiteVerification,
       detail: stats.hasSiteVerification
         ? "Env tanımlı"
@@ -88,60 +86,88 @@ export function AdSenseReadiness({ stats }: Props) {
   ];
 
   const passedCount = checks.filter((c) => c.passed).length;
-  const ready = passedCount === checks.length;
+  const percentage = Math.round((passedCount / checks.length) * 100);
+  const ready = percentage >= 80;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>AdSense Hazırlık</CardTitle>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {passedCount}/{checks.length} kriter tamamlandı
-          </p>
-        </div>
-        <Badge variant={ready ? "default" : "secondary"}>
-          {ready ? "Başvuruya yakın" : "Devam edin"}
-        </Badge>
-      </CardHeader>
-      <CardContent>
-        <ul className="space-y-3">
-          {checks.map((check) => (
-            <li key={check.label} className="flex items-start gap-2 text-sm">
-              {check.passed ? (
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-              ) : (
-                <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-              )}
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span>{check.label}</span>
-                  <span className="text-xs text-muted-foreground">
-                    ({check.detail})
-                  </span>
-                </div>
-                {check.href && !check.passed && (
-                  <Link
-                    href={check.href}
-                    className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                  >
-                    Tamamla
-                    <ExternalLink className="h-3 w-3" />
-                  </Link>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-        {!ready && (
-          <div className="mt-4 rounded-lg bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
-            <p className="font-semibold">⚠️ AdSense Onay İpuçları:</p>
-            <ul className="mt-1 space-y-1 list-disc pl-4 text-muted-foreground">
-              <li>Özgün blog yazısı sayınızı en az 30&apos;a ve kaliteli mekan sayınızı en az 200&apos;e çıkarın.</li>
-              <li>Google Search Console&apos;a kaydolun ve <code className="font-mono text-xs">sitemap.xml</code> gönderin.</li>
-              <li>Google&apos;da <code className="font-mono text-xs">site:senidebekleriz.com</code> yazarak en az 30+ sayfanın indekslendiğini doğruladıktan sonra başvuru yapın.</li>
-            </ul>
+    <Card className="rounded-2xl border-border/80 shadow-xs">
+      <CardHeader className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between border-b">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <ShieldCheck className="h-5 w-5" />
           </div>
-        )}
+          <div>
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              SEO &amp; AdSense Hazırlık Durumu
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Google onay ve organik trafik kriterleri ({passedCount} / {checks.length} tamamlandı)
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-center">
+          <div className="text-right">
+            <span className="text-lg font-extrabold text-foreground">%{percentage}</span>
+          </div>
+          <Badge
+            variant={ready ? "default" : "secondary"}
+            className={ready ? "bg-emerald-600 text-white text-xs font-semibold" : "text-xs"}
+          >
+            {ready ? "🚀 Başvuruya Uygun" : "⏳ Geliştiriliyor"}
+          </Badge>
+        </div>
+      </CardHeader>
+
+      <CardContent className="pt-4 space-y-4">
+        {/* Progress Bar */}
+        <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+          <div
+            className={`h-full transition-all duration-500 rounded-full ${
+              ready
+                ? "bg-emerald-500"
+                : percentage > 50
+                ? "bg-blue-500"
+                : "bg-amber-500"
+            }`}
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
+
+        {/* Checklist */}
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          {checks.map((check) => (
+            <div
+              key={check.label}
+              className={`flex items-start justify-between gap-2 rounded-xl border p-2.5 text-xs transition-colors ${
+                check.passed
+                  ? "border-emerald-500/20 bg-emerald-500/5 text-foreground"
+                  : "border-border/60 bg-card text-muted-foreground hover:bg-muted/40"
+              }`}
+            >
+              <div className="flex items-start gap-2 min-w-0">
+                {check.passed ? (
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                ) : (
+                  <Circle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+                )}
+                <div className="min-w-0">
+                  <p className="font-semibold text-foreground truncate">{check.label}</p>
+                  <p className="text-[11px] text-muted-foreground">{check.detail}</p>
+                </div>
+              </div>
+
+              {check.href && !check.passed && (
+                <Link
+                  href={check.href}
+                  className="shrink-0 font-medium text-primary hover:underline inline-flex items-center gap-0.5 text-[11px]"
+                >
+                  Tamamla <ExternalLink className="h-2.5 w-2.5" />
+                </Link>
+              )}
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );

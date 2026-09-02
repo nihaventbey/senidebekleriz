@@ -5,14 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Upload, X } from "lucide-react";
+import { Loader2, Sparkles, Upload, X, Wand2 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { AiImageModal } from "@/components/admin/ai-image-modal";
 
 const SOURCE_LABELS: Record<string, string> = {
   manual: "Manuel",
-  valilik: "Valilik",
   wikimedia: "Wikimedia",
-  ai: "AI",
+  ai: "AI Görsel",
   import: "İçe aktarım",
 };
 
@@ -39,6 +39,7 @@ export function CoverImageField({
   const [value, setValue] = useState(defaultValue || "");
   const [sourceLabel, setSourceLabel] = useState(source || "");
   const [suggestionNote, setSuggestionNote] = useState<string | null>(null);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [uploading, startUpload] = useTransition();
   const [suggesting, startSuggest] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -182,6 +183,16 @@ export function CoverImageField({
         <Button
           type="button"
           variant="outline"
+          onClick={() => setIsAiModalOpen(true)}
+          className="shrink-0 text-xs font-semibold gap-1 text-primary border-primary/30 hover:bg-primary/5"
+        >
+          <Wand2 className="h-3.5 w-3.5 text-primary" />
+          AI Görsel
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
           className="shrink-0"
@@ -222,6 +233,17 @@ export function CoverImageField({
           referrerPolicy="no-referrer"
         />
       )}
+
+      <AiImageModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        onSelectImage={(url) => {
+          setValue(url);
+          setSourceLabel("ai");
+          setSuggestionNote("AI tarafından üretildi (kaydetmek için formu gönderin)");
+        }}
+        initialTitle={slug}
+      />
     </div>
   );
 }

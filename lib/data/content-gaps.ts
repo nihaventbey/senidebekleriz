@@ -8,8 +8,8 @@ export type ContentGaps = {
   placesThinContent: number;
   placesIndexableWithoutCover: number;
   citiesWithoutCover: number;
-  citiesValilikCover: number;
-  citiesValilikDescription: number;
+  newsDraftCount: number;
+  eventsPendingCount: number;
   eventsWithoutCover: number;
   articlesMissingMeta: number;
 };
@@ -20,22 +20,29 @@ function wordCount(text: string | null): number {
 }
 
 export async function getContentGaps(): Promise<ContentGaps> {
-  const [placesRes, citiesRes, eventsRes, articlesRes] = await Promise.all([
+  const [placesRes, citiesRes, eventsRes, articlesRes, newsDraftRes, eventsPendingRes] = await Promise.all([
     supabaseAdmin
       .from("places")
       .select("description, source, is_featured, cover_image")
       .eq("is_active", true),
     supabaseAdmin
       .from("cities")
-      .select("cover_image, cover_image_source, description_source, intro_source_url")
+      .select("cover_image")
       .eq("is_active", true),
     supabaseAdmin
       .from("cultural_events")
-      .select("cover_image, is_published")
-      .eq("is_published", true),
+      .select("cover_image, is_published"),
     supabaseAdmin
       .from("articles")
       .select("meta_description, cover_image"),
+    supabaseAdmin
+      .from("cultural_news")
+      .select("*", { count: "exact", head: true })
+      .eq("is_published", false),
+    supabaseAdmin
+      .from("cultural_events")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending_review"),
   ]);
 
   const places = placesRes.data || [];
@@ -62,35 +69,11 @@ export async function getContentGaps(): Promise<ContentGaps> {
     }
   }
 
-  let cityRows = citiesRes.data || [];
-  if (citiesRes.error?.message.includes("cover_image_source")) {
-    const fallback = await supabaseAdmin
-      .from("cities")
-      .select("cover_image, description, intro_source_url")
-      .eq("is_active", true);
-    cityRows = (fallback.data || []).map((c) => ({
-      cover_image: c.cover_image,
-      cover_image_source: null,
-      description_source: null,
-      intro_source_url: (c as { intro_source_url?: string | null }).intro_source_url ?? null,
-    }));
-  }
-
+  const cityRows = citiesRes.data || [];
   const citiesWithoutCover = cityRows.filter((c) => !c.cover_image).length;
-  const citiesValilikCover = cityRows.filter(
-    (c) => c.cover_image && c.cover_image_source === "valilik"
-  ).length;
-  const citiesValilikDescription = cityRows.filter((c) => {
-    if (c.description_source === "valilik") return true;
-    if (c.description_source === "manual" || c.description_source === "ai") {
-      return false;
-    }
-    return Boolean(c.intro_source_url);
-  }).length;
 
-  const eventsWithoutCover = (eventsRes.data || []).filter(
-    (e) => !e.cover_image
-  ).length;
+  const events = eventsRes.data || [];
+  const eventsWithoutCover = events.filter((e) => !e.cover_image).length;
 
   const articlesMissingMeta = (articlesRes.data || []).filter(
     (a) => !a.meta_description || !a.cover_image
@@ -101,8 +84,8 @@ export async function getContentGaps(): Promise<ContentGaps> {
     placesThinContent,
     placesIndexableWithoutCover,
     citiesWithoutCover,
-    citiesValilikCover,
-    citiesValilikDescription,
+    newsDraftCount: newsDraftRes.count ?? 0,
+    eventsPendingCount: eventsPendingRes.count ?? 0,
     eventsWithoutCover,
     articlesMissingMeta,
   };
