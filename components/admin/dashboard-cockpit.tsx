@@ -35,8 +35,10 @@ import {
   Clock,
   Send,
   AlertCircle,
+  Zap,
 } from "lucide-react";
 import { AiImageModal } from "@/components/admin/ai-image-modal";
+import { UniversalUrlImportModal } from "@/components/admin/universal-url-import-modal";
 import { DiscoverySyncButton } from "@/components/admin/discovery-sync-button";
 import { AdSenseReadiness } from "@/components/admin/adsense-readiness";
 import type { AdminDashboardStats, ContentReadinessStats } from "@/lib/data/admin-stats";
@@ -138,6 +140,7 @@ export function DashboardCockpit({
 }: CockpitProps) {
   const router = useRouter();
   const [isAiImageModalOpen, setIsAiImageModalOpen] = useState(false);
+  const [isUniversalImportModalOpen, setIsUniversalImportModalOpen] = useState(false);
   const [quickAiUrl, setQuickAiUrl] = useState("");
 
   // Discovery triage state
@@ -243,8 +246,17 @@ export function DashboardCockpit({
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
             <Button
               type="button"
+              onClick={() => setIsUniversalImportModalOpen(true)}
+              className="h-10 px-3.5 text-xs font-bold gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-xs"
+            >
+              <Zap className="h-4 w-4 text-blue-100" />
+              <span>URL&apos;den Çek &amp; Üret</span>
+            </Button>
+
+            <Button
+              type="button"
               onClick={() => setIsAiImageModalOpen(true)}
-              className="h-10 px-4 text-xs font-bold gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-xs"
+              className="h-10 px-3.5 text-xs font-bold gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-xs"
             >
               <Wand2 className="h-4 w-4 text-amber-100" />
               <span>AI Görsel Üret</span>
@@ -776,6 +788,14 @@ export function DashboardCockpit({
             toast.success("Görsel URL bağlantısı panoya kopyalandı! İstediğiniz içerikte kullanabilirsiniz. 📋");
           });
         }}
+      />
+
+      {/* Universal URL Importer */}
+      <UniversalUrlImportModal
+        isOpen={isUniversalImportModalOpen}
+        onClose={() => setIsUniversalImportModalOpen(false)}
+        defaultTarget="auto"
+        title="Kokpit Hızlı URL Çekici"
       />
     </div>
   );

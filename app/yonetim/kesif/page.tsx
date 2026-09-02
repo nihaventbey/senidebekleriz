@@ -31,7 +31,7 @@ export default async function AdminDiscoveryPage({ searchParams }: Props) {
       : "pending_review";
 
   const contentType: DiscoveryContentType | undefined =
-    tip === "event" || tip === "article" ? tip : undefined;
+    tip === "news" || tip === "event" || tip === "article" ? tip : undefined;
 
   const [items, pendingCount] = await Promise.all([
     getDiscoveredContent(status, contentType),
@@ -39,15 +39,16 @@ export default async function AdminDiscoveryPage({ searchParams }: Props) {
   ]);
 
   const statusFilters = [
-    { key: "pending_review", label: "Onay Bekleyen" },
-    { key: "imported", label: "İçe Aktarılan" },
-    { key: "rejected", label: "Reddedilen" },
+    { key: "pending_review", label: "⏳ Onay Bekleyen" },
+    { key: "imported", label: "✅ İçe Aktarılan" },
+    { key: "rejected", label: "❌ Reddedilen" },
   ] as const;
 
   const typeFilters = [
-    { key: undefined, label: "Tüm tipler" },
-    { key: "event", label: "Etkinlik" },
-    { key: "article", label: "Gezi / Yazı" },
+    { key: undefined, label: "Tüm Tipler" },
+    { key: "news", label: "📰 Kültür Haberleri" },
+    { key: "event", label: "🎭 Etkinlikler" },
+    { key: "article", label: "🗺️ Gezi & Rehber" },
   ] as const;
 
   return (

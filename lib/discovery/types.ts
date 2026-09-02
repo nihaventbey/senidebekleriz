@@ -1,6 +1,6 @@
 export type DiscoverySourceType = "google_news_rss";
 
-export type DiscoveryContentType = "event" | "article" | "unknown" | "skip";
+export type DiscoveryContentType = "news" | "event" | "article" | "unknown" | "skip";
 
 export type DiscoveryStatus = "pending_review" | "imported" | "rejected";
 
@@ -33,7 +33,7 @@ export type DiscoveredContentRow = {
 };
 
 export type ClassifiedDiscovery = {
-  content_type: "event" | "article" | "skip";
+  content_type: "news" | "event" | "article" | "skip";
   city_slug: string | null;
   confidence: number;
 };

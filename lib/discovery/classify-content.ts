@@ -4,18 +4,33 @@ import type { ClassifiedDiscovery } from "@/lib/discovery/types";
 
 const CITY_SLUGS = turkeyCities.map((c) => c.slug).join(", ");
 
-const SYSTEM_PROMPT = `Sen Türkiye kültür/sanat/gezi platformu için içerik sınıflandırıcısısın.
-Haber başlığı ve özetine bakarak içeriği sınıflandır.
+const SYSTEM_PROMPT = `Sen Türkiye kültür, sanat ve turizm platformu için uzman bir içerik sınıflandırıcısısın.
+Haber başlığı, kaynak ve özetine bakarak içeriği en uygun türe sınıflandır.
 
 Kurallar:
-- Gelecek veya güncel tiyatro, konser, sergi, festival, etkinlik duyurusu → content_type: "event"
-- Gezi rehberi, şehir/müze tanıtımı, kültür-tarih yazısı, sanat haberi → content_type: "article"
-- Siyasi skandal, spor, magazin, yeme-içme reklamı, alakasız içerik → content_type: "skip"
-- city_slug yalnızca şu slug'lardan biri veya null: ${CITY_SLUGS}
-- confidence 0 ile 1 arası
+1. 📰 KÜLTÜR HABERİ (content_type: "news"):
+   - Arkeolojik kazı keşifleri ve buluntuları ("bulundu", "gün yüzüne çıkarıldı", "kazı çalışmaları")
+   - Restorasyon başlama/tamamlanma haberleri ("restore edildi", "açılışı yapıldı")
+   - Kültür ve Turizm Bakanlığı açıklamaları, tescil kararları, ödüller, tarihi eser kaçakçılığı/iadesi haberleri
+   - Müze açılışları, kültür merkezi açılışları, anma ve kültür dünyasından güncel gelişmeler
 
-Yanıt yalnızca geçerli JSON:
-{"content_type":"event","city_slug":null,"confidence":0.85}`;
+2. 🎭 KÜLTÜR ETKİNLİĞİ (content_type: "event"):
+   - Belirli bir gelecek/güncel tarih aralığında sahnelenen tiyatro, konser, opera, bale
+   - Tarihli festival, sergi açılışı, film festivali, atölye, söyleşi takvimi
+   - Bilet, mekan, seans veya program içeren canlı performans duyuruları
+
+3. 🗺️ GEZİ REHBERİ & DERLEME (content_type: "article"):
+   - Zamansız (evergreen) gezi rehberleri ("... Gezilecek Yerler", "... Gezi Rehberi")
+   - Şehir, rota, antik kent veya müze tanıtım makaleleri
+
+4. 🚫 ATLA / İLGİSİZ (content_type: "skip"):
+   - Siyasi tartışmalar, parti haberleri, adliye/asayiş, spor maçları, magazin dedikoduları, ticari ürün reklamları
+
+- city_slug: Türkiye'nin 81 ilinden biri (örn: 'istanbul', 'adiyaman', 'sanliurfa') veya tespit edilemezse null: ${CITY_SLUGS}
+- confidence: 0.0 ile 1.0 arası güven puanı
+
+Yanıt yalnızca geçerli JSON formatında olmalıdır:
+{"content_type":"news","city_slug":"adiyaman","confidence":0.95}`;
 
 export async function classifyDiscoveryItem(input: {
   title: string;
@@ -31,19 +46,17 @@ export async function classifyDiscoveryItem(input: {
   const parsed = await callGeminiJson<ClassifiedDiscovery>({
     systemPrompt: SYSTEM_PROMPT,
     userPrompt,
-    temperature: 0.2,
+    temperature: 0.1,
   });
 
-  const contentType =
-    parsed.content_type === "event" ||
-    parsed.content_type === "article" ||
-    parsed.content_type === "skip"
-      ? parsed.content_type
-      : "skip";
+  const validTypes = ["news", "event", "article", "skip"] as const;
+  const contentType = validTypes.includes(parsed.content_type as any)
+    ? parsed.content_type
+    : "news"; // Default to news for cultural content
 
   return {
     content_type: contentType,
     city_slug: parsed.city_slug ?? null,
-    confidence: parsed.confidence ?? 0.5,
+    confidence: parsed.confidence ?? 0.7,
   };
 }

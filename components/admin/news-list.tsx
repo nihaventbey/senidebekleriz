@@ -26,6 +26,7 @@ import {
   Newspaper,
   Loader2,
   Sparkles,
+  Zap,
 } from "lucide-react";
 import {
   deleteNews,
@@ -36,6 +37,7 @@ import { getCityName } from "@/lib/cities/lookup";
 import type { AdminNewsListItem } from "@/lib/data/admin-news";
 import { toast } from "@/lib/toast";
 import { NEWS_CATEGORY_LABELS, NEWS_CATEGORY_COLORS } from "@/components/news/news-card";
+import { UniversalUrlImportModal } from "@/components/admin/universal-url-import-modal";
 
 type Props = {
   newsList: AdminNewsListItem[];
@@ -45,6 +47,7 @@ export function AdminNewsList({ newsList }: Props) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft" | "featured">("all");
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -131,7 +134,18 @@ export function AdminNewsList({ newsList }: Props) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button asChild size="sm" className="gap-1.5 text-xs font-semibold">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setIsImportModalOpen(true)}
+            className="gap-1.5 text-xs font-semibold text-primary border-primary/30 hover:bg-primary/5 shadow-xs"
+          >
+            <Zap className="h-3.5 w-3.5 text-amber-500" />
+            URL&apos;den Haber Çek
+          </Button>
+
+          <Button asChild size="sm" className="gap-1.5 text-xs font-semibold shadow-xs">
             <Link href="/yonetim/haberler/yeni">
               <Plus className="h-4 w-4" /> Yeni Haber Ekle
             </Link>
@@ -323,6 +337,13 @@ export function AdminNewsList({ newsList }: Props) {
           </Table>
         </div>
       )}
+
+      <UniversalUrlImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        defaultTarget="news"
+        title="URL'den Kültür Haberi Çek"
+      />
     </div>
   );
 }

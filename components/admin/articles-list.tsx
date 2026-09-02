@@ -14,11 +14,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Check, ExternalLink, EyeOff, Loader2, Pencil, Search, MapPinned, BookOpen } from "lucide-react";
+import { Check, ExternalLink, EyeOff, Loader2, Pencil, Search, MapPinned, BookOpen, Zap } from "lucide-react";
 import { publishArticle, unpublishArticle } from "@/lib/actions/articles";
 import { getCityName } from "@/lib/cities/lookup";
 import type { AdminArticleListItem } from "@/lib/data/admin-articles";
 import { toast } from "@/lib/toast";
+import { UniversalUrlImportModal } from "@/components/admin/universal-url-import-modal";
 
 type Props = {
   articles: AdminArticleListItem[];
@@ -27,6 +28,7 @@ type Props = {
 export function ArticlesList({ articles }: Props) {
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const [activeTab, setActiveTab] = useState<"all" | "guides" | "blog">("all");
@@ -127,14 +129,27 @@ export function ArticlesList({ articles }: Props) {
           </button>
         </div>
 
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Başlık veya şehir ara..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-8.5 pl-8 text-xs"
-          />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setIsImportModalOpen(true)}
+            className="gap-1.5 text-xs font-semibold text-primary border-primary/30 hover:bg-primary/5 shrink-0 h-8.5"
+          >
+            <Zap className="h-3.5 w-3.5 text-amber-500" />
+            URL&apos;den Rehber Çek
+          </Button>
+
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Başlık veya şehir ara..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-8.5 pl-8 text-xs"
+            />
+          </div>
         </div>
       </div>
 
@@ -257,6 +272,13 @@ export function ArticlesList({ articles }: Props) {
           </Table>
         </div>
       )}
+
+      <UniversalUrlImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        defaultTarget="article"
+        title="URL'den Gezi Rehberi Çek"
+      />
     </div>
   );
 }
