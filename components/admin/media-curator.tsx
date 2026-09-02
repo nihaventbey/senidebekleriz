@@ -210,12 +210,7 @@ export function MediaCurator({ initialCities }: Props) {
     }
   };
 
-  const handleSaveUrl = async () => {
-    if (!activeItemForUrl || !inputImageUrl.trim()) return;
-
-    setSavingUrl(true);
-    const url = inputImageUrl.trim();
-
+  const handleUpdateImage = async (item: MediaItem, url: string) => {
     try {
       const res = await fetch("/api/admin/curate-image", {
         method: "POST",
@@ -223,9 +218,9 @@ export function MediaCurator({ initialCities }: Props) {
         body: JSON.stringify({
           action: "update-image",
           type: entityType,
-          id: activeItemForUrl.id,
-          slug: activeItemForUrl.slug,
-          citySlug: activeItemForUrl.cities?.slug || activeItemForUrl.city_slug,
+          id: item.id,
+          slug: item.slug,
+          citySlug: item.cities?.slug || item.city_slug,
           imageUrl: url,
         }),
       });
@@ -237,17 +232,28 @@ export function MediaCurator({ initialCities }: Props) {
 
       setItems((prev) =>
         prev.map((i) =>
-          i.id === activeItemForUrl.id
+          i.id === item.id
             ? { ...i, cover_image: url, cover_image_source: "manual", cover_image_locked: true }
             : i
         )
       );
 
-      toast.success("Görsel başarıyla güncellendi ve kaydedildi! ✅");
-      setUrlDialogOpen(false);
-      setInputImageUrl("");
+      toast.success("Görsel başarıyla kaydedildi! ✅");
     } catch (err: any) {
       toast.error(err.message || "Görsel kaydedilemedi");
+    }
+  };
+
+  const handleSaveUrl = async () => {
+    if (!activeItemForUrl || !inputImageUrl.trim()) return;
+
+    setSavingUrl(true);
+    const url = inputImageUrl.trim();
+
+    try {
+      await handleUpdateImage(activeItemForUrl, url);
+      setUrlDialogOpen(false);
+      setInputImageUrl("");
     } finally {
       setSavingUrl(false);
     }
