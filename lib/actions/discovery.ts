@@ -14,11 +14,14 @@ import {
 } from "@/lib/discovery/resolve-google-news-url";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { slugify } from "@/lib/slugify";
+import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
 
 function revalidateDiscoveryPaths() {
   revalidatePath("/yonetim/kesif");
   revalidatePath("/yonetim/etkinlikler");
   revalidatePath("/yonetim/yazilar");
+  revalidatePath("/yonetim/haberler");
+  revalidatePath("/");
 }
 
 async function markDiscoveryImported(
@@ -101,6 +104,7 @@ export async function importDiscoveryAsEvent(id: string) {
     fallbackText: item.snippet,
   });
   const slug = uniqueEventSlug(imported.title || item.title);
+  const storedCoverImage = await ensureStoredCoverImage(imported.cover_image, "events", slug);
 
   const { data, error } = await supabaseAdmin
     .from("cultural_events")
@@ -117,7 +121,7 @@ export async function importDiscoveryAsEvent(id: string) {
       venue_name: imported.venue_name,
       starts_at: imported.starts_at,
       ends_at: imported.ends_at,
-      cover_image: imported.cover_image,
+      cover_image: storedCoverImage,
       raw_payload: {
         discovery_id: item.id,
         image_urls: imported.image_urls,
@@ -153,6 +157,7 @@ export async function importDiscoveryAsArticle(id: string) {
   });
 
   const slug = slugify(draft.title || item.title);
+  const storedCoverImage = await ensureStoredCoverImage(draft.cover_image, "articles", slug);
 
   const { data, error } = await supabaseAdmin
     .from("articles")
@@ -161,7 +166,7 @@ export async function importDiscoveryAsArticle(id: string) {
       slug,
       excerpt: draft.excerpt,
       content: draft.content,
-      cover_image: draft.cover_image,
+      cover_image: storedCoverImage,
       city_slug: normalizeCitySlug(item.city_slug),
       meta_description: draft.meta_description,
       is_published: false,
@@ -194,6 +199,7 @@ export async function importDiscoveryAsNews(id: string) {
   });
 
   const slug = slugify(draft.title || item.title);
+  const storedCoverImage = await ensureStoredCoverImage(draft.cover_image, "news", slug);
 
   const { data, error } = await supabaseAdmin
     .from("cultural_news")
@@ -202,7 +208,7 @@ export async function importDiscoveryAsNews(id: string) {
       slug,
       summary: draft.summary,
       content: draft.content,
-      cover_image: draft.cover_image,
+      cover_image: storedCoverImage,
       category: draft.category || "genel",
       city_slug: normalizeCitySlug(item.city_slug),
       source_name: item.source_name,
@@ -213,7 +219,14 @@ export async function importDiscoveryAsNews(id: string) {
     .select("id, slug")
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.message?.includes("cultural_news") || error.message?.includes("schema cache")) {
+      throw new Error(
+        "Veritabanında 'cultural_news' tablosu eksik. Lütfen Supabase SQL Editor'da '015_cultural_news.sql' migration dosyasını çalıştırın."
+      );
+    }
+    throw new Error(error.message);
+  }
 
   await markDiscoveryImported(id, "cultural_news", data.id);
   revalidateDiscoveryPaths();

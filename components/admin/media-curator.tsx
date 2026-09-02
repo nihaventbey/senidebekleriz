@@ -22,6 +22,7 @@ import {
   Image as ImageIcon,
   AlertCircle,
   X,
+  Wand2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
+import { AiImageModal } from "@/components/admin/ai-image-modal";
 
 type City = { id: string; name: string; slug: string };
 
@@ -82,6 +84,9 @@ export function MediaCurator({ initialCities }: Props) {
   const [activeItemForUrl, setActiveItemForUrl] = useState<MediaItem | null>(null);
   const [inputImageUrl, setInputImageUrl] = useState("");
   const [savingUrl, setSavingUrl] = useState(false);
+
+  // AI Image generator state
+  const [aiModalItem, setAiModalItem] = useState<MediaItem | null>(null);
 
   // Wiki suggestions state
   const [wikiDialogOpen, setWikiDialogOpen] = useState(false);
@@ -718,6 +723,17 @@ export function MediaCurator({ initialCities }: Props) {
                   Wiki Önerisi
                 </Button>
 
+                {/* 2.5 AI Image Generator */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAiModalItem(currentFocusItem)}
+                  className="w-full text-xs font-semibold gap-1.5 text-primary border-primary/30 hover:bg-primary/5"
+                >
+                  <Wand2 className="h-3.5 w-3.5 text-primary" />
+                  ✨ AI ile Görsel Üret
+                </Button>
+
                 {/* 3. Paste URL */}
                 <Button
                   variant="outline"
@@ -1138,6 +1154,22 @@ export function MediaCurator({ initialCities }: Props) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* AI Image Generation Modal */}
+      {aiModalItem && (
+        <AiImageModal
+          isOpen={Boolean(aiModalItem)}
+          onClose={() => setAiModalItem(null)}
+          onSelectImage={(url) => {
+            if (aiModalItem) {
+              handleUpdateImage(aiModalItem, url);
+              setAiModalItem(null);
+            }
+          }}
+          initialTitle={aiModalItem.name}
+          initialCity={aiModalItem.cities?.name || aiModalItem.city_slug || undefined}
+        />
       )}
     </div>
   );

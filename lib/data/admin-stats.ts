@@ -3,6 +3,7 @@ import {
   hasEditorialContent,
 } from "@/lib/content/place-quality";
 import { turkeyCities } from "@/data/turkey-cities";
+import { getCityName } from "@/lib/cities/lookup";
 import { existsSync } from "fs";
 import { join } from "path";
 
@@ -16,6 +17,35 @@ export type AdminDashboardStats = {
   categories: number;
   articles: number;
   publishedArticles: number;
+  newsTotal: number;
+  newsPublished: number;
+  newsDraft: number;
+  newsFeatured: number;
+  eventsTotal: number;
+  eventsPublished: number;
+  eventsPending: number;
+  pendingDiscoveries: number;
+  recentNews: Array<{
+    id: string;
+    title: string;
+    slug: string;
+    category: string;
+    cityName: string | null;
+    coverImage: string | null;
+    isPublished: boolean;
+    isFeatured: boolean;
+    updatedAt: string;
+  }>;
+  recentEvents: Array<{
+    id: string;
+    title: string;
+    slug: string;
+    eventType: string;
+    cityName: string | null;
+    startsAt: string | null;
+    status: string;
+    updatedAt: string;
+  }>;
   recentPlaces: Array<{
     name: string;
     slug: string;
@@ -157,7 +187,17 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     categoriesRes,
     articlesRes,
     publishedArticlesRes,
-    recentRes,
+    newsTotalRes,
+    newsPublishedRes,
+    newsDraftRes,
+    newsFeaturedRes,
+    eventsTotalRes,
+    eventsPublishedRes,
+    eventsPendingRes,
+    pendingDiscoveriesRes,
+    recentPlacesRes,
+    recentNewsRes,
+    recentEventsRes,
   ] = await Promise.all([
     supabaseAdmin.from("cities").select("*", { count: "exact", head: true }),
     supabaseAdmin.from("places").select("*", { count: "exact", head: true }),
@@ -179,14 +219,32 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
       .from("articles")
       .select("*", { count: "exact", head: true })
       .eq("is_published", true),
+    supabaseAdmin.from("cultural_news").select("*", { count: "exact", head: true }),
+    supabaseAdmin.from("cultural_news").select("*", { count: "exact", head: true }).eq("is_published", true),
+    supabaseAdmin.from("cultural_news").select("*", { count: "exact", head: true }).eq("is_published", false),
+    supabaseAdmin.from("cultural_news").select("*", { count: "exact", head: true }).eq("is_featured", true),
+    supabaseAdmin.from("cultural_events").select("*", { count: "exact", head: true }),
+    supabaseAdmin.from("cultural_events").select("*", { count: "exact", head: true }).eq("status", "published"),
+    supabaseAdmin.from("cultural_events").select("*", { count: "exact", head: true }).eq("status", "pending_review"),
+    supabaseAdmin.from("discovered_content").select("*", { count: "exact", head: true }).eq("status", "pending_review"),
     supabaseAdmin
       .from("places")
       .select("name, slug, updated_at, is_featured, cities(name)")
       .order("updated_at", { ascending: false })
       .limit(5),
+    supabaseAdmin
+      .from("cultural_news")
+      .select("id, title, slug, category, city_slug, cover_image, is_published, is_featured, updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(4),
+    supabaseAdmin
+      .from("cultural_events")
+      .select("id, title, slug, event_type, city_slug, starts_at, status, updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(4),
   ]);
 
-  const recentPlaces = (recentRes.data || []).map((place) => {
+  const recentPlaces = (recentPlacesRes.data || []).map((place) => {
     const cities = place.cities as { name: string }[] | { name: string } | null;
     const cityName = Array.isArray(cities)
       ? cities[0]?.name || ""
@@ -201,6 +259,29 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     };
   });
 
+  const recentNews = (recentNewsRes.data || []).map((n) => ({
+    id: n.id,
+    title: n.title,
+    slug: n.slug,
+    category: n.category,
+    cityName: getCityName(n.city_slug) || n.city_slug,
+    coverImage: n.cover_image,
+    isPublished: n.is_published ?? false,
+    isFeatured: n.is_featured ?? false,
+    updatedAt: n.updated_at,
+  }));
+
+  const recentEvents = (recentEventsRes.data || []).map((e) => ({
+    id: e.id,
+    title: e.title,
+    slug: e.slug,
+    eventType: e.event_type,
+    cityName: getCityName(e.city_slug) || e.city_slug,
+    startsAt: e.starts_at,
+    status: e.status,
+    updatedAt: e.updated_at,
+  }));
+
   return {
     cities: citiesRes.count ?? 0,
     places: placesRes.count ?? 0,
@@ -211,6 +292,16 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     categories: categoriesRes.count ?? 0,
     articles: articlesRes.count ?? 0,
     publishedArticles: publishedArticlesRes.count ?? 0,
+    newsTotal: newsTotalRes.count ?? 0,
+    newsPublished: newsPublishedRes.count ?? 0,
+    newsDraft: newsDraftRes.count ?? 0,
+    newsFeatured: newsFeaturedRes.count ?? 0,
+    eventsTotal: eventsTotalRes.count ?? 0,
+    eventsPublished: eventsPublishedRes.count ?? 0,
+    eventsPending: eventsPendingRes.count ?? 0,
+    pendingDiscoveries: pendingDiscoveriesRes.count ?? 0,
+    recentNews,
+    recentEvents,
     recentPlaces,
   };
 }

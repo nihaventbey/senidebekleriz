@@ -97,30 +97,25 @@ export async function generateNewsDraft(
     .filter(Boolean)
     .join("\n\n");
 
-  const mediaPromise =
-    fetchedImages.length > 0
-      ? uploadArticleImagesFromUrls(fetchedImages, slugHint, { maxImages: 6 })
-      : Promise.resolve({ coverImage: null, uploadedImages: [] as string[] });
-
-  const [parsed, media] = await Promise.all([
-    callGeminiJson<Omit<GeneratedNews, "cover_image" | "uploaded_images">>({
-      systemPrompt: NEWS_SYSTEM_PROMPT,
-      userPrompt,
-      temperature: 0.4,
-    }),
-    mediaPromise,
-  ]);
+  const parsed = await callGeminiJson<Omit<GeneratedNews, "cover_image" | "uploaded_images">>({
+    systemPrompt: NEWS_SYSTEM_PROMPT,
+    userPrompt,
+    temperature: 0.4,
+  });
 
   if (!parsed.title || !parsed.content) {
     throw new Error("AI haber yanıtı geçersiz");
   }
+
+  // Preserve raw candidate image URL in draft; will be transferred to storage only upon approval/save
+  const candidateCoverImage = fetchedImages.length > 0 ? fetchedImages[0] : null;
 
   return {
     title: parsed.title,
     summary: parsed.summary || parsed.title,
     content: parsed.content,
     category: parsed.category || "genel",
-    cover_image: media.coverImage,
-    uploaded_images: media.uploadedImages,
+    cover_image: candidateCoverImage,
+    uploaded_images: fetchedImages,
   };
 }

@@ -187,3 +187,35 @@ export async function uploadEventImagesFromUrls(
     maxImages: 2,
   });
 }
+
+export function isSupabaseStorageUrl(url?: string | null): boolean {
+  if (!url) return false;
+  return (
+    url.includes("/storage/v1/object/public/media") ||
+    url.includes("/storage/v1/object/authenticated/media")
+  );
+}
+
+export async function ensureStoredCoverImage(
+  url: string | null | undefined,
+  folder: "news" | "events" | "articles" | "places",
+  slugHint: string
+): Promise<string | null> {
+  if (!url || !url.trim()) return null;
+  const trimmed = url.trim();
+
+  // If already stored in our Supabase storage, return as-is
+  if (isSupabaseStorageUrl(trimmed)) {
+    return trimmed;
+  }
+
+  // If it's an external HTTP/HTTPS URL, download and save to storage upon confirmation
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    const safeSlug = safePathSegment(slugHint || "cover");
+    const storagePath = `${folder}/${safeSlug}/${Date.now()}/cover`;
+    const storedUrl = await uploadImageFromUrl(trimmed, storagePath);
+    return storedUrl || trimmed;
+  }
+
+  return trimmed;
+}

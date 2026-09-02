@@ -105,37 +105,55 @@ export function DiscoveryList({ items, filter }: Props) {
 
   return (
     <div className="overflow-x-auto rounded-2xl border bg-card shadow-xs">
-      <Table className="w-full min-w-[850px]">
+      <Table className="w-full min-w-[850px] table-fixed">
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[38%]">Başlık & Özet</TableHead>
-            <TableHead className="w-[12%]">Önerilen Tür</TableHead>
-            <TableHead className="w-[12%]">Şehir</TableHead>
-            <TableHead className="w-[14%]">Kaynak</TableHead>
-            <TableHead className="w-[24%] text-right">AI İle İçe Aktar</TableHead>
+            <TableHead className="w-[42%]">Başlık & Özet</TableHead>
+            <TableHead className="w-[11%]">Önerilen Tür</TableHead>
+            <TableHead className="w-[11%]">Şehir</TableHead>
+            <TableHead className="w-[13%]">Kaynak</TableHead>
+            <TableHead className="w-[23%] text-right">AI İle İçe Aktar</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {items.map((item) => {
             const busy = isPending && pendingId === item.id;
+            const formattedTitle =
+              item.title.length > 85
+                ? `${item.title.slice(0, 85).trim()}...`
+                : item.title;
+            const formattedSnippet =
+              item.snippet && item.snippet.length > 120
+                ? `${item.snippet.slice(0, 120).trim()}...`
+                : item.snippet;
 
             return (
               <TableRow key={item.id} className="hover:bg-muted/40">
-                <TableCell>
-                  <span className="line-clamp-2 font-bold text-sm leading-snug">{item.title}</span>
-                  {item.snippet && (
-                    <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                      {item.snippet}
+                <TableCell className="max-w-[400px] overflow-hidden py-3">
+                  <div className="space-y-1">
+                    <p
+                      className="font-bold text-sm leading-snug line-clamp-2 break-words text-foreground"
+                      title={item.title}
+                    >
+                      {formattedTitle}
                     </p>
-                  )}
+                    {formattedSnippet && (
+                      <p
+                        className="line-clamp-2 text-xs text-muted-foreground break-words leading-relaxed"
+                        title={item.snippet || undefined}
+                      >
+                        {formattedSnippet}
+                      </p>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className="text-[11px] font-medium">
+                  <Badge variant="outline" className="text-[11px] font-medium whitespace-nowrap">
                     {TYPE_LABELS[item.content_type] || item.content_type}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <span className="text-xs text-muted-foreground font-medium">
+                  <span className="text-xs text-muted-foreground font-medium truncate block">
                     {getCityName(item.city_slug) || "—"}
                   </span>
                 </TableCell>
@@ -151,7 +169,7 @@ export function DiscoveryList({ items, filter }: Props) {
                     <ExternalLink className="ml-1 h-3 w-3 shrink-0" />
                   </a>
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right whitespace-nowrap">
                   {item.status === "pending_review" ? (
                     <div className="flex justify-end items-center gap-1.5">
                       {/* 1. News Button */}

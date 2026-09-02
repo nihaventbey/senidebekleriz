@@ -29,6 +29,7 @@ import { renderMarkdown } from "@/lib/markdown";
 import { toast } from "@/lib/toast";
 import { slugify } from "@/lib/slugify";
 import { MarkdownContent } from "@/components/markdown/markdown-content";
+import { AiImageModal } from "@/components/admin/ai-image-modal";
 import type { NewsActionResult } from "@/lib/actions/news";
 
 type CityOption = { slug: string; name: string };
@@ -83,6 +84,7 @@ export function NewsForm({
   const [isFeatured, setIsFeatured] = useState(defaultValues.is_featured ?? false);
 
   const [preview, setPreview] = useState(false);
+  const [isAiImageModalOpen, setIsAiImageModalOpen] = useState(false);
   const [aiPending, startAiTransition] = useTransition();
   const [savePending, startSaveTransition] = useTransition();
   const [aiSourceUrl, setAiSourceUrl] = useState("");
@@ -352,9 +354,21 @@ export function NewsForm({
 
         {/* Cover Image */}
         <div className="space-y-2">
-          <Label htmlFor="cover_image" className="text-xs font-semibold">
-            Kapak Görseli URL
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="cover_image" className="text-xs font-semibold">
+              Kapak Görseli URL
+            </Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsAiImageModalOpen(true)}
+              className="h-7 text-xs font-semibold gap-1 text-primary border-primary/30 hover:bg-primary/10 shadow-xs"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+              ✨ AI ile Görsel Üret
+            </Button>
+          </div>
           <Input
             id="cover_image"
             name="cover_image"
@@ -370,6 +384,15 @@ export function NewsForm({
             </div>
           )}
         </div>
+
+        <AiImageModal
+          isOpen={isAiImageModalOpen}
+          onClose={() => setIsAiImageModalOpen(false)}
+          onSelectImage={(url) => setCoverImage(url)}
+          initialTitle={title}
+          initialCity={cities.find((c) => c.slug === citySlug)?.name}
+          initialCategory={category}
+        />
 
         {/* Source info */}
         <div className="grid gap-4 sm:grid-cols-2">

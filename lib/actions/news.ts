@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { slugify } from "@/lib/slugify";
 import { normalizeCitySlug } from "@/lib/cities/lookup";
+import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
 
 export type NewsActionResult = {
   success: boolean;
@@ -28,7 +29,7 @@ export async function createNews(formData: FormData): Promise<NewsActionResult> 
   const content = String(formData.get("content") || "").trim();
   const category = String(formData.get("category") || "genel").trim();
   const citySlugRaw = String(formData.get("city_slug") || "").trim();
-  const coverImage = String(formData.get("cover_image") || "").trim() || null;
+  const coverImageRaw = String(formData.get("cover_image") || "").trim() || null;
   const sourceName = String(formData.get("source_name") || "").trim() || null;
   const sourceUrl = String(formData.get("source_url") || "").trim() || null;
   const isPublished = formData.get("is_published") === "on" || formData.get("is_published") === "true";
@@ -40,6 +41,9 @@ export async function createNews(formData: FormData): Promise<NewsActionResult> 
 
   const slug = slugify(rawSlug || title);
   const citySlug = normalizeCitySlug(citySlugRaw === "none" ? null : citySlugRaw);
+
+  // Transfer cover image to Supabase Storage now that user confirmed/submitted
+  const coverImage = await ensureStoredCoverImage(coverImageRaw, "news", slug);
 
   const { data, error } = await supabaseAdmin
     .from("cultural_news")
@@ -65,6 +69,12 @@ export async function createNews(formData: FormData): Promise<NewsActionResult> 
     if (error.code === "23505") {
       return { success: false, error: "Bu URL slug zaten kullanımda" };
     }
+    if (error.message?.includes("cultural_news") || error.message?.includes("schema cache")) {
+      return {
+        success: false,
+        error: "Veritabanında 'cultural_news' tablosu eksik. Lütfen Supabase SQL Editor'da '015_cultural_news.sql' migration dosyasını çalıştırın.",
+      };
+    }
     return { success: false, error: error.message };
   }
 
@@ -82,7 +92,7 @@ export async function updateNews(
   const content = String(formData.get("content") || "").trim();
   const category = String(formData.get("category") || "genel").trim();
   const citySlugRaw = String(formData.get("city_slug") || "").trim();
-  const coverImage = String(formData.get("cover_image") || "").trim() || null;
+  const coverImageRaw = String(formData.get("cover_image") || "").trim() || null;
   const sourceName = String(formData.get("source_name") || "").trim() || null;
   const sourceUrl = String(formData.get("source_url") || "").trim() || null;
   const isPublished = formData.get("is_published") === "on" || formData.get("is_published") === "true";
@@ -94,6 +104,9 @@ export async function updateNews(
 
   const slug = slugify(rawSlug || title);
   const citySlug = normalizeCitySlug(citySlugRaw === "none" ? null : citySlugRaw);
+
+  // Transfer cover image to Supabase Storage upon update
+  const coverImage = await ensureStoredCoverImage(coverImageRaw, "news", slug);
 
   const { data, error } = await supabaseAdmin
     .from("cultural_news")
@@ -116,6 +129,12 @@ export async function updateNews(
     .single();
 
   if (error) {
+    if (error.message?.includes("cultural_news") || error.message?.includes("schema cache")) {
+      return {
+        success: false,
+        error: "Veritabanında 'cultural_news' tablosu eksik. Lütfen Supabase SQL Editor'da '015_cultural_news.sql' migration dosyasını çalıştırın.",
+      };
+    }
     return { success: false, error: error.message };
   }
 
