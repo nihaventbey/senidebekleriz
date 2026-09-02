@@ -79,6 +79,20 @@ export function sortEventsByClosestUpcoming(events: PublicEvent[]): PublicEvent[
   });
 }
 
+export function isEventExpired(event: { startsAt: string | null; endsAt: string | null }): boolean {
+  const now = new Date();
+  if (event.endsAt) {
+    return new Date(event.endsAt).getTime() < now.getTime();
+  }
+  if (event.startsAt) {
+    const start = new Date(event.startsAt);
+    const endOfDay = new Date(start);
+    endOfDay.setHours(23, 59, 59, 999);
+    return endOfDay.getTime() < now.getTime();
+  }
+  return false;
+}
+
 function publishedFilter() {
   const now = new Date().toISOString();
   return supabaseAdmin
@@ -103,8 +117,11 @@ export async function getFeaturedEvents(limit = 8): Promise<PublicEvent[]> {
   const rows = (data || []) as CulturalEventRow[];
   const mapped = rows.map(mapEvent);
 
-  const featured = mapped.filter((r) => r.isFeatured);
-  const rest = mapped.filter((r) => !r.isFeatured);
+  // Exclude expired events from featured home page
+  const activeOnly = mapped.filter((e) => !isEventExpired(e));
+
+  const featured = activeOnly.filter((r) => r.isFeatured);
+  const rest = activeOnly.filter((r) => !r.isFeatured);
 
   const sortedFeatured = sortEventsByClosestUpcoming(featured);
   const sortedRest = sortEventsByClosestUpcoming(rest);
@@ -115,6 +132,7 @@ export async function getFeaturedEvents(limit = 8): Promise<PublicEvent[]> {
 export async function getPublishedEvents(options?: {
   citySlug?: string;
   eventType?: EventType;
+  includePast?: boolean;
   limit?: number;
 }): Promise<PublicEvent[]> {
   let query = publishedFilter()
@@ -140,7 +158,13 @@ export async function getPublishedEvents(options?: {
   }
 
   const mapped = ((data || []) as CulturalEventRow[]).map(mapEvent);
-  return sortEventsByClosestUpcoming(mapped);
+  
+  // Filter out past events unless explicitly requested
+  const filtered = options?.includePast
+    ? mapped
+    : mapped.filter((e) => !isEventExpired(e));
+
+  return sortEventsByClosestUpcoming(filtered);
 }
 
 export async function getPublishedEventSlugs(): Promise<

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { JsonLd } from "@/components/seo/json-ld";
 import { AdBanner } from "@/components/ads/ad-banner";
-import { getEventBySlug, getPublishedEventSlugs } from "@/lib/data/events";
+import { getEventBySlug, getPublishedEventSlugs, isEventExpired } from "@/lib/data/events";
 import { buildBreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import { getCityCoordinates } from "@/lib/cities/lookup";
 import { EventVenueMap } from "@/components/maps/event-venue-map";
@@ -16,6 +16,7 @@ import {
   ExternalLink,
   MapPin,
   Ticket,
+  Clock,
 } from "lucide-react";
 
 export const revalidate = 86400;
@@ -146,6 +147,12 @@ export default async function EventDetailPage({
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Badge>{TYPE_LABELS[event.eventType] || "Kültür"}</Badge>
+        {isEventExpired(event) && (
+          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 font-semibold">
+            <Clock className="mr-1 h-3 w-3" />
+            Geçmiş Etkinlik
+          </Badge>
+        )}
         {event.cityName && (
           <Badge variant="outline">
             <MapPin className="mr-1 h-3 w-3" />
@@ -153,6 +160,13 @@ export default async function EventDetailPage({
           </Badge>
         )}
       </div>
+
+      {isEventExpired(event) && (
+        <div className="mb-6 rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4 text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-2.5">
+          <Clock className="h-4 w-4 shrink-0" />
+          <span>Bu etkinlik tamamlanmıştır. Güncel kültür ve sanat etkinliklerini keşfetmek için etkinlikler takvimini ziyaret edebilirsiniz.</span>
+        </div>
+      )}
 
       <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
         {event.title}
