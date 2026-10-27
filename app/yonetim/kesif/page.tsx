@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   countPendingDiscoveries,
-  getDiscoveredContent,
+  getDiscoveredContentPaginated,
 } from "@/lib/data/admin-discovery";
 import { DiscoveryList } from "@/components/admin/discovery-list";
 import { DiscoverySyncButton } from "@/components/admin/discovery-sync-button";
@@ -17,11 +17,11 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{ durum?: string; tip?: string }>;
+  searchParams: Promise<{ durum?: string; tip?: string; sayfa?: string; limit?: string }>;
 };
 
 export default async function AdminDiscoveryPage({ searchParams }: Props) {
-  const { durum, tip } = await searchParams;
+  const { durum, tip, sayfa, limit } = await searchParams;
 
   const status: DiscoveryStatus | undefined =
     durum === "pending_review" ||
@@ -33,8 +33,16 @@ export default async function AdminDiscoveryPage({ searchParams }: Props) {
   const contentType: DiscoveryContentType | undefined =
     tip === "news" || tip === "event" || tip === "article" ? tip : undefined;
 
-  const [items, pendingCount] = await Promise.all([
-    getDiscoveredContent(status, contentType),
+  const currentPage = parseInt(sayfa || "1", 10) || 1;
+  const pageSize = parseInt(limit || "25", 10) || 25;
+
+  const [paginated, pendingCount] = await Promise.all([
+    getDiscoveredContentPaginated({
+      status,
+      contentType,
+      page: currentPage,
+      limit: pageSize,
+    }),
     countPendingDiscoveries(),
   ]);
 
@@ -110,7 +118,15 @@ export default async function AdminDiscoveryPage({ searchParams }: Props) {
         ))}
       </div>
 
-      <DiscoveryList items={items} filter={status} />
+      <DiscoveryList
+        items={paginated.items}
+        filter={status}
+        typeFilter={contentType}
+        totalCount={paginated.totalCount}
+        totalPages={paginated.totalPages}
+        currentPage={paginated.page}
+        pageSize={paginated.limit}
+      />
     </div>
   );
 }

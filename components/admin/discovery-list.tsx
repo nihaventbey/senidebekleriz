@@ -33,6 +33,7 @@ import {
   rejectDiscovery,
   bulkRejectDiscovery,
   bulkDeleteDiscovery,
+  deleteAllDiscoveredContentByFilter,
 } from "@/lib/actions/discovery";
 import { getCityName } from "@/lib/cities/lookup";
 import type { AdminDiscoveryListItem } from "@/lib/data/admin-discovery";
@@ -48,9 +49,22 @@ const TYPE_LABELS: Record<string, string> = {
 type Props = {
   items: AdminDiscoveryListItem[];
   filter?: string;
+  typeFilter?: string;
+  totalCount: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
 };
 
-export function DiscoveryList({ items, filter }: Props) {
+export function DiscoveryList({
+  items,
+  filter = "pending_review",
+  typeFilter,
+  totalCount,
+  totalPages,
+  currentPage,
+  pageSize,
+}: Props) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -113,6 +127,45 @@ export function DiscoveryList({ items, filter }: Props) {
     });
   }
 
+  function handleClearAllInFilter() {
+    const filterName =
+      filter === "pending_review"
+        ? "Onay Bekleyen"
+        : filter === "imported"
+        ? "İçe Aktarılan"
+        : filter === "rejected"
+        ? "Reddedilen"
+        : "Bu filtredeki";
+
+    if (
+      !confirm(
+        `DİKKAT: ${filterName} kategorisindeki TÜM (${totalCount}) içerik kalıcı olarak silinecek. Emin misiniz?`
+      )
+    ) {
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        await deleteAllDiscoveredContentByFilter(filter);
+        toast.success(`${filterName} kategorisindeki tüm kayıtlar temizlendi! 🧹`);
+        setSelectedIds(new Set());
+        router.refresh();
+      } catch (err: any) {
+        toast.error("Temizleme hatası", err.message);
+      }
+    });
+  }
+
+  function getPageUrl(targetPage: number, targetLimit?: number) {
+    const params = new URLSearchParams();
+    if (filter) params.set("durum", filter);
+    if (typeFilter) params.set("tip", typeFilter);
+    params.set("sayfa", targetPage.toString());
+    params.set("limit", (targetLimit || pageSize).toString());
+    return `/yonetim/kesif?${params.toString()}`;
+  }
+
   function runAction(
     id: string,
     action: "news" | "event" | "article" | "reject",
@@ -168,6 +221,49 @@ export function DiscoveryList({ items, filter }: Props) {
 
   return (
     <div className="space-y-3">
+      {/* Top Controls: Total Count, Page Size Selector, & Clear All Filter */}
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground pb-1">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-foreground">
+            Toplam {totalCount.toLocaleString("tr-TR")} içerik
+          </span>
+          <span>·</span>
+          <span>Sayfa {currentPage} / {totalPages}</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span>Sayfa Başı:</span>
+            {[25, 50, 100].map((l) => (
+              <Button
+                key={l}
+                variant={pageSize === l ? "secondary" : "ghost"}
+                size="sm"
+                asChild
+                className="h-7 px-2 text-xs"
+              >
+                <Link href={getPageUrl(1, l)}>{l}</Link>
+              </Button>
+            ))}
+          </div>
+
+          {totalCount > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={isPending}
+              onClick={handleClearAllInFilter}
+              className="h-7 text-xs text-destructive hover:bg-destructive/10 gap-1 font-medium"
+              title="Bu filtredeki tüm içerikleri kalıcı olarak sil"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>Bu Listeyi Temizle</span>
+            </Button>
+          )}
+        </div>
+      </div>
+
       {/* Bulk Action Bar (When 1+ items selected) */}
       {selectedIds.size > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-primary/10 border border-primary/30 shadow-sm animate-in fade-in slide-in-from-top-2">
@@ -417,6 +513,74 @@ export function DiscoveryList({ items, filter }: Props) {
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination Footer */}
+      {totalPages > 1 && (
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-3 text-xs">
+          <p className="text-muted-foreground">
+            Sayfa <span className="font-semibold text-foreground">{currentPage}</span> / {totalPages} (Toplam {totalCount.toLocaleString("tr-TR")} kayıt)
+          </p>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1}
+              asChild={currentPage > 1}
+              className="h-8 px-3 text-xs"
+            >
+              {currentPage > 1 ? (
+                <Link href={getPageUrl(currentPage - 1)}>← Önceki</Link>
+              ) : (
+                <span>← Önceki</span>
+              )}
+            </Button>
+
+            {/* Quick page numbers around current */}
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(
+                  (p) =>
+                    p === 1 ||
+                    p === totalPages ||
+                    Math.abs(p - currentPage) <= 2
+                )
+                .map((p, idx, arr) => {
+                  const prev = arr[idx - 1];
+                  const hasGap = prev && p - prev > 1;
+
+                  return (
+                    <span key={p} className="flex items-center">
+                      {hasGap && <span className="px-1 text-muted-foreground">…</span>}
+                      <Button
+                        variant={p === currentPage ? "default" : "outline"}
+                        size="sm"
+                        asChild
+                        className="h-8 w-8 p-0 text-xs"
+                      >
+                        <Link href={getPageUrl(p)}>{p}</Link>
+                      </Button>
+                    </span>
+                  );
+                })}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= totalPages}
+              asChild={currentPage < totalPages}
+              className="h-8 px-3 text-xs"
+            >
+              {currentPage < totalPages ? (
+                <Link href={getPageUrl(currentPage + 1)}>Sonraki →</Link>
+              ) : (
+                <span>Sonraki →</span>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

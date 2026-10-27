@@ -212,128 +212,139 @@ export function DashboardCockpit({
 
   return (
     <div className="space-y-6 sm:space-y-8 max-w-7xl mx-auto pb-10">
-      {/* 1. Cockpit Header Bar with Dynamic Greeting & Quote */}
-      <section className="relative overflow-hidden rounded-3xl border border-primary/25 bg-gradient-to-br from-primary/15 via-background to-card p-6 sm:p-8 shadow-sm">
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+      {/* 1. Cockpit Header Bar (Modern, Derli Toplu & Profesyonel) */}
+      <section className="relative overflow-hidden rounded-3xl border border-border/70 bg-card p-6 sm:p-7 shadow-xs">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+              <span className="text-xs font-semibold text-muted-foreground">
                 {todayDateStr}
               </span>
-              <span className="text-muted-foreground">·</span>
-              <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full">
+              <span className="text-muted-foreground/40">·</span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Sistem Canlı &amp; Hazır
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground">
-              {greeting}, Editör! 🚀
-            </h1>
-
-            {/* Daily Cultural Inspiration */}
-            <div className="flex items-start gap-2.5 rounded-xl border border-primary/15 bg-background/60 backdrop-blur-xs p-3 text-xs text-muted-foreground mt-2">
-              <Quote className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-              <div>
-                <p className="italic text-foreground font-medium">
-                  &ldquo;{todayQuote.quote}&rdquo;
-                </p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  — <strong>{todayQuote.author}</strong> ({todayQuote.tag})
-                </p>
-              </div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+                {greeting}, Editör
+              </h1>
             </div>
+
+            {/* Daily Cultural Quote - Minimal & Subtle */}
+            <p className="text-xs text-muted-foreground flex items-center gap-2 pt-0.5">
+              <Quote className="h-3.5 w-3.5 text-primary shrink-0 opacity-70" />
+              <span className="italic font-medium text-foreground/90">&ldquo;{todayQuote.quote}&rdquo;</span>
+              <span className="text-muted-foreground/70">— {todayQuote.author}</span>
+            </p>
           </div>
 
-          {/* Quick Cockpit Action Suite */}
+          {/* Action Suite - Temiz & Düzenli Hiyerarşi */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
             <Button
-              type="button"
-              onClick={() => setIsUniversalImportModalOpen(true)}
-              className="h-10 px-3.5 text-xs font-bold gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-xs"
+              asChild
+              size="sm"
+              className="h-9 px-3.5 text-xs font-semibold gap-1.5 bg-primary text-primary-foreground shadow-xs"
             >
-              <Zap className="h-4 w-4 text-blue-100" />
-              <span>URL&apos;den Çek &amp; Üret</span>
-            </Button>
-
-            <Button
-              type="button"
-              onClick={() => setIsSocialModalOpen(true)}
-              className="h-10 px-3.5 text-xs font-bold gap-1.5 bg-gradient-to-r from-rose-500 via-purple-500 to-amber-500 hover:opacity-90 text-white shadow-xs"
-            >
-              <Camera className="h-4 w-4 text-white" />
-              <span>Sosyal Medya Stüdyosu</span>
-            </Button>
-
-            <Button
-              type="button"
-              onClick={() => setIsAiImageModalOpen(true)}
-              className="h-10 px-3.5 text-xs font-bold gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-xs"
-            >
-              <Wand2 className="h-4 w-4 text-amber-100" />
-              <span>AI Görsel Üret</span>
-            </Button>
-
-            <DiscoverySyncButton />
-
-            <Button asChild variant="outline" size="sm" className="h-10 px-3.5 text-xs font-semibold gap-1.5 shadow-xs">
               <Link href="/yonetim/haberler/yeni">
                 <Plus className="h-3.5 w-3.5" />
                 <span>Yeni Haber</span>
               </Link>
             </Button>
 
-            <Button asChild variant="outline" size="sm" className="h-10 px-3.5 text-xs font-semibold gap-1.5 shadow-xs">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="h-9 px-3.5 text-xs font-semibold gap-1.5 shadow-xs"
+            >
               <Link href="/yonetim/etkinlikler/yeni">
                 <Plus className="h-3.5 w-3.5" />
                 <span>Yeni Etkinlik</span>
               </Link>
             </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsUniversalImportModalOpen(true)}
+              className="h-9 px-3 text-xs font-medium gap-1.5 shadow-xs"
+            >
+              <Zap className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+              <span>URL&apos;den Çek</span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsAiImageModalOpen(true)}
+              className="h-9 px-3 text-xs font-medium gap-1.5 shadow-xs"
+            >
+              <Wand2 className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+              <span>AI Görsel</span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsSocialModalOpen(true)}
+              className="h-9 px-3 text-xs font-medium gap-1.5 shadow-xs"
+            >
+              <Camera className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+              <span>Sosyal Stüdyo</span>
+            </Button>
+
+            <DiscoverySyncButton />
           </div>
+        </div>
+
+        {/* Quick AI Launcher - Header içine entegre şık arama çubuğu */}
+        <div className="mt-5 pt-4 border-t border-border/60">
+          <form onSubmit={handleQuickAiSubmit} className="flex flex-col sm:flex-row items-center gap-2.5">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground/80 shrink-0">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <span>Hızlı Haber Başlat:</span>
+            </div>
+            <div className="relative flex-1 w-full">
+              <Input
+                type="url"
+                placeholder="Kültür Bakanlığı, AA, TRT veya haber linki yapıştırın (https://...)"
+                value={quickAiUrl}
+                onChange={(e) => setQuickAiUrl(e.target.value)}
+                className="h-9 text-xs pl-3 pr-8 bg-background/80"
+              />
+              {quickAiUrl && (
+                <button
+                  type="button"
+                  onClick={() => setQuickAiUrl("")}
+                  className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <Button type="submit" size="sm" variant="default" className="h-9 text-xs font-semibold gap-1.5 w-full sm:w-auto shrink-0 shadow-xs">
+              <Send className="h-3 w-3" /> Dönüştür
+            </Button>
+          </form>
         </div>
       </section>
 
-      {/* 2. Quick AI News Launcher Box (Kokpitten Doğrudan Linkle Haber Başlatma) */}
-      <section className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs">
-        <form onSubmit={handleQuickAiSubmit} className="flex flex-col sm:flex-row items-center gap-3">
-          <div className="flex items-center gap-2 text-xs font-bold text-foreground shrink-0">
-            <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-            <span>Hızlı AI Haber Başlatıcı:</span>
-          </div>
-          <div className="relative flex-1 w-full">
-            <Input
-              type="url"
-              placeholder="Kültür Bakanlığı, AA, TRT veya haber sitesi linki yapıştırın (https://...)"
-              value={quickAiUrl}
-              onChange={(e) => setQuickAiUrl(e.target.value)}
-              className="h-9 text-xs pl-3 pr-8"
-            />
-            {quickAiUrl && (
-              <button
-                type="button"
-                onClick={() => setQuickAiUrl("")}
-                className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          <Button type="submit" size="sm" className="h-9 text-xs font-semibold gap-1.5 w-full sm:w-auto shrink-0 shadow-xs">
-            <Send className="h-3.5 w-3.5" /> Habere Dönüştür
-          </Button>
-        </form>
-      </section>
-
-      {/* 3. Core Cockpit KPI Cards (6'lı Canlı Veri Grid) */}
+      {/* 2. Core Cockpit KPI Cards (Tutarlı & Modern 6'lı Izgara) */}
       <section className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">
         {/* Card 1: Kültür Haberleri */}
         <Link
           href="/yonetim/haberler"
-          className="group rounded-2xl border border-blue-500/25 bg-gradient-to-br from-blue-500/10 via-card to-card p-4 transition-all hover:shadow-md hover:border-blue-500/50"
+          className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm hover:border-primary/50"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-blue-600 dark:text-blue-400">Kültür Haberi</span>
-            <Newspaper className="h-4 w-4 text-blue-500 opacity-80 group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-semibold text-muted-foreground">Kültür Haberleri</span>
+            <Newspaper className="h-4 w-4 text-blue-500 opacity-80 group-hover:scale-105 transition-transform" />
           </div>
           <div className="mt-2 text-2xl font-extrabold text-foreground">
             {stats.newsTotal.toLocaleString("tr-TR")}
@@ -352,11 +363,11 @@ export function DashboardCockpit({
         {/* Card 2: Etkinlikler */}
         <Link
           href="/yonetim/etkinlikler"
-          className="group rounded-2xl border border-purple-500/25 bg-gradient-to-br from-purple-500/10 via-card to-card p-4 transition-all hover:shadow-md hover:border-purple-500/50"
+          className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm hover:border-primary/50"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-purple-600 dark:text-purple-400">Etkinlikler</span>
-            <CalendarDays className="h-4 w-4 text-purple-500 opacity-80 group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-semibold text-muted-foreground">Etkinlikler</span>
+            <CalendarDays className="h-4 w-4 text-purple-500 opacity-80 group-hover:scale-105 transition-transform" />
           </div>
           <div className="mt-2 text-2xl font-extrabold text-foreground">
             {stats.eventsTotal.toLocaleString("tr-TR")}
@@ -375,32 +386,32 @@ export function DashboardCockpit({
         {/* Card 3: Keşif Kuyruğu */}
         <Link
           href="/yonetim/kesif"
-          className={`group rounded-2xl border p-4 transition-all hover:shadow-md ${
+          className={`group rounded-2xl border p-4 transition-all hover:shadow-sm ${
             stats.pendingDiscoveries > 0
-              ? "border-amber-500/40 bg-gradient-to-br from-amber-500/15 via-card to-card hover:border-amber-500/60"
-              : "border-border/60 bg-card hover:border-primary/40"
+              ? "border-amber-500/40 bg-amber-500/5 hover:border-amber-500/60"
+              : "border-border/70 bg-card hover:border-primary/50"
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-amber-600 dark:text-amber-400">Keşif Kuyruğu</span>
-            <Compass className="h-4 w-4 text-amber-500 opacity-80 group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-semibold text-muted-foreground">Keşif Kuyruğu</span>
+            <Compass className="h-4 w-4 text-amber-500 opacity-80 group-hover:scale-105 transition-transform" />
           </div>
           <div className="mt-2 text-2xl font-extrabold text-foreground">
             {stats.pendingDiscoveries.toLocaleString("tr-TR")}
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground truncate">
-            {stats.pendingDiscoveries > 0 ? "Onay bekleyen içerik" : "Kuyruk temiz"}
+            {stats.pendingDiscoveries > 0 ? `${stats.pendingDiscoveries} onay bekliyor` : "Kuyruk temiz"}
           </p>
         </Link>
 
         {/* Card 4: Gezi Rehberleri / Blog */}
         <Link
           href="/yonetim/yazilar"
-          className="group rounded-2xl border border-indigo-500/25 bg-gradient-to-br from-indigo-500/10 via-card to-card p-4 transition-all hover:shadow-md hover:border-indigo-500/50"
+          className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm hover:border-primary/50"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">Rehber &amp; Yazı</span>
-            <BookOpen className="h-4 w-4 text-indigo-500 opacity-80 group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-semibold text-muted-foreground">Rehber &amp; Yazı</span>
+            <BookOpen className="h-4 w-4 text-indigo-500 opacity-80 group-hover:scale-105 transition-transform" />
           </div>
           <div className="mt-2 text-2xl font-extrabold text-foreground">
             {stats.articles.toLocaleString("tr-TR")}
@@ -413,11 +424,11 @@ export function DashboardCockpit({
         {/* Card 5: Mekanlar */}
         <Link
           href="/yonetim/mekanlar"
-          className="group rounded-2xl border border-teal-500/25 bg-gradient-to-br from-teal-500/10 via-card to-card p-4 transition-all hover:shadow-md hover:border-teal-500/50"
+          className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm hover:border-primary/50"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-teal-600 dark:text-teal-400">Kültür Mekanları</span>
-            <MapPinned className="h-4 w-4 text-teal-500 opacity-80 group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-semibold text-muted-foreground">Kültür Mekanları</span>
+            <MapPinned className="h-4 w-4 text-teal-500 opacity-80 group-hover:scale-105 transition-transform" />
           </div>
           <div className="mt-2 text-2xl font-extrabold text-foreground">
             {stats.places.toLocaleString("tr-TR")}
@@ -430,11 +441,11 @@ export function DashboardCockpit({
         {/* Card 6: 81 Şehir */}
         <Link
           href="/yonetim/sehirler"
-          className="group rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/10 via-card to-card p-4 transition-all hover:shadow-md hover:border-emerald-500/50"
+          className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm hover:border-primary/50"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">81 İl Kapsamı</span>
-            <Building2 className="h-4 w-4 text-emerald-500 opacity-80 group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-semibold text-muted-foreground">81 İl Kapsamı</span>
+            <Building2 className="h-4 w-4 text-emerald-500 opacity-80 group-hover:scale-105 transition-transform" />
           </div>
           <div className="mt-2 text-2xl font-extrabold text-foreground">
             {stats.cities.toLocaleString("tr-TR")}

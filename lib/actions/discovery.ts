@@ -264,3 +264,18 @@ export async function bulkDeleteDiscovery(ids: string[]) {
   return { success: true, count: ids.length };
 }
 
+export async function deleteAllDiscoveredContentByFilter(status?: string) {
+  let query = supabaseAdmin.from("discovered_content").delete();
+  if (status && status !== "all") {
+    query = query.eq("status", status);
+  } else {
+    query = query.neq("id", "00000000-0000-0000-0000-000000000000");
+  }
+
+  const { error } = await query;
+  if (error) throw new Error(error.message);
+
+  revalidateDiscoveryPaths();
+  return { success: true };
+}
+

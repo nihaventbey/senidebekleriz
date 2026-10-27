@@ -17,34 +17,85 @@ export type AdminDiscoveryListItem = {
   discovered_at: string;
 };
 
-export async function getDiscoveredContent(
-  status?: DiscoveryStatus,
-  contentType?: DiscoveryContentType
-): Promise<AdminDiscoveryListItem[]> {
-  let query = supabaseAdmin
+export type PaginatedDiscoveryResult = {
+  items: AdminDiscoveryListItem[];
+  totalCount: number;
+  totalPages: number;
+  page: number;
+  limit: number;
+};
+
+export async function getDiscoveredContentPaginated({
+  status,
+  contentType,
+  page = 1,
+  limit = 25,
+}: {
+  status?: DiscoveryStatus;
+  contentType?: DiscoveryContentType;
+  page?: number;
+  limit?: number;
+}): Promise<PaginatedDiscoveryResult> {
+  const safePage = Math.max(1, page);
+  const safeLimit = Math.min(100, Math.max(10, limit));
+  const from = (safePage - 1) * safeLimit;
+  const to = from + safeLimit - 1;
+
+  let countQuery = supabaseAdmin
+    .from("discovered_content")
+    .select("id", { count: "exact", head: true });
+
+  let dataQuery = supabaseAdmin
     .from("discovered_content")
     .select(
       "id, title, source_url, source_name, snippet, content_type, status, city_slug, discovered_at"
     )
     .order("discovered_at", { ascending: false })
-    .limit(100);
+    .range(from, to);
 
   if (status) {
-    query = query.eq("status", status);
+    countQuery = countQuery.eq("status", status);
+    dataQuery = dataQuery.eq("status", status);
   }
 
   if (contentType && contentType !== "unknown" && contentType !== "skip") {
-    query = query.eq("content_type", contentType);
+    countQuery = countQuery.eq("content_type", contentType);
+    dataQuery = dataQuery.eq("content_type", contentType);
   }
 
-  const { data, error } = await query;
+  const [{ count, error: countErr }, { data, error: dataErr }] =
+    await Promise.all([countQuery, dataQuery]);
 
-  if (error) {
-    console.error("getDiscoveredContent error:", error.message);
-    return [];
+  if (countErr) {
+    console.error("getDiscoveredContent count error:", countErr.message);
+  }
+  if (dataErr) {
+    console.error("getDiscoveredContent data error:", dataErr.message);
   }
 
-  return (data || []) as AdminDiscoveryListItem[];
+  const total = count || 0;
+  const totalPages = Math.ceil(total / safeLimit) || 1;
+
+  return {
+    items: (data || []) as AdminDiscoveryListItem[],
+    totalCount: total,
+    totalPages,
+    page: safePage,
+    limit: safeLimit,
+  };
+}
+
+export async function getDiscoveredContent(
+  status?: DiscoveryStatus,
+  contentType?: DiscoveryContentType
+): Promise<AdminDiscoveryListItem[]> {
+  const res = await getDiscoveredContentPaginated({
+    status,
+    contentType,
+    page: 1,
+    limit: 100,
+  });
+  return res.items;
 }
 
 export async function countPendingDiscoveries(): Promise<number> {
