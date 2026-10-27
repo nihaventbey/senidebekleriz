@@ -32,18 +32,10 @@ export function hasEditorialContent(place: PlaceQualityInput): boolean {
   return isEditorialSource(place.source);
 }
 
-/** Akıllı SEO İndeksleme Mantığı: Kültürel değeri veya zengin verisi olan tüm mekanlar Google'a açılır */
+/** Editöryal kalitede ve kapak görseli olan mekanlar Google indeksine açılır */
 export function shouldIndexPlace(place: PlaceQualityInput): boolean {
-  if (place.is_featured) return true;
-  if (place.cover_image?.trim()) return true;
-  if (place.wikidata_id?.trim()) return true;
-  if (place.phone?.trim() || place.website?.trim()) return true;
-  
-  const desc = place.description?.trim() ?? "";
-  if (countWords(desc) >= 15) return true;
-
-  // İçi tamamen boş olan tek kelimelik mahalle parkları ana şehir rehberine kanonik bağlanır
-  return false;
+  if (!place.cover_image?.trim()) return false;
+  return hasEditorialContent(place);
 }
 
 export function getPlaceDescriptionFallback(

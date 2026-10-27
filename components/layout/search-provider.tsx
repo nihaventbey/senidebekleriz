@@ -11,7 +11,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Search, MapPin, ArrowRight, Loader2 } from "lucide-react";
+import { Search, MapPin, Landmark, BookOpen, Calendar, Newspaper, ArrowRight, Loader2 } from "lucide-react";
 
 const SEARCH_PORTAL_ID = "search-portal";
 
@@ -20,7 +20,7 @@ function getSearchPortalRoot(): HTMLElement {
 }
 
 type SearchResult = {
-  type: "city" | "place";
+  type: "city" | "place" | "article" | "event" | "news";
   name: string;
   slug: string;
   citySlug?: string;
@@ -99,8 +99,14 @@ function SearchOverlay({
     onClose();
     if (result.type === "city") {
       router.push(`/sehir/${result.slug}`);
-    } else {
+    } else if (result.type === "place") {
       router.push(`/mekan/${result.slug}`);
+    } else if (result.type === "article") {
+      router.push(`/blog/${result.slug}`);
+    } else if (result.type === "event") {
+      router.push(`/etkinlik/${result.slug}`);
+    } else if (result.type === "news") {
+      router.push(`/haber/${result.slug}`);
     }
   }
 
@@ -172,7 +178,11 @@ function SearchOverlay({
                     className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-muted"
                   >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                      <MapPin className="h-5 w-5 text-primary" />
+                      {result.type === "city" && <MapPin className="h-5 w-5 text-primary" />}
+                      {result.type === "place" && <Landmark className="h-5 w-5 text-amber-600 dark:text-amber-400" />}
+                      {result.type === "article" && <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
+                      {result.type === "event" && <Calendar className="h-5 w-5 text-purple-600 dark:text-purple-400" />}
+                      {result.type === "news" && <Newspaper className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">
@@ -181,7 +191,13 @@ function SearchOverlay({
                       <p className="truncate text-xs text-muted-foreground">
                         {result.type === "city"
                           ? "Şehir"
-                          : result.cityName || "Mekan"}
+                          : result.type === "article"
+                          ? "Gezi Rehberi"
+                          : result.type === "event"
+                          ? "Etkinlik"
+                          : result.type === "news"
+                          ? "Kültür Haberi"
+                          : result.cityName || "Kültür Mekanı"}
                         {result.description &&
                           ` · ${result.description.slice(0, 60)}`}
                       </p>

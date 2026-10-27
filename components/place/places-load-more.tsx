@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, ChevronDown, Loader2 } from "lucide-react";
 import { PlaceImageComponent } from "@/components/place/place-image";
 import { getPlaceCardExcerpt } from "@/lib/content/place-quality";
+import { checkMuzekartStatus } from "@/lib/places/muzekart";
 
 type Place = {
   id: string;
@@ -58,36 +59,57 @@ export function PlacesLoadMore({ citySlug, cityName, initialCount, totalCount }:
     <>
       {places.length > 0 && (
         <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {places.map((place) => (
-            <Link key={place.slug} href={`/mekan/${place.slug}`}>
-              <Card className="card-hover h-full border-border/60 overflow-hidden">
-                <div className="relative h-40 w-full bg-muted">
-                  {place.is_featured && (
-                    <Badge className="absolute left-3 top-3 z-10">Öne Çıkan</Badge>
-                  )}
-                  <PlaceImageComponent
-                    wikidataId={place.wikidata_id}
-                    placeName={place.name}
-                    cityName={cityName}
-                    coverImage={place.cover_image}
-                    className="h-full w-full"
-                  />
-                </div>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">{place.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-                    {getPlaceCardExcerpt(place.name, place.description)}
-                  </p>
-                  <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3" />
-                    {place.lat.toFixed(4)}, {place.lng.toFixed(4)}
+          {places.map((place) => {
+            const muzekart = checkMuzekartStatus({
+              name: place.name,
+              description: place.description,
+              wikidata_id: place.wikidata_id,
+              is_featured: place.is_featured,
+            });
+
+            return (
+              <Link key={place.slug} href={`/mekan/${place.slug}`}>
+                <Card className="card-hover h-full border-border/60 overflow-hidden">
+                  <div className="relative h-40 w-full bg-muted">
+                    {place.is_featured && (
+                      <Badge className="absolute left-3 top-3 z-10">Öne Çıkan</Badge>
+                    )}
+                    {muzekart.isValid && (
+                      <Badge className="absolute right-3 top-3 z-10 bg-emerald-600/90 hover:bg-emerald-700 text-white backdrop-blur-xs text-[10px] px-1.5 py-0.5 font-medium shadow-xs">
+                        🎫 MüzeKart
+                      </Badge>
+                    )}
+                    <PlaceImageComponent
+                      wikidataId={place.wikidata_id}
+                      placeName={place.name}
+                      cityName={cityName}
+                      coverImage={place.cover_image}
+                      className="h-full w-full"
+                    />
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">{place.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                      {getPlaceCardExcerpt(place.name, place.description)}
+                    </p>
+                    <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {place.lat.toFixed(4)}, {place.lng.toFixed(4)}
+                      </div>
+                      {muzekart.isValid && (
+                        <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          MüzeKart ile Ücretsiz
+                        </span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       )}
 

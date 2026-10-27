@@ -12,6 +12,7 @@ import {
   getPublishedCityGuideSlugs,
 } from "@/lib/data/articles";
 import { getPublishedEventSlugs } from "@/lib/data/events";
+import { getNewsSlugs } from "@/lib/data/news";
 import { shouldIndexCategoryHub, shouldIndexCityHub } from "@/lib/content/hub-quality";
 import { shouldIndexPlace } from "@/lib/content/place-quality";
 
@@ -53,6 +54,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.9,
     },
+    {
+      url: `${baseUrl}/haberler`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
   ];
 
   const [
@@ -62,6 +69,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     indexablePlaces,
     articles,
     eventSlugs,
+    newsSlugs,
     guideArticleSlugs,
     guidePageSlugs,
     indexableByCity,
@@ -72,6 +80,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     getIndexablePlacesForSitemap(),
     getPublishedArticles(500),
     getPublishedEventSlugs(),
+    getNewsSlugs(),
     getPublishedCityGuideSlugs(),
     getCityGuidePageSlugs(),
     getIndexablePlaceCountsByCity(),
@@ -154,6 +163,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(event.updatedAt),
       changeFrequency: "daily",
       priority: 0.7,
+    });
+  }
+
+  for (const news of newsSlugs) {
+    routes.push({
+      url: `${baseUrl}/haber/${news.slug}`,
+      lastModified: new Date(news.updatedAt),
+      changeFrequency: "daily",
+      priority: 0.8,
     });
   }
 

@@ -18,8 +18,7 @@ import { getSiteUrl } from "@/lib/agents/site";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-sans",
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600", "700", "800"],
+  subsets: ["latin"],
 });
 
 const siteUrl = getSiteUrl();

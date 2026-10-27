@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -15,13 +16,18 @@ export function getCookieConsent(): CookieConsentValue | null {
 }
 
 export function CookieConsent() {
+  const pathname = usePathname();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    if (pathname?.startsWith("/embed")) {
+      setVisible(false);
+      return;
+    }
     if (!getCookieConsent()) {
       setVisible(true);
     }
-  }, []);
+  }, [pathname]);
 
   function accept() {
     localStorage.setItem(CONSENT_KEY, "accepted");
@@ -35,7 +41,7 @@ export function CookieConsent() {
     setVisible(false);
   }
 
-  if (!visible) return null;
+  if (!visible || pathname?.startsWith("/embed")) return null;
 
   return (
     <div

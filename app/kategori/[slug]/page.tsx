@@ -17,6 +17,7 @@ import {
 } from "@/lib/content/place-quality";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buildBreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
+import { checkMuzekartStatus } from "@/lib/places/muzekart";
 
 export const revalidate = 604800;
 
@@ -135,54 +136,75 @@ export default async function CategoryPage({
           </p>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {places.map((place, index) => (
-              <div key={place.slug}>
-                <Link href={`/mekan/${place.slug}`}>
-                  <Card className="h-full overflow-hidden transition-shadow hover:shadow-lg">
-                    <div className="relative h-40 w-full bg-muted">
-                      {place.is_featured && (
-                        <Badge className="absolute left-3 top-3 z-10">
-                          Öne Çıkan
-                        </Badge>
-                      )}
-                      <PlaceImageComponent
-                        wikidataId={place.wikidata_id}
-                        placeName={place.name}
-                        cityName={place.cityName}
-                        coverImage={place.cover_image}
-                        className="h-full w-full"
+            {places.map((place, index) => {
+              const muzekart = checkMuzekartStatus({
+                name: place.name,
+                description: place.description,
+                wikidata_id: place.wikidata_id,
+                is_featured: place.is_featured,
+              });
+
+              return (
+                <div key={place.slug}>
+                  <Link href={`/mekan/${place.slug}`}>
+                    <Card className="h-full overflow-hidden transition-shadow hover:shadow-lg">
+                      <div className="relative h-40 w-full bg-muted">
+                        {place.is_featured && (
+                          <Badge className="absolute left-3 top-3 z-10">
+                            Öne Çıkan
+                          </Badge>
+                        )}
+                        {muzekart.isValid && (
+                          <Badge className="absolute right-3 top-3 z-10 bg-emerald-600/90 hover:bg-emerald-700 text-white backdrop-blur-xs text-[10px] px-1.5 py-0.5 font-medium shadow-xs">
+                            🎫 MüzeKart
+                          </Badge>
+                        )}
+                        <PlaceImageComponent
+                          wikidataId={place.wikidata_id}
+                          placeName={place.name}
+                          cityName={place.cityName}
+                          coverImage={place.cover_image}
+                          className="h-full w-full"
+                        />
+                      </div>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg">{place.name}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="line-clamp-3 text-sm text-muted-foreground">
+                          {getPlaceCardExcerpt(place.name, place.description)}
+                        </p>
+                        <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {place.cityName}
+                          </div>
+                          {muzekart.isValid && (
+                            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                              MüzeKart ile Ücretsiz
+                            </span>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+
+                  {indexable && (index + 1) % 6 === 0 && (
+                    <div className="mt-6">
+                      <AdBanner
+                        slot="category-list-inline"
+                        className="min-h-[250px] w-full"
+                        style={{
+                          display: "block",
+                          minHeight: "250px",
+                          width: "100%",
+                        }}
                       />
                     </div>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg">{place.name}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="line-clamp-3 text-sm text-muted-foreground">
-                        {getPlaceCardExcerpt(place.name, place.description)}
-                      </p>
-                      <div className="mt-4 flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="h-3 w-3" />
-                        {place.cityName}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-
-                {indexable && (index + 1) % 6 === 0 && (
-                  <div className="mt-6">
-                    <AdBanner
-                      slot="category-list-inline"
-                      className="min-h-[250px] w-full"
-                      style={{
-                        display: "block",
-                        minHeight: "250px",
-                        width: "100%",
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

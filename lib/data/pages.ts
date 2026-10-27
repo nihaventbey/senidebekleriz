@@ -35,12 +35,14 @@ export async function getPageBySlug(slug: string): Promise<PageData | undefined>
     .select("*")
     .eq("slug", slug)
     .eq("is_published", true)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
-    console.error("getPageBySlug error:", error?.message);
+  if (error) {
+    console.error("getPageBySlug error:", error.message);
     return undefined;
   }
+
+  if (!data) return undefined;
 
   return {
     slug: data.slug,

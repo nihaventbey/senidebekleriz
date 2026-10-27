@@ -35,6 +35,9 @@ import {
 } from "@/lib/content/place-quality";
 import { buildBreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import { NearbyPlaces } from "@/components/place/nearby-places";
+import { checkMuzekartStatus } from "@/lib/places/muzekart";
+import { BookmarkButton } from "@/components/common/bookmark-button";
+import { EmbedPlaceButton } from "@/components/place/embed-modal";
 
 export const revalidate = 2592000;
 export const dynamicParams = true;
@@ -151,6 +154,13 @@ export default async function PlacePage({
     ...(image?.url ? [image.url] : []),
     ...(place.photos || []),
   ].filter(Boolean);
+
+  const muzekart = checkMuzekartStatus({
+    name: place.name,
+    description: aboutText,
+    wikidata_id: place.wikidata_id,
+    is_featured: place.is_featured,
+  });
 
   const placeJsonLd = [
     {
@@ -269,6 +279,11 @@ export default async function PlacePage({
                   {categories.length === 0 && (
                     <Badge variant="secondary">{place.category}</Badge>
                   )}
+                  {muzekart.isValid && (
+                    <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1 font-medium shadow-xs">
+                      <span>🎫</span> MüzeKart ile Ücretsiz
+                    </Badge>
+                  )}
                 </div>
 
                 <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl">
@@ -301,7 +316,44 @@ export default async function PlacePage({
                     </span>
                   </div>
                 </div>
+
+                {/* Pasaport / Kaydet & Sitene Göm Butonları */}
+                <div className="mt-6 flex flex-wrap items-center gap-3 border-t pt-4">
+                  <BookmarkButton
+                    item={{
+                      id: place.id,
+                      type: "place",
+                      title: place.name,
+                      slug: place.slug,
+                      coverImage: image?.url || null,
+                      cityName: cityData.name,
+                    }}
+                  />
+                  <EmbedPlaceButton placeName={place.name} slug={place.slug} />
+                </div>
               </div>
+
+              {/* MüzeKart Bilgilendirme Kutusu */}
+              {muzekart.isValid && (
+                <div className="flex items-start sm:items-center gap-3.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-foreground shadow-xs">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white font-bold text-xl shadow-xs">
+                    🏛️
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-sm text-emerald-800 dark:text-emerald-300">
+                        T.C. Kültür ve Turizm Bakanlığı MüzeKart Geçerlidir
+                      </span>
+                      <span className="inline-flex items-center rounded-full bg-emerald-600/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-200">
+                        {muzekart.savingsText}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                      {muzekart.explanation}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {indexable && (
               <AdBanner
@@ -418,6 +470,26 @@ export default async function PlacePage({
                         >
                           {cityData.name}
                         </Link>
+                      </dd>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                      <span className="text-sm">🎫</span>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">MüzeKart</dt>
+                      <dd className="font-medium text-xs sm:text-sm">
+                        {muzekart.isValid ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                            Geçerli (Ücretsiz Giriş)
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            {muzekart.badgeLabel}
+                          </span>
+                        )}
                       </dd>
                     </div>
                   </div>

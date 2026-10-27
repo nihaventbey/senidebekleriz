@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Logo } from "@/components/layout/logo";
 import { DeveloperCredit } from "@/components/layout/developer-credit";
 import type { BrandSettings } from "@/lib/settings/branding";
@@ -8,7 +11,12 @@ type FooterProps = {
 };
 
 export function Footer({ brand }: FooterProps) {
+  const pathname = usePathname();
   const currentYear = new Date().getFullYear();
+
+  if (pathname?.startsWith("/embed")) {
+    return null;
+  }
 
   return (
     <footer className="border-t border-border/60 bg-muted/20">
@@ -25,6 +33,16 @@ export function Footer({ brand }: FooterProps) {
           <div>
             <h3 className="text-sm font-semibold">Keşfet</h3>
             <ul className="mt-4 space-y-2.5 text-sm text-muted-foreground">
+              <li>
+                <Link href="/etkinlikler" className="transition-colors hover:text-foreground">
+                  Etkinlikler
+                </Link>
+              </li>
+              <li>
+                <Link href="/haberler" className="transition-colors hover:text-foreground">
+                  Kültür Haberleri
+                </Link>
+              </li>
               <li>
                 <Link href="/sehirler" className="transition-colors hover:text-foreground">
                   Şehirler

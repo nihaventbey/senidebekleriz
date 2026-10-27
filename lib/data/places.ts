@@ -297,20 +297,46 @@ export async function getPlaceCategories(
     .filter(Boolean) as Array<{ name: string; slug: string; icon: string | null }>;
 }
 
+async function fetchAllActivePlaces<T>(
+  selectFields: string
+): Promise<T[]> {
+  const pageSize = 1000;
+  let from = 0;
+  const allRows: T[] = [];
+
+  while (true) {
+    const { data, error } = await supabaseAdmin
+      .from("places")
+      .select(selectFields)
+      .eq("is_active", true)
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      console.error("fetchAllActivePlaces error:", error.message);
+      break;
+    }
+    if (!data || data.length === 0) break;
+    allRows.push(...(data as unknown as T[]));
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return allRows;
+}
+
 export async function getIndexablePlacesForSitemap(): Promise<
   Array<{ slug: string; updatedAt: string }>
 > {
-  const { data, error } = await supabaseAdmin
-    .from("places")
-    .select("slug, updated_at, description, source, is_featured, cover_image")
-    .eq("is_active", true);
+  const rows = await fetchAllActivePlaces<{
+    slug: string;
+    updated_at: string;
+    description: string | null;
+    source: string | null;
+    is_featured: boolean | null;
+    cover_image: string | null;
+  }>("slug, updated_at, description, source, is_featured, cover_image");
 
-  if (error) {
-    console.error("getIndexablePlacesForSitemap error:", error.message);
-    return [];
-  }
-
-  return (data || [])
+  return rows
     .filter((place) =>
       shouldIndexPlace({
         description: place.description,
@@ -342,18 +368,17 @@ export async function countIndexablePlacesByCitySlug(
 export async function getIndexablePlaceCountsByCity(): Promise<
   Map<string, number>
 > {
-  const { data, error } = await supabaseAdmin
-    .from("places")
-    .select("description, source, is_featured, cover_image, cities!inner(slug)")
-    .eq("is_active", true);
+  const rows = await fetchAllActivePlaces<{
+    description: string | null;
+    source: string | null;
+    is_featured: boolean | null;
+    cover_image: string | null;
+    cities: { slug: string } | { slug: string }[] | null;
+  }>("description, source, is_featured, cover_image, cities!inner(slug)");
 
   const counts = new Map<string, number>();
-  if (error) {
-    console.error("getIndexablePlaceCountsByCity error:", error.message);
-    return counts;
-  }
 
-  for (const row of data || []) {
+  for (const row of rows) {
     const city = Array.isArray(row.cities)
       ? (row.cities[0] as { slug: string } | undefined)
       : (row.cities as { slug: string } | undefined);
