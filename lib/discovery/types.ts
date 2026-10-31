@@ -1,4 +1,4 @@
-export type DiscoverySourceType = "google_news_rss";
+export type DiscoverySourceType = "google_news_rss" | "rss";
 
 export type DiscoveryContentType = "news" | "event" | "article" | "unknown" | "skip";
 

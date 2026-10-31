@@ -16,7 +16,7 @@ function curlJson<T>(url: string): T | null {
       "-H",
       "User-Agent: SeniDeBekleriz/1.0 (info@senidebekleriz.com)",
       "--max-time",
-      "8",
+      "5",
       url,
     ]).toString("utf-8");
     if (!raw || !raw.trim().startsWith("{")) return null;
@@ -37,118 +37,115 @@ type WikiSummary = {
 
 function getHighResWikimediaUrl(url?: string | null): string | null {
   if (!url) return null;
-  // If thumbnail URL with /330px-... change to /1200px-...
   if (url.includes("/thumb/") && /\/\d+px-[^/]+$/.test(url)) {
     return url.replace(/\/\d+px-([^/]+)$/, "/1200px-$1").split("?")[0];
   }
   return url.split("?")[0];
 }
 
-async function main() {
-  console.log("🔍 Doğrulanmış Kültür & Müze Mekanlarını Zenginleştirme Başlatılıyor...\n");
+async function processPlace(place: {
+  id: string;
+  name: string;
+  wikidata_id: string | null;
+  cover_image: string | null;
+  description: string | null;
+}): Promise<boolean> {
+  const qid = place.wikidata_id!;
+  const cleanName = place.name.trim();
 
-  // 1. Fetch active cultural places that either have a wikidata_id OR match museum/tarihi-yer
+  const needsImage = !place.cover_image || place.cover_image.includes("unsplash");
+  const needsDesc = !place.description || place.description.length < 50 || place.description.startsWith("tr:");
+
+  if (!needsImage && !needsDesc) return false;
+
+  let summary = curlJson<WikiSummary>(
+    `https://tr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cleanName)}`
+  );
+
+  if (!summary || summary.wikibase_item !== qid) {
+    const searchRes = curlJson<{ query?: { search?: Array<{ title: string }> } }>(
+      `https://tr.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
+        cleanName
+      )}&srlimit=3&format=json`
+    );
+
+    const candidates = searchRes?.query?.search || [];
+    for (const cand of candidates) {
+      const candSum = curlJson<WikiSummary>(
+        `https://tr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cand.title)}`
+      );
+      if (candSum && candSum.wikibase_item === qid) {
+        summary = candSum;
+        break;
+      }
+    }
+  }
+
+  if (!summary || !summary.extract) return false;
+
+  const updates: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  const rawImg = summary.originalimage?.source || summary.thumbnail?.source;
+  const finalImg = getHighResWikimediaUrl(rawImg);
+
+  if (needsImage && finalImg && !finalImg.toLowerCase().endsWith(".svg")) {
+    updates.cover_image = finalImg;
+  }
+
+  if (needsDesc && summary.extract && summary.extract.length > 40) {
+    updates.description = summary.extract;
+  }
+
+  if (Object.keys(updates).length > 1) {
+    const { error } = await supabase
+      .from("places")
+      .update(updates)
+      .eq("id", place.id);
+
+    return !error;
+  }
+
+  return false;
+}
+
+async function main() {
+  console.log("⚡ Hızlı ve Paralel Zenginleştirme Başlatılıyor...\n");
+
   const { data: places, error } = await supabase
     .from("places")
-    .select("id, name, slug, wikidata_id, cover_image, description, is_featured")
+    .select("id, name, slug, wikidata_id, cover_image, description")
     .eq("is_active", true)
     .not("wikidata_id", "is", null);
 
   if (error || !places) {
-    console.error("Veritabanından mekanlar çekilemedi:", error);
+    console.error("Mekanlar çekilemedi:", error);
     return;
   }
 
-  console.log(`Toplam ${places.length} adet doğrulanabilir (Wikidata ID'li) aktif mekan inceleniyor...`);
+  const pending = places.filter((p) => {
+    const needsImg = !p.cover_image || p.cover_image.includes("unsplash");
+    const needsDesc = !p.description || p.description.length < 50 || p.description.startsWith("tr:");
+    return needsImg || needsDesc;
+  });
 
-  let updatedCount = 0;
-  let imageAddedCount = 0;
-  let descAddedCount = 0;
+  console.log(`İşlenecek mekan sayısı: ${pending.length} / Toplam: ${places.length}`);
 
-  for (let i = 0; i < places.length; i++) {
-    const place = places[i];
-    const qid = place.wikidata_id!;
-    const cleanName = place.name.trim();
+  let updated = 0;
+  const CHUNK_SIZE = 6;
 
-    // Check if place needs image or description
-    const needsImage = !place.cover_image || place.cover_image.includes("unsplash");
-    const needsDesc = !place.description || place.description.length < 50 || place.description.startsWith("tr:");
+  for (let i = 0; i < pending.length; i += CHUNK_SIZE) {
+    const chunk = pending.slice(i, i + CHUNK_SIZE);
+    const results = await Promise.all(chunk.map((p) => processPlace(p)));
+    const successInChunk = results.filter(Boolean).length;
+    updated += successInChunk;
 
-    if (!needsImage && !needsDesc) {
-      continue;
-    }
-
-    // Attempt direct summary by place name
-    let summary = curlJson<WikiSummary>(
-      `https://tr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cleanName)}`
-    );
-
-    // If no direct summary or QID doesn't match, search Wikipedia
-    if (!summary || summary.wikibase_item !== qid) {
-      const searchRes = curlJson<{ query?: { search?: Array<{ title: string }> } }>(
-        `https://tr.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
-          cleanName
-        )}&srlimit=3&format=json`
-      );
-
-      const candidates = searchRes?.query?.search || [];
-      for (const cand of candidates) {
-        const candSum = curlJson<WikiSummary>(
-          `https://tr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cand.title)}`
-        );
-        if (candSum && candSum.wikibase_item === qid) {
-          summary = candSum;
-          break;
-        }
-      }
-    }
-
-    // If still not matched, check if summary has title match
-    if (!summary || !summary.extract) {
-      continue;
-    }
-
-    const updates: Record<string, unknown> = {
-      updated_at: new Date().toISOString(),
-    };
-
-    const rawImg = summary.originalimage?.source || summary.thumbnail?.source;
-    const finalImg = getHighResWikimediaUrl(rawImg);
-
-    // Validate that image is not a generic svg icon or logo
-    if (needsImage && finalImg && !finalImg.toLowerCase().endsWith(".svg")) {
-      updates.cover_image = finalImg;
-      imageAddedCount++;
-    }
-
-    if (needsDesc && summary.extract && summary.extract.length > 40) {
-      updates.description = summary.extract;
-      descAddedCount++;
-    }
-
-    if (Object.keys(updates).length > 1) {
-      const { error: updErr } = await supabase
-        .from("places")
-        .update(updates)
-        .eq("id", place.id);
-
-      if (!updErr) {
-        updatedCount++;
-        console.log(`[${updatedCount}] ✅ ${place.name}:`, {
-          hasImage: Boolean(updates.cover_image),
-          hasDesc: Boolean(updates.description),
-        });
-      }
-    }
-
-    // Rate-limit friendly pause (80ms)
-    await new Promise((r) => setTimeout(r, 80));
+    process.stdout.write(`İlerleme: [${Math.min(i + CHUNK_SIZE, pending.length)} / ${pending.length}] (Güncellenen: ${updated})\r`);
+    await new Promise((r) => setTimeout(r, 60));
   }
 
-  console.log(`\n🎉 Zenginleştirme Tamamlandı!`);
-  console.log(`Toplam Güncellenen Mekan: ${updatedCount}`);
-  console.log(`Eklenen Gerçek Görsel: ${imageAddedCount}`);
-  console.log(`Zenginleştirilen Açıklama: ${descAddedCount}`);
+  console.log(`\n\n🎉 Tamamlandı! Toplam ${updated} yeni mekan gerçek fotoğraf ve ansiklopedik içerikle zenginleştirildi.`);
 }
 
 main().catch(console.error);

@@ -48,7 +48,7 @@ export async function getDiscoveredContentPaginated({
   let dataQuery = supabaseAdmin
     .from("discovered_content")
     .select(
-      "id, title, source_url, source_name, snippet, content_type, status, city_slug, discovered_at"
+      "id, title, source_url, source_name, snippet, content_type, status, city_slug, discovered_at, raw_payload"
     )
     .order("discovered_at", { ascending: false })
     .range(from, to);
@@ -59,8 +59,16 @@ export async function getDiscoveredContentPaginated({
   }
 
   if (contentType && contentType !== "unknown" && contentType !== "skip") {
-    countQuery = countQuery.eq("content_type", contentType);
-    dataQuery = dataQuery.eq("content_type", contentType);
+    if (contentType === "news") {
+      countQuery = countQuery.or("content_type.eq.news,raw_payload->>inferred_content_type.eq.news");
+      dataQuery = dataQuery.or("content_type.eq.news,raw_payload->>inferred_content_type.eq.news");
+    } else if (contentType === "article") {
+      countQuery = countQuery.eq("content_type", "article").neq("raw_payload->>inferred_content_type", "news");
+      dataQuery = dataQuery.eq("content_type", "article").neq("raw_payload->>inferred_content_type", "news");
+    } else {
+      countQuery = countQuery.eq("content_type", contentType);
+      dataQuery = dataQuery.eq("content_type", contentType);
+    }
   }
 
   const [{ count, error: countErr }, { data, error: dataErr }] =
@@ -76,8 +84,26 @@ export async function getDiscoveredContentPaginated({
   const total = count || 0;
   const totalPages = Math.ceil(total / safeLimit) || 1;
 
+  const mappedItems: AdminDiscoveryListItem[] = (data || []).map((row: any) => {
+    let effectiveType: DiscoveryContentType = row.content_type;
+    if (row.content_type === "article" && row.raw_payload?.inferred_content_type === "news") {
+      effectiveType = "news";
+    }
+    return {
+      id: row.id,
+      title: row.title,
+      source_url: row.source_url,
+      source_name: row.source_name,
+      snippet: row.snippet,
+      content_type: effectiveType,
+      status: row.status,
+      city_slug: row.city_slug,
+      discovered_at: row.discovered_at,
+    };
+  });
+
   return {
-    items: (data || []) as AdminDiscoveryListItem[],
+    items: mappedItems,
     totalCount: total,
     totalPages,
     page: safePage,

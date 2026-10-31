@@ -1,4 +1,8 @@
-import { classifyDiscoveryItem } from "@/lib/discovery/classify-content";
+import {
+  classifyDiscoveryBatch,
+  classifyDiscoveryItem,
+  type BatchClassifyInput,
+} from "@/lib/discovery/classify-content";
 import {
   discoverySourceUrlExists,
   rejectedDiscoveryUrlExists,
@@ -9,6 +13,8 @@ import {
   resolvePublisherUrl,
 } from "@/lib/discovery/resolve-google-news-url";
 import { fetchGoogleNewsItems } from "@/lib/discovery/sources/google-news-rss";
+import { fetchKtbRssItems } from "@/lib/events/sources/ktb-rss";
+import type { RawFeedItem } from "@/lib/events/types";
 import type {
   DiscoverContentResult,
   DiscoverySourceRow,
@@ -16,9 +22,10 @@ import type {
 import { eventSourceUrlExists } from "@/lib/events/dedupe";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-const MAX_NEW_ITEMS_PER_RUN = 25;
+const MAX_NEW_ITEMS_PER_RUN = 30;
 const MIN_CONFIDENCE = 0.55;
-const RESOLVE_DELAY_MS = 300;
+const ITEMS_PER_SOURCE = 8;
+const MAX_CLASSIFY_BATCH = 6;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -28,7 +35,8 @@ async function getActiveDiscoverySources(): Promise<DiscoverySourceRow[]> {
   const { data, error } = await supabaseAdmin
     .from("discovery_sources")
     .select("*")
-    .eq("is_active", true);
+    .eq("is_active", true)
+    .order("source_type", { ascending: true }); // Prioritize direct 'rss' feeds first
 
   if (error) {
     console.error("getActiveDiscoverySources error:", error.message);
@@ -55,14 +63,37 @@ async function insertDiscoveredItem(input: {
   published_at_source: string | null;
   raw_payload: Record<string, unknown>;
 }): Promise<boolean> {
-  const { error } = await supabaseAdmin.from("discovered_content").insert({
+  const payloadToInsert = {
     ...input,
     status: input.content_type === "skip" ? "rejected" : "pending_review",
     updated_at: new Date().toISOString(),
-  });
+  };
+
+  const { error } = await supabaseAdmin
+    .from("discovered_content")
+    .insert(payloadToInsert);
 
   if (error) {
-    if (error.code === "23505") return false;
+    if (error.code === "23505") return false; // Duplicate source_url
+    // PostgreSQL check constraint (23514) fallback:
+    // If table constraint restricts content_type (e.g. only accepts 'event', 'article', 'unknown', 'skip'),
+    // insert as 'article' and annotate inferred_content_type in raw_payload so it is never dropped.
+    if (error.code === "23514" && input.content_type === "news") {
+      const fallbackPayload = {
+        ...payloadToInsert,
+        content_type: "article",
+        raw_payload: {
+          ...input.raw_payload,
+          inferred_content_type: "news",
+        },
+      };
+      const { error: retryError } = await supabaseAdmin
+        .from("discovered_content")
+        .insert(fallbackPayload);
+      if (!retryError) return true;
+      if (retryError.code === "23505") return false;
+      throw new Error(retryError.message);
+    }
     throw new Error(error.message);
   }
 
@@ -100,68 +131,127 @@ export async function discoverContent(): Promise<DiscoverContentResult> {
     result.sourcesProcessed += 1;
 
     try {
-      const items = await fetchGoogleNewsItems(
-        source.query_or_url,
-        source.name,
-        12
-      );
-      result.itemsFetched += items.length;
+      let rawItems: RawFeedItem[] = [];
+      const isDirectRss = source.source_type === "rss";
 
-      for (const item of items) {
-        if (insertedThisRun >= MAX_NEW_ITEMS_PER_RUN) break;
+      if (isDirectRss) {
+        rawItems = await fetchKtbRssItems(
+          source.query_or_url,
+          source.name,
+          ITEMS_PER_SOURCE
+        );
+      } else {
+        rawItems = await fetchGoogleNewsItems(
+          source.query_or_url,
+          source.name,
+          ITEMS_PER_SOURCE
+        );
+      }
 
-        const googleNewsUrl = item.link.trim();
-        if (!googleNewsUrl) {
+      result.itemsFetched += rawItems.length;
+
+      // Filter and resolve items
+      type PreparedCandidate = {
+        item: RawFeedItem;
+        sourceUrl: string;
+        googleNewsUrl?: string;
+        displayTitle: string;
+        publisherName?: string;
+      };
+
+      const candidates: PreparedCandidate[] = [];
+
+      for (const item of rawItems) {
+        if (insertedThisRun + candidates.length >= MAX_NEW_ITEMS_PER_RUN) break;
+
+        const rawUrl = item.link.trim();
+        if (!rawUrl) {
           result.itemsSkipped += 1;
           continue;
         }
 
-        let sourceUrl = googleNewsUrl;
-        if (isGoogleNewsArticleUrl(googleNewsUrl)) {
-          sourceUrl = await resolvePublisherUrl(googleNewsUrl);
-          if (RESOLVE_DELAY_MS > 0) {
-            await sleep(RESOLVE_DELAY_MS);
+        // Quick check before resolving
+        if (await isDuplicateUrl(rawUrl)) {
+          result.itemsSkipped += 1;
+          continue;
+        }
+
+        let sourceUrl = rawUrl;
+        const isGNews = !isDirectRss && isGoogleNewsArticleUrl(rawUrl);
+
+        if (isGNews) {
+          try {
+            sourceUrl = await resolvePublisherUrl(rawUrl);
+          } catch {
+            sourceUrl = rawUrl;
           }
-        }
-
-        if (await isDuplicateUrl(sourceUrl, googleNewsUrl)) {
-          result.itemsSkipped += 1;
-          continue;
-        }
-
-        const publisherName = item.publisherName || undefined;
-        const displayTitle = cleanGoogleNewsTitle(item.title, publisherName);
-
-        try {
-          const classified = await classifyDiscoveryItem({
-            title: displayTitle,
-            snippet: item.description,
-            sourceName: publisherName || item.sourceName,
-          });
-
-          if (
-            classified.content_type === "skip" ||
-            classified.confidence < MIN_CONFIDENCE
-          ) {
+          if (await isDuplicateUrl(sourceUrl, rawUrl)) {
             result.itemsSkipped += 1;
             continue;
           }
+        }
 
+        const publisherName = item.publisherName || undefined;
+        const displayTitle = isGNews
+          ? cleanGoogleNewsTitle(item.title, publisherName)
+          : item.title.trim();
+
+        candidates.push({
+          item,
+          sourceUrl,
+          googleNewsUrl: isGNews ? rawUrl : undefined,
+          displayTitle,
+          publisherName,
+        });
+
+        if (candidates.length >= MAX_CLASSIFY_BATCH) break;
+      }
+
+      if (candidates.length === 0) {
+        continue;
+      }
+
+      // Batch classify using Gemini in a single prompt
+      const batchInput: BatchClassifyInput[] = candidates.map((c, index) => ({
+        id: index,
+        title: c.displayTitle,
+        snippet: c.item.description,
+        sourceName: c.publisherName || c.item.sourceName,
+      }));
+
+      const classifications = await classifyDiscoveryBatch(batchInput);
+
+      for (let i = 0; i < candidates.length; i++) {
+        if (insertedThisRun >= MAX_NEW_ITEMS_PER_RUN) break;
+
+        const cand = candidates[i];
+        const classified = classifications.get(i);
+
+        if (
+          !classified ||
+          classified.content_type === "skip" ||
+          classified.confidence < MIN_CONFIDENCE
+        ) {
+          result.itemsSkipped += 1;
+          continue;
+        }
+
+        try {
           const inserted = await insertDiscoveredItem({
-            title: displayTitle,
-            source_url: sourceUrl,
-            source_name: publisherName || item.sourceName,
-            snippet: item.description.slice(0, 500),
+            title: cand.displayTitle,
+            source_url: cand.sourceUrl,
+            source_name: cand.publisherName || cand.item.sourceName,
+            snippet: cand.item.description.slice(0, 500),
             content_type: classified.content_type,
             city_slug: classified.city_slug,
-            published_at_source: parsePubDate(item.pubDate),
+            published_at_source: parsePubDate(cand.item.pubDate),
             raw_payload: {
               feed_source_id: source.id,
               query: source.query_or_url,
               confidence: classified.confidence,
-              pubDate: item.pubDate,
-              google_news_url: googleNewsUrl,
-              publisher_site: item.publisherSite,
+              pubDate: cand.item.pubDate,
+              google_news_url: cand.googleNewsUrl,
+              publisher_site: cand.item.publisherSite,
             },
           });
 
@@ -171,10 +261,10 @@ export async function discoverContent(): Promise<DiscoverContentResult> {
           } else {
             result.itemsSkipped += 1;
           }
-        } catch (itemError) {
+        } catch (insertErr) {
           result.errors.push(
-            `${displayTitle.slice(0, 40)}: ${
-              itemError instanceof Error ? itemError.message : "sınıflandırma hatası"
+            `${cand.displayTitle.slice(0, 35)}: ${
+              insertErr instanceof Error ? insertErr.message : "Kayıt hatası"
             }`
           );
           result.itemsSkipped += 1;
