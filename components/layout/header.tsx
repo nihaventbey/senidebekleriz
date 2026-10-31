@@ -12,12 +12,12 @@ import { cn } from "@/lib/utils";
 import type { BrandSettings } from "@/lib/settings/branding";
 
 const navItems = [
-  { href: "/", label: "Ana Sayfa" },
   { href: "/haberler", label: "Haberler" },
-  { href: "/etkinlikler", label: "Etkinlikler" },
-  { href: "/sehirler", label: "Şehirler" },
-  { href: "/kategoriler", label: "Kategoriler" },
-  { href: "/blog", label: "Gezi Rehberi" },
+  { href: "/etkinlikler", label: "Etkinlik Takvimi" },
+  { href: "/etkinlikler?zaman=haftasonu", label: "Bu Hafta Sonu" },
+  { href: "/etkinlikler?tur=sergi", label: "Sergiler" },
+  { href: "/etkinlikler?tur=tiyatro", label: "Tiyatro & Sahne" },
+  { href: "/etkinlikler?tur=festival", label: "Festivaller" },
 ];
 
 type HeaderProps = {

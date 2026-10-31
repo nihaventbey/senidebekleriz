@@ -25,63 +25,57 @@ export function Footer({ brand }: FooterProps) {
           <div className="md:col-span-1">
             <Logo brand={brand} />
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              Türkiye'nin müzelerini, tarihi yerlerini ve sanat mekanlarını
-              keşfedin.
+              Türkiye'nin güncel kültür, sanat ve şehir ajandası. Sergi, tiyatro, konser, festival ve arkeoloji haberleri tek adreste.
             </p>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold">Keşfet</h3>
+            <h3 className="text-sm font-semibold">Ajanda &amp; Kültür</h3>
             <ul className="mt-4 space-y-2.5 text-sm text-muted-foreground">
               <li>
                 <Link href="/etkinlikler" className="transition-colors hover:text-foreground">
-                  Etkinlikler
+                  Etkinlik Takvimi
                 </Link>
               </li>
               <li>
                 <Link href="/haberler" className="transition-colors hover:text-foreground">
-                  Kültür Haberleri
+                  Kültür &amp; Sanat Haberleri
                 </Link>
               </li>
               <li>
-                <Link href="/sehirler" className="transition-colors hover:text-foreground">
-                  Şehirler
+                <Link href="/etkinlikler?zaman=haftasonu" className="transition-colors hover:text-foreground">
+                  Bu Hafta Sonu Ne Var?
                 </Link>
               </li>
               <li>
-                <Link href="/kategoriler" className="transition-colors hover:text-foreground">
-                  Kategoriler
+                <Link href="/etkinlikler?tur=sergi" className="transition-colors hover:text-foreground">
+                  Güncel Sergiler &amp; Müzeler
                 </Link>
               </li>
               <li>
-                <Link href="/blog" className="transition-colors hover:text-foreground">
-                  Gezi Rehberi
+                <Link href="/etkinlikler?tur=tiyatro" className="transition-colors hover:text-foreground">
+                  Tiyatro &amp; Sahne Sanatları
                 </Link>
               </li>
               <li>
-                <Link href="/sayfa/hakkimizda" className="transition-colors hover:text-foreground">
-                  Hakkımızda
-                </Link>
-              </li>
-              <li>
-                <Link href="/sayfa/misyon" className="transition-colors hover:text-foreground">
-                  Misyonumuz
-                </Link>
-              </li>
-              <li>
-                <Link href="/sayfa/vizyon" className="transition-colors hover:text-foreground">
-                  Vizyonumuz
+                <Link href="/etkinlikler?tur=festival" className="transition-colors hover:text-foreground">
+                  Festivaller
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold">Yasal</h3>
+            <h3 className="text-sm font-semibold">Kurumsal &amp; İletişim</h3>
             <ul className="mt-4 space-y-2.5 text-sm text-muted-foreground">
               <li>
-                <Link href="/sayfa/kullanim-kosullari" className="transition-colors hover:text-foreground">
-                  Kullanım Koşulları
+                <Link href="/sayfa/hakkimizda" className="transition-colors hover:text-foreground">
+                  Hakkımızda
+                </Link>
+              </li>
+              <li>
+                <Link href="/sayfa/iletisim" className="transition-colors hover:text-foreground">
+                  İletişim &amp; Bülten Gönderimi
                 </Link>
               </li>
               <li>
@@ -90,19 +84,17 @@ export function Footer({ brand }: FooterProps) {
                 </Link>
               </li>
               <li>
-                <Link href="/sayfa/iletisim" className="transition-colors hover:text-foreground">
-                  İletişim
+                <Link href="/sayfa/kullanim-kosullari" className="transition-colors hover:text-foreground">
+                  Kullanım Koşulları
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold">Hakkında</h3>
+            <h3 className="text-sm font-semibold">Kültür-Sanat Medyası</h3>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              Sanat, tarih ve kültür odaklı bir keşif platformu. Amacımız,
-              müzeleri ve tarihi mekanları daha görünür kılmak; insanları bu
-              alanlara yönlendirmek.
+              Seni de Bekleriz; tiyatro sahnelerinden müze galerilerine, antik kent kazılarından açık hava festivallerine Türkiye'nin yaşayan kültür nabzını tutar.
             </p>
           </div>
         </div>

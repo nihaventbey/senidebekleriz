@@ -35,29 +35,21 @@ type NavSection = {
 export const adminNavSections: NavSection[] = [
   {
     title: "Ana Merkez",
-    items: [{ href: "/yonetim", label: "Yönetim Kokpiti", icon: LayoutDashboard }],
-  },
-  {
-    title: "Kültür & Sanat Akışı",
     items: [
-      { href: "/yonetim/haberler", label: "Kültür Haberleri", icon: Newspaper },
-      { href: "/yonetim/etkinlikler", label: "Etkinlikler", icon: CalendarDays },
+      { href: "/yonetim", label: "Yönetim Kokpiti", icon: LayoutDashboard },
       { href: "/yonetim/kesif", label: "İçerik Keşfi (AI)", icon: Radar },
-      { href: "/yonetim/yazilar", label: "Gezi Rehberleri", icon: BookOpen },
     ],
   },
   {
-    title: "Şehir & Mekan Rehberi",
+    title: "Kültür & Sanat Portalı",
     items: [
-      { href: "/yonetim/sehirler", label: "81 Şehir", icon: Building2 },
-      { href: "/yonetim/mekanlar", label: "Kültür Mekanları", icon: MapPinned },
-      { href: "/yonetim/gorseller", label: "Görsel Stüdyosu", icon: Images },
-      { href: "/yonetim/kategoriler", label: "Kategoriler", icon: Tags },
+      { href: "/yonetim/haberler", label: "Kültür Haberleri", icon: Newspaper },
+      { href: "/yonetim/etkinlikler", label: "Etkinlikler", icon: CalendarDays },
       { href: "/yonetim/sayfalar", label: "Statik Sayfalar", icon: FileText },
     ],
   },
   {
-    title: "Yönetim & Ayarlar",
+    title: "Sistem & Gelir",
     items: [
       { href: "/yonetim/reklamlar", label: "Reklam & Gelir", icon: Megaphone },
       { href: "/yonetim/gorunum", label: "Site Görünümü", icon: Paintbrush },
