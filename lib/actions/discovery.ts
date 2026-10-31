@@ -15,6 +15,7 @@ import {
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { slugify } from "@/lib/slugify";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
+import { extractEventsFromBulletin } from "@/lib/ai/extract-multi-events";
 
 function revalidateDiscoveryPaths() {
   revalidatePath("/yonetim/kesif");
@@ -130,7 +131,7 @@ export async function importDiscoveryAsEvent(id: string) {
       ends_at: null,
       cover_image: item.cover_image || null,
       image_urls: item.cover_image ? [item.cover_image] : [],
-      ticket_url: publisherUrl,
+      ticket_url: null,
     };
   }
 
@@ -157,16 +158,19 @@ export async function importDiscoveryAsEvent(id: string) {
       title: imported.title || item.title,
       slug,
       summary: (imported.summary || item.snippet || item.title).slice(0, 160),
+      description: imported.description || item.snippet || null,
       event_type: imported.event_type || "duyuru",
       status: "pending_review",
       source_name: item.source_name,
       source_url: publisherUrl,
-      ticket_url: imported.ticket_url || publisherUrl,
+      ticket_url: imported.ticket_url || null,
       city_slug: imported.city_slug || item.city_slug,
-      venue_name: imported.venue_name,
-      starts_at: imported.starts_at,
-      ends_at: imported.ends_at,
+      venue_name: imported.venue_name || null,
+      starts_at: imported.starts_at || null,
+      ends_at: imported.ends_at || null,
       cover_image: storedCoverImage,
+      meta_title: imported.meta_title || null,
+      meta_description: imported.meta_description || (imported.summary || item.snippet || item.title).slice(0, 155),
       raw_payload: {
         discovery_id: item.id,
         image_urls: imported.image_urls,
@@ -365,5 +369,29 @@ export async function deleteAllDiscoveredContentByFilter(status?: string) {
 
   revalidateDiscoveryPaths();
   return { success: true };
+}
+
+export async function disaggregateDiscoveryBulletin(id: string) {
+  const item = await getDiscoveredContentById(id);
+  if (!item) throw new Error("Keşif kaydı bulunamadı");
+  if (item.status !== "pending_review") {
+    throw new Error("Bu kayıt zaten işlendi");
+  }
+
+  const publisherUrl = await resolveDiscoveryUrl(item);
+
+  const res = await extractEventsFromBulletin({
+    url: publisherUrl,
+    fallbackTitle: item.title,
+    fallbackText: item.snippet || undefined,
+    sourceName: item.source_name || undefined,
+  });
+
+  if (res.extractedCount > 0) {
+    await markDiscoveryImported(id, "cultural_events", res.events[0].id);
+    revalidateDiscoveryPaths();
+  }
+
+  return res;
 }
 

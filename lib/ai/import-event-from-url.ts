@@ -5,6 +5,7 @@ import {
 import { normalizeUrlContent } from "@/lib/ai/normalize-event";
 import { slugify } from "@/lib/slugify";
 import { uploadEventImagesFromUrls } from "@/lib/storage/upload-image-from-url";
+import { cleanTicketUrl } from "@/lib/events/ticket-url";
 
 export type ImportEventFromUrlOptions = {
   fallbackTitle?: string | null;
@@ -60,7 +61,7 @@ export async function importEventFromUrl(
   return {
     ...normalized,
     source_url: sourceUrl,
-    ticket_url: normalized.ticket_url || sourceUrl,
+    ticket_url: cleanTicketUrl(normalized.ticket_url, sourceUrl),
     cover_image: media.coverImage,
     image_urls: media.uploadedImages,
   };

@@ -30,6 +30,7 @@ import {
   importDiscoveryAsArticle,
   importDiscoveryAsEvent,
   importDiscoveryAsNews,
+  disaggregateDiscoveryBulletin,
   rejectDiscovery,
   bulkRejectDiscovery,
   bulkDeleteDiscovery,
@@ -168,8 +169,8 @@ export function DiscoveryList({
 
   function runAction(
     id: string,
-    action: "news" | "event" | "article" | "reject",
-    fn: () => Promise<{ slug: string } | void>
+    action: "news" | "event" | "article" | "reject" | "multi",
+    fn: () => Promise<any>
   ) {
     setPendingId(id);
     setPendingAction(action);
@@ -179,6 +180,12 @@ export function DiscoveryList({
         if (action === "reject") {
           toast.success("Keşif kaydı reddedildi");
           router.refresh();
+          return;
+        }
+        if (action === "multi") {
+          const count = result?.extractedCount || 0;
+          toast.success(`Bültenden ${count} adet bağımsız etkinlik ayrıştırıldı! 🎭`);
+          router.push("/yonetim/etkinlikler?durum=pending_review");
           return;
         }
         if (result && typeof result === "object" && "slug" in result) {
@@ -477,7 +484,28 @@ export function DiscoveryList({
                           <span>Rehber</span>
                         </Button>
 
-                        {/* 4. Reject Button */}
+                        {/* 4. Multi-Event Disaggregation Button */}
+                        <Button
+                          size="sm"
+                          variant="default"
+                          disabled={busy}
+                          onClick={() =>
+                            runAction(item.id, "multi", () =>
+                              disaggregateDiscoveryBulletin(item.id)
+                            )
+                          }
+                          className="h-7 px-2 text-[11px] font-semibold gap-1 bg-purple-600 hover:bg-purple-700 text-white shadow-xs"
+                          title="Bülten içindeki tüm alt etkinlikleri tek tek ayrıştırıp ekle"
+                        >
+                          {busy && pendingAction === "multi" ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Layers className="h-3 w-3" />
+                          )}
+                          <span>Ayrıştır</span>
+                        </Button>
+
+                        {/* 5. Reject Button */}
                         <Button
                           size="sm"
                           variant="outline"
