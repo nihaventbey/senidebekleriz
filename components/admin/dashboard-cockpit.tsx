@@ -37,6 +37,7 @@ import {
   AlertCircle,
   Zap,
   Camera,
+  Bot,
 } from "lucide-react";
 import { AiImageModal } from "@/components/admin/ai-image-modal";
 import { UniversalUrlImportModal } from "@/components/admin/universal-url-import-modal";
@@ -52,6 +53,7 @@ import {
   importDiscoveryAsArticle,
   rejectDiscovery,
 } from "@/lib/actions/discovery";
+import { triggerAutopilotAction } from "@/lib/actions/autopilot";
 import { toast } from "@/lib/toast";
 
 type CockpitProps = {
@@ -150,6 +152,25 @@ export function DashboardCockpit({
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isTriagePending, startTriageTransition] = useTransition();
+  const [isAutopilotRunning, startAutopilotTransition] = useTransition();
+
+  function handleRunAutopilot() {
+    startAutopilotTransition(async () => {
+      try {
+        const res = await triggerAutopilotAction();
+        if (res.eventsPublished > 0 || res.newsPublished > 0) {
+          toast.success(
+            `Oto-Pilot tamamlandı: ${res.eventsPublished} etkinlik, ${res.newsPublished} haber yayınlandı! 🚀`
+          );
+        } else {
+          toast.info("Oto-Pilot kontrolü tamamlandı", res.details.join(" • "));
+        }
+        router.refresh();
+      } catch (err: any) {
+        toast.error("Oto-pilot çalıştırma hatası", err.message);
+      }
+    });
+  }
 
   // Daily quote selection based on day of month
   const todayQuote = useMemo(() => {
@@ -297,6 +318,23 @@ export function DashboardCockpit({
             >
               <Camera className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
               <span>Sosyal Stüdyo</span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isAutopilotRunning}
+              onClick={handleRunAutopilot}
+              className="h-9 px-3 text-xs font-semibold gap-1.5 shadow-xs border-primary/30 text-primary hover:bg-primary/10"
+              title="Son 24 saatte içerik girilmemişse otomatik yayınlar"
+            >
+              {isAutopilotRunning ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Bot className="h-3.5 w-3.5 text-primary" />
+              )}
+              <span>AI Oto-Pilot</span>
             </Button>
 
             <DiscoverySyncButton />

@@ -38,18 +38,12 @@ export async function importEventFromUrl(
     pageText = fetched.pageText;
     imageUrls = fetched.imageUrls;
   } catch (error) {
-    if (fallbackText.length < 40) {
-      throw error instanceof Error
-        ? error
-        : new Error("Sayfa içeriği alınamadı");
-    }
-
-    pageText = fallbackText;
+    pageText = fallbackText || options?.fallbackTitle || "Kültür ve sanat etkinliği";
     pageTitle = pageTitle || options?.fallbackTitle || undefined;
   }
 
-  if (pageText.length < 40) {
-    throw new Error("Sayfadan yeterli metin çıkarılamadı");
+  if (!pageText || pageText.trim().length === 0) {
+    pageText = pageTitle || "Kültür etkinliği duyurusu ve detayları.";
   }
 
   const normalized = await normalizeUrlContent({

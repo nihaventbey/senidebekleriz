@@ -158,20 +158,36 @@ export async function generateArticleDraft(
       ? uploadArticleImagesFromUrls(fetchedImages, slugHint, { maxImages: 8 })
       : Promise.resolve({ coverImage: null, uploadedImages: [] as string[] });
 
-  const [parsed, media] = await Promise.all([
-    callGeminiJson<Omit<GeneratedArticle, "cover_image" | "uploaded_images">>({
+  let parsed: Omit<GeneratedArticle, "cover_image" | "uploaded_images">;
+  try {
+    parsed = await callGeminiJson<Omit<GeneratedArticle, "cover_image" | "uploaded_images">>({
       systemPrompt: sourceBlock
         ? `${BASE_SYSTEM_PROMPT}\n${URL_SYSTEM_APPEND}`
         : BASE_SYSTEM_PROMPT,
       userPrompt,
       temperature: sourceBlock ? 0.55 : 0.7,
-    }),
-    mediaPromise,
-  ]);
-
-  if (!parsed.title || !parsed.content) {
-    throw new Error("Gemini yanıtı geçersiz");
+    });
+  } catch (error) {
+    console.warn("generateArticleDraft AI fallback triggered:", error instanceof Error ? error.message : error);
+    parsed = {
+      title: topic,
+      excerpt: (input.fallbackText || topic).slice(0, 160),
+      meta_description: `${topic} hakkında detaylı gezi rehberi, tarihi ve kültürel bilgiler.`,
+      content: [
+        `# ${topic}`,
+        "",
+        input.fallbackText || `${topic} hakkında kültür, sanat ve tarih odaklı gezi rehberi Seni de Bekleriz'de.`,
+        "",
+        "## Öne Çıkan Özellikler ve Ziyaret Notları",
+        "Bu mekan ve kültürel değer hakkında güncel gezi notları, mimari doku ve ziyaret saatleri resmi bilgilendirmeler doğrultusunda sunulmaktadır.",
+        "",
+        "## Editör Notu",
+        input.sourceUrl ? `Kaynak: [Orijinal Bilgi ve Detaylar](${input.sourceUrl})` : "Kaynak: Kültür ve Sanat Portalı.",
+      ].join("\n"),
+    };
   }
+
+  const media = await mediaPromise;
 
   const contentWithMappedUrls = replaceSourceImageUrls(
     parsed.content,

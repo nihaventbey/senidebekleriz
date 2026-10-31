@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, ExternalLink, MapPin, Ticket } from "lucide-react";
-import type { PublicEvent } from "@/lib/data/events";
+import { Calendar, Clock, ExternalLink, MapPin, Ticket } from "lucide-react";
+import { type PublicEvent, isEventExpired } from "@/lib/data/events";
 import { CulturalCoverPlaceholder } from "@/components/ui/cultural-cover-placeholder";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -28,6 +28,7 @@ function formatDate(iso: string | null) {
 export function EventSlideCard({ event }: { event: PublicEvent }) {
   const ctaUrl = event.ticketUrl || event.sourceUrl;
   const dateLabel = formatDate(event.startsAt);
+  const expired = isEventExpired(event);
 
   return (
     <div className="relative flex min-h-[240px] flex-col justify-end overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/90 via-primary/80 to-primary/60 p-5 text-primary-foreground sm:min-h-[300px] sm:rounded-3xl sm:p-8 md:min-h-[380px] md:p-10 lg:min-h-[420px] lg:p-12">
@@ -47,6 +48,15 @@ export function EventSlideCard({ event }: { event: PublicEvent }) {
           >
             {TYPE_LABELS[event.eventType] || "Kültür"}
           </Badge>
+          {expired && (
+            <Badge
+              variant="outline"
+              className="bg-amber-500/90 text-slate-950 font-bold border-amber-400 text-[11px] sm:text-xs flex items-center gap-1"
+            >
+              <Clock className="h-3 w-3" />
+              Sona Erdi
+            </Badge>
+          )}
           {event.cityName && (
             <Badge
               variant="outline"
@@ -127,16 +137,17 @@ export function EventSlideCard({ event }: { event: PublicEvent }) {
 export function EventListCard({ event }: { event: PublicEvent }) {
   const ctaUrl = event.ticketUrl || event.sourceUrl;
   const dateLabel = formatDate(event.startsAt);
+  const expired = isEventExpired(event);
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border bg-card transition-all hover:border-primary/50 hover:shadow-md">
+    <article className={`group flex h-full flex-col overflow-hidden rounded-2xl border bg-card transition-all hover:border-primary/50 hover:shadow-md ${expired ? "opacity-90 border-border/70" : ""}`}>
       {/* Cover Image or Cultural Logo Fallback */}
       <Link href={`/etkinlik/${event.slug}`} className="relative block aspect-[16/9] w-full overflow-hidden bg-muted">
         {event.coverImage ? (
           <img
             src={event.coverImage}
             alt={event.title}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${expired ? "grayscale-[25%]" : ""}`}
             loading="lazy"
           />
         ) : (
@@ -147,10 +158,16 @@ export function EventListCard({ event }: { event: PublicEvent }) {
             iconSize="sm"
           />
         )}
-        <div className="absolute top-2.5 left-2.5">
+        <div className="absolute top-2.5 left-2.5 flex flex-wrap items-center gap-1.5">
           <Badge className="bg-background/90 text-foreground backdrop-blur-xs text-[10px] font-bold shadow-xs">
             {TYPE_LABELS[event.eventType] || "Kültür"}
           </Badge>
+          {expired && (
+            <Badge className="bg-amber-600/95 text-white backdrop-blur-xs text-[10px] font-bold shadow-xs flex items-center gap-1">
+              <Clock className="h-2.5 w-2.5" />
+              Sona Erdi
+            </Badge>
+          )}
         </div>
       </Link>
 
@@ -163,7 +180,7 @@ export function EventListCard({ event }: { event: PublicEvent }) {
             </span>
           )}
           {dateLabel && (
-            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+            <span className={`text-[11px] flex items-center gap-1 ${expired ? "text-amber-600 dark:text-amber-400 font-medium" : "text-muted-foreground"}`}>
               <Calendar className="h-3 w-3" />
               {dateLabel}
             </span>
@@ -185,7 +202,7 @@ export function EventListCard({ event }: { event: PublicEvent }) {
             href={`/etkinlik/${event.slug}`}
             className="font-bold text-primary hover:underline flex items-center gap-1"
           >
-            Detay &amp; Harita →
+            {expired ? "Detay & Arşiv →" : "Detay & Harita →"}
           </Link>
 
           {ctaUrl && (

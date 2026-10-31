@@ -17,6 +17,46 @@ Kurallar:
 Yanıt yalnızca geçerli JSON:
 {"title":"...","summary":"...","event_type":"...","city_slug":null,"venue_name":null,"starts_at":null,"ends_at":null,"is_cultural_event":true,"confidence":0.9}`;
 
+function heuristicNormalizeEvent(input: {
+  url: string;
+  pageTitle?: string;
+  pageText: string;
+}): NormalizedEventDraft & { ticket_url?: string | null } {
+  const text = `${input.pageTitle || ""} ${input.pageText}`.toLocaleLowerCase("tr");
+
+  // Determine city from 81 cities
+  let detectedCity: string | null = null;
+  for (const c of turkeyCities) {
+    if (text.includes(c.name.toLocaleLowerCase("tr")) || text.includes(c.slug)) {
+      detectedCity = c.slug;
+      break;
+    }
+  }
+
+  // Determine event type
+  let eventType: NormalizedEventDraft["event_type"] = "duyuru";
+  if (/\b(tiyatro|oyun|sahne|perde|prömiyer|bale|opera)\b/i.test(text)) eventType = "tiyatro";
+  else if (/\b(sergi|sergisi|galeri|müze)\b/i.test(text)) eventType = "sergi";
+  else if (/\b(konser|konseri|resital|orkestra|senfoni)\b/i.test(text)) eventType = "konser";
+  else if (/\b(festival|festivali|şenlik)\b/i.test(text)) eventType = "festival";
+
+  const cleanTitle = (input.pageTitle || input.url).replace(/\s*[-–|].*$/, "").trim();
+  const summary = (input.pageText || cleanTitle).slice(0, 160).trim();
+
+  return {
+    title: cleanTitle,
+    summary: summary || cleanTitle,
+    event_type: eventType,
+    city_slug: detectedCity,
+    venue_name: null,
+    starts_at: null,
+    ends_at: null,
+    is_cultural_event: true,
+    confidence: 0.8,
+    ticket_url: null,
+  };
+}
+
 export async function normalizeFeedItem(
   item: RawFeedItem
 ): Promise<NormalizedEventDraft> {
@@ -30,17 +70,26 @@ export async function normalizeFeedItem(
     .filter(Boolean)
     .join("\n");
 
-  const parsed = await callGeminiJson<NormalizedEventDraft>({
-    systemPrompt: SYSTEM_PROMPT,
-    userPrompt,
-    temperature: 0.3,
-  });
+  try {
+    const parsed = await callGeminiJson<NormalizedEventDraft>({
+      systemPrompt: SYSTEM_PROMPT,
+      userPrompt,
+      temperature: 0.3,
+    });
 
-  return {
-    ...parsed,
-    title: parsed.title || item.title,
-    summary: (parsed.summary || item.title).slice(0, 160),
-  };
+    return {
+      ...parsed,
+      title: parsed.title || item.title,
+      summary: (parsed.summary || item.title).slice(0, 160),
+    };
+  } catch (error) {
+    console.warn("normalizeFeedItem AI fallback triggered:", error instanceof Error ? error.message : error);
+    return heuristicNormalizeEvent({
+      url: item.link,
+      pageTitle: item.title,
+      pageText: item.description,
+    });
+  }
 }
 
 export async function normalizeUrlContent(input: {
@@ -57,13 +106,18 @@ export async function normalizeUrlContent(input: {
     .filter(Boolean)
     .join("\n");
 
-  const parsed = await callGeminiJson<
-    NormalizedEventDraft & { ticket_url?: string | null }
-  >({
-    systemPrompt: `${SYSTEM_PROMPT}\nEk alan: ticket_url (bilet linki varsa URL, yoksa null)`,
-    userPrompt,
-    temperature: 0.3,
-  });
+  try {
+    const parsed = await callGeminiJson<
+      NormalizedEventDraft & { ticket_url?: string | null }
+    >({
+      systemPrompt: `${SYSTEM_PROMPT}\nEk alan: ticket_url (bilet linki varsa URL, yoksa null)`,
+      userPrompt,
+      temperature: 0.3,
+    });
 
-  return parsed;
+    return parsed;
+  } catch (error) {
+    console.warn("normalizeUrlContent AI fallback triggered:", error instanceof Error ? error.message : error);
+    return heuristicNormalizeEvent(input);
+  }
 }
