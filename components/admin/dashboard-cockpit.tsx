@@ -153,6 +153,7 @@ export function DashboardCockpit({
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isTriagePending, startTriageTransition] = useTransition();
   const [isAutopilotRunning, startAutopilotTransition] = useTransition();
+  const [isQuickImportPending, startQuickImportTransition] = useTransition();
 
   function handleRunAutopilot() {
     startAutopilotTransition(async () => {
@@ -227,8 +228,37 @@ export function DashboardCockpit({
       toast.error("Lütfen bir haber veya etkinlik kaynak linki girin");
       return;
     }
-    // Prefill news create page with sourceUrl query param
-    router.push(`/yonetim/haberler/yeni?sourceUrl=${encodeURIComponent(quickAiUrl.trim())}`);
+
+    startQuickImportTransition(async () => {
+      try {
+        const res = await fetch("/api/admin/universal-import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: quickAiUrl.trim(),
+            targetType: "auto",
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "İçerik çekilemedi");
+        }
+
+        const typeLabels: Record<string, string> = {
+          news: "Kültür Haberi",
+          event: "Etkinlik",
+          article: "Gezi Rehberi",
+        };
+
+        const typeName = typeLabels[data.type] || "İçerik";
+        toast.success(`${typeName} taslağı başarıyla oluşturuldu! ✨`, `"${data.title}" sayfasına yönlendiriliyorsunuz.`);
+        setQuickAiUrl("");
+        router.push(data.editUrl);
+      } catch (err: any) {
+        toast.error("İçe aktarma hatası", err.message || "İçerik çekilemedi");
+      }
+    });
   }
 
   return (
@@ -366,8 +396,19 @@ export function DashboardCockpit({
                 </button>
               )}
             </div>
-            <Button type="submit" size="sm" variant="default" className="h-9 text-xs font-semibold gap-1.5 w-full sm:w-auto shrink-0 shadow-xs">
-              <Send className="h-3 w-3" /> Dönüştür
+            <Button
+              type="submit"
+              size="sm"
+              variant="default"
+              disabled={isQuickImportPending}
+              className="h-9 text-xs font-semibold gap-1.5 w-full sm:w-auto shrink-0 shadow-xs"
+            >
+              {isQuickImportPending ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Send className="h-3 w-3" />
+              )}
+              <span>{isQuickImportPending ? "Çekiliyor..." : "Dönüştür"}</span>
             </Button>
           </form>
         </div>

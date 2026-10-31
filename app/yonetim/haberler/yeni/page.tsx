@@ -7,7 +7,12 @@ export const metadata: Metadata = {
   title: "Yeni Kültür Haberi Ekle",
 };
 
-export default async function NewNewsPage() {
+type Props = {
+  searchParams: Promise<{ sourceUrl?: string }>;
+};
+
+export default async function NewNewsPage({ searchParams }: Props) {
+  const { sourceUrl } = await searchParams;
   const cities = await getAllCities();
 
   return (
@@ -22,6 +27,7 @@ export default async function NewNewsPage() {
       <NewsForm
         action={createNews}
         cities={cities.map((c) => ({ slug: c.slug, name: c.name }))}
+        initialSourceUrl={sourceUrl}
       />
     </div>
   );

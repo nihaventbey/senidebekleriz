@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useTransition, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,7 @@ type NewsFormProps = {
   action: (formData: FormData) => Promise<NewsActionResult>;
   cities: CityOption[];
   currentSlug?: string;
+  initialSourceUrl?: string;
   deleteAction?: () => Promise<void>;
   defaultValues?: {
     title?: string;
@@ -67,6 +68,7 @@ export function NewsForm({
   action,
   cities,
   currentSlug,
+  initialSourceUrl,
   deleteAction,
   defaultValues = {},
 }: NewsFormProps) {
@@ -79,7 +81,7 @@ export function NewsForm({
   const [coverImage, setCoverImage] = useState(defaultValues.cover_image || "");
   const [citySlug, setCitySlug] = useState(defaultValues.city_slug || "none");
   const [sourceName, setSourceName] = useState(defaultValues.source_name || "");
-  const [sourceUrl, setSourceUrl] = useState(defaultValues.source_url || "");
+  const [sourceUrl, setSourceUrl] = useState(defaultValues.source_url || initialSourceUrl || "");
   const [isPublished, setIsPublished] = useState(defaultValues.is_published ?? true);
   const [isFeatured, setIsFeatured] = useState(defaultValues.is_featured ?? false);
 
@@ -87,7 +89,7 @@ export function NewsForm({
   const [isAiImageModalOpen, setIsAiImageModalOpen] = useState(false);
   const [aiPending, startAiTransition] = useTransition();
   const [savePending, startSaveTransition] = useTransition();
-  const [aiSourceUrl, setAiSourceUrl] = useState("");
+  const [aiSourceUrl, setAiSourceUrl] = useState(initialSourceUrl || defaultValues.source_url || "");
   const [aiTopic, setAiTopic] = useState("");
 
   function handleTitleChange(value: string) {
@@ -97,8 +99,9 @@ export function NewsForm({
     }
   }
 
-  function generateWithAi() {
-    if (!aiTopic.trim() && !aiSourceUrl.trim()) {
+  function generateWithAi(overrideUrl?: string) {
+    const targetUrl = (overrideUrl || aiSourceUrl || "").trim();
+    if (!aiTopic.trim() && !targetUrl) {
       toast.error("Haber konusu veya kaynak URL girin");
       return;
     }
@@ -110,7 +113,7 @@ export function NewsForm({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             topic: aiTopic.trim(),
-            sourceUrl: aiSourceUrl.trim(),
+            sourceUrl: targetUrl,
             cityName: cities.find((c) => c.slug === citySlug)?.name,
           }),
         });
@@ -126,7 +129,10 @@ export function NewsForm({
         if (data.content) setContent(data.content);
         if (data.category) setCategory(data.category);
         if (data.cover_image) setCoverImage(data.cover_image);
-        if (aiSourceUrl.trim()) setSourceUrl(aiSourceUrl.trim());
+        if (targetUrl) {
+          setSourceUrl(targetUrl);
+          setAiSourceUrl(targetUrl);
+        }
 
         toast.success("AI haber taslağı başarıyla oluşturuldu! ✨");
       } catch (err: any) {
@@ -134,6 +140,13 @@ export function NewsForm({
       }
     });
   }
+
+  // Auto-generate if arrived with initialSourceUrl and form is empty
+  useEffect(() => {
+    if (initialSourceUrl && !title && !content && !defaultValues.title) {
+      generateWithAi(initialSourceUrl);
+    }
+  }, [initialSourceUrl]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -236,7 +249,7 @@ export function NewsForm({
             <div className="flex items-end">
               <Button
                 type="button"
-                onClick={generateWithAi}
+                onClick={() => generateWithAi()}
                 disabled={aiPending || (!aiSourceUrl.trim() && !aiTopic.trim())}
                 className="w-full h-9 text-xs font-semibold gap-1.5"
               >

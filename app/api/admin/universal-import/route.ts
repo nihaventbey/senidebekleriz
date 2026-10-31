@@ -55,12 +55,41 @@ export async function POST(request: NextRequest) {
 
     // 3. Process according to type
     if (detectedType === "event") {
+      // Check if already exists
+      const { data: existingEvent } = await supabaseAdmin
+        .from("cultural_events")
+        .select("slug, title")
+        .eq("source_url", sourceUrl)
+        .maybeSingle();
+
+      if (existingEvent) {
+        return NextResponse.json({
+          success: true,
+          type: "event",
+          title: existingEvent.title,
+          slug: existingEvent.slug,
+          editUrl: `/yonetim/etkinlikler/${existingEvent.slug}/duzenle`,
+        });
+      }
+
       const imported = await importEventFromUrl(sourceUrl, {
         fallbackTitle: title,
         fallbackText: snippet,
       });
 
-      const slug = uniqueEventSlug(imported.title || title);
+      const baseSlug = slugify(imported.title || title || "etkinlik");
+      let slug = baseSlug.slice(0, 100);
+      let counter = 1;
+      while (true) {
+        const { data: slugExists } = await supabaseAdmin
+          .from("cultural_events")
+          .select("id")
+          .eq("slug", slug)
+          .maybeSingle();
+        if (!slugExists) break;
+        slug = `${baseSlug.slice(0, 90)}-${counter++}`;
+      }
+
       const storedCoverImage = await ensureStoredCoverImage(imported.cover_image, "events", slug);
 
       const { data, error } = await supabaseAdmin
@@ -103,6 +132,22 @@ export async function POST(request: NextRequest) {
     }
 
     if (detectedType === "article") {
+      const { data: existingArticle } = await supabaseAdmin
+        .from("articles")
+        .select("slug, title")
+        .eq("slug", slugify(title))
+        .maybeSingle();
+
+      if (existingArticle) {
+        return NextResponse.json({
+          success: true,
+          type: "article",
+          title: existingArticle.title,
+          slug: existingArticle.slug,
+          editUrl: `/yonetim/yazilar/${existingArticle.slug}/duzenle`,
+        });
+      }
+
       const draft = await generateArticleDraft({
         topic: title,
         sourceUrl,
@@ -110,7 +155,19 @@ export async function POST(request: NextRequest) {
         type: "guide",
       });
 
-      const slug = slugify(draft.title || title);
+      const baseSlug = slugify(draft.title || title || "yazi");
+      let slug = baseSlug.slice(0, 100);
+      let counter = 1;
+      while (true) {
+        const { data: slugExists } = await supabaseAdmin
+          .from("articles")
+          .select("id")
+          .eq("slug", slug)
+          .maybeSingle();
+        if (!slugExists) break;
+        slug = `${baseSlug.slice(0, 90)}-${counter++}`;
+      }
+
       const storedCoverImage = await ensureStoredCoverImage(draft.cover_image, "articles", slug);
 
       const { data, error } = await supabaseAdmin
@@ -141,13 +198,42 @@ export async function POST(request: NextRequest) {
     }
 
     // Default: Kültür Haberi
+    // Check if already exists with this source_url
+    const { data: existingNews } = await supabaseAdmin
+      .from("cultural_news")
+      .select("slug, title")
+      .eq("source_url", sourceUrl)
+      .maybeSingle();
+
+    if (existingNews) {
+      return NextResponse.json({
+        success: true,
+        type: "news",
+        title: existingNews.title,
+        slug: existingNews.slug,
+        editUrl: `/yonetim/haberler/${existingNews.slug}/duzenle`,
+      });
+    }
+
     const draft = await generateNewsDraft({
       topic: title,
       sourceUrl,
       fallbackText: snippet,
     });
 
-    const slug = slugify(draft.title || title);
+    const baseSlug = slugify(draft.title || title || "haber");
+    let slug = baseSlug.slice(0, 100);
+    let counter = 1;
+    while (true) {
+      const { data: slugExists } = await supabaseAdmin
+        .from("cultural_news")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+      if (!slugExists) break;
+      slug = `${baseSlug.slice(0, 90)}-${counter++}`;
+    }
+
     const storedCoverImage = await ensureStoredCoverImage(draft.cover_image, "news", slug);
 
     const { data, error } = await supabaseAdmin
