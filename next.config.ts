@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/sehir/:slug",
-        destination: "/etkinlikler?sehir=:slug",
+        destination: "/etkinlikler/:slug",
         permanent: true,
       },
       {

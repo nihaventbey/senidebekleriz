@@ -15,9 +15,9 @@ const navItems = [
   { href: "/haberler", label: "Haberler" },
   { href: "/etkinlikler", label: "Etkinlik Takvimi" },
   { href: "/etkinlikler?zaman=haftasonu", label: "Bu Hafta Sonu" },
-  { href: "/etkinlikler?tur=sergi", label: "Sergiler" },
-  { href: "/etkinlikler?tur=tiyatro", label: "Tiyatro & Sahne" },
-  { href: "/etkinlikler?tur=festival", label: "Festivaller" },
+  { href: "/etkinlikler/sergi", label: "Sergiler" },
+  { href: "/etkinlikler/tiyatro", label: "Tiyatro & Sahne" },
+  { href: "/etkinlikler/festival", label: "Festivaller" },
 ];
 
 type HeaderProps = {
@@ -83,10 +83,10 @@ export function Header({ brand }: HeaderProps) {
           <Link
             href="/kaydedilenler"
             className="relative flex h-9 items-center gap-1.5 rounded-lg border border-border/60 px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            title="Kültür Pasaportum & Gezi Listem"
+            title="Kültür Ajandam & Kaydedilen Etkinlikler"
           >
             <Heart className={cn("h-4 w-4", bookmarkCount > 0 ? "fill-rose-500 text-rose-500" : "")} />
-            <span>Pasaportum</span>
+            <span>Ajandam</span>
             {bookmarkCount > 0 && (
               <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1 text-[11px] font-bold text-white">
                 {bookmarkCount}
@@ -99,7 +99,7 @@ export function Header({ brand }: HeaderProps) {
           <Link
             href="/kaydedilenler"
             className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border/60 text-muted-foreground"
-            aria-label="Kültür Pasaportum"
+            aria-label="Kültür Ajandam"
           >
             <Heart className={cn("h-4 w-4", bookmarkCount > 0 ? "fill-rose-500 text-rose-500" : "")} />
             {bookmarkCount > 0 && (
@@ -144,7 +144,7 @@ export function Header({ brand }: HeaderProps) {
               >
                 <span className="flex items-center gap-2">
                   <Heart className="h-4 w-4 fill-rose-500 text-rose-500" />
-                  Kültür Pasaportum & Gezi Listem
+                  Kültür Ajandam &amp; Kaydedilenler
                 </span>
                 {bookmarkCount > 0 && (
                   <span className="rounded-full bg-rose-600 px-2 py-0.5 text-xs text-white">
