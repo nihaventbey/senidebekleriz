@@ -6,12 +6,15 @@ import {
 import { slugify } from "@/lib/slugify";
 import { uploadArticleImagesFromUrls } from "@/lib/storage/upload-image-from-url";
 
+export type ArticleDepth = "standard" | "deep" | "comprehensive";
+
 type GenerateArticleInput = {
   topic: string;
   cityName?: string;
   type?: "guide" | "list" | "tips";
   sourceUrl?: string;
   fallbackText?: string;
+  depth?: ArticleDepth;
 };
 
 export type GeneratedArticle = {
@@ -21,19 +24,47 @@ export type GeneratedArticle = {
   meta_description: string;
   cover_image?: string | null;
   uploaded_images?: string[];
+  word_count?: number;
 };
 
-const BASE_SYSTEM_PROMPT = `Sen Türkiye odaklı bir kültür ve gezi editörüsün. Seni de Bekleriz sitesi için özgün Türkçe gezi rehberi yazıları üretiyorsun.
-Kurallar:
-- Markdown formatında yaz (## başlıklar, madde işaretleri, kısa paragraflar)
-- En az 400 kelime, zengin ve okunabilir yapı
-- Kaynak metni kelimesi kelimesine kopyalama; editoryal yeniden yazım yap
-- Wikipedia veya kaynak sitesinden blok alıntı yapma
-- Uydurma açılış saatleri/ücret/bilet stoku iddiası verme; genel ipuçları kullan
-- Harici görsel URL'si ekleme; görseller editör tarafından ayrıca eklenecek
-- 1-2 cümlelik giriş, 3-5 alt başlık, pratik ipuçları ve sonunda "## Editör Notu" bölümü ekle
-Yanıt yalnızca geçerli JSON:
+function buildArticleSystemPrompt(depth: ArticleDepth = "deep"): string {
+  const depthGuide = {
+    standard: "Hedef uzunluk: 500 - 750 kelime. 3-4 alt başlık, pratik ipuçları ve SSS.",
+    deep: `Hedef uzunluk: 800 - 1300 kelime.
+Aşağıdaki 6 ana bölümü ayrıntılı ve doyurucu paragraflarla inşa et:
+1. Giriş ve Mekânın / Konunun Şehir İçin Anlamı (2 kapsamlı paragraf)
+2. ## Tarihsel Köken ve Dönem Bilgileri (2-3 paragraf)
+3. ## Mimari ve Sanatsal Özellikler (2-3 paragraf)
+4. ## Ziyaret Deneyimi ve Öne Çıkan Rotalar (2-3 paragraf)
+5. ## Ziyaretçi Rehberi: Ulaşım ve Pratik Bilgiler (ulaşım, en iyi mevsim/saat, çevredeki duraklar)
+6. ## Sıkça Sorulan Sorular (3-4 maddelik soru-cevap: '### 1. ...')
+7. ## Editör Notu ve Kaynakça`,
+    comprehensive: `Hedef uzunluk: 1300 - 2000+ kelime.
+Kapsamlı bir kültür-gezi ansiklopedisi ve seyahat monografisi niteliğinde üret:
+1. Kapsamlı Editoryal Giriş & Coğrafi/Kültürel Kimlik (3 paragraf)
+2. ## Derinlemesine Tarihsel Arka Plan ve Arşiv Notları (3-4 paragraf)
+3. ## Mimari Detaylar, Sanat Eserleri ve Üslup İncelemesi (3-4 paragraf)
+4. ## Adım Adım Gezi Güzergâhı ve Deneyim Rotaları (3-4 paragraf)
+5. ## Kapsamlı Ziyaretçi Rehberi (ulaşım, çevre köyler/ilçeler, yerel kültür)
+6. ## Sıkça Sorulan Sorular (5-6 maddelik ayrıntılı SSS)
+7. ## Editör Notu ve Bibliyografya`,
+  };
+
+  return `Sen Türkiye odaklı kıdemli bir kültür araştırmacısı ve gezi editörüsün. Seni de Bekleriz (senidebekleriz.com) portalı için zengin, akıcı, derinlikli Türkçe kültür ve gezi rehberleri üretiyorsun.
+
+${depthGuide[depth]}
+
+KURALLAR:
+- Markdown formatında yaz (## alt başlıklar, ### SSS maddeleri, temiz paragraflar)
+- Kesinlikle hiçbir ham HTML etiketi (<a href...>, <font>, vb.) kullanma.
+- Kaynak metni kelimesi kelimesine kopyalama; editoryal derinlikle yeniden yazım yap
+- Wikipedia veya kaynak sitelerden kuru bürokratik dil veya ham blok alıntı yapma
+- Metni Türkiye'nin zengin tarihi, sanatı, mimarisi ve kültürel dokusu bilgisiyle zenginleştir
+- Yanıt yalnızca geçerli JSON:
 {"title":"...","excerpt":"...","meta_description":"...","content":"..."}`;
+}
+
+const BASE_SYSTEM_PROMPT = buildArticleSystemPrompt("deep");
 
 const URL_SYSTEM_APPEND = `
 URL kaynağı verildiğinde:
@@ -158,14 +189,18 @@ export async function generateArticleDraft(
       ? uploadArticleImagesFromUrls(fetchedImages, slugHint, { maxImages: 8 })
       : Promise.resolve({ coverImage: null, uploadedImages: [] as string[] });
 
+  const requestedDepth: ArticleDepth = input.depth || "deep";
+  const systemPrompt = buildArticleSystemPrompt(requestedDepth);
+
   let parsed: Omit<GeneratedArticle, "cover_image" | "uploaded_images">;
   try {
     parsed = await callGeminiJson<Omit<GeneratedArticle, "cover_image" | "uploaded_images">>({
       systemPrompt: sourceBlock
-        ? `${BASE_SYSTEM_PROMPT}\n${URL_SYSTEM_APPEND}`
-        : BASE_SYSTEM_PROMPT,
+        ? `${systemPrompt}\n${URL_SYSTEM_APPEND}`
+        : systemPrompt,
       userPrompt,
-      temperature: sourceBlock ? 0.55 : 0.7,
+      temperature: sourceBlock ? 0.45 : 0.65,
+      maxOutputTokens: 8192,
     });
   } catch (error) {
     console.warn("generateArticleDraft AI fallback triggered:", error instanceof Error ? error.message : error);
@@ -201,10 +236,13 @@ export async function generateArticleDraft(
     parsed.title
   );
 
+  const wordCount = contentWithImages.trim().split(/\s+/).filter(Boolean).length;
+
   return {
     ...parsed,
     content: contentWithImages,
     cover_image: media.coverImage,
     uploaded_images: media.uploadedImages,
+    word_count: wordCount,
   };
 }

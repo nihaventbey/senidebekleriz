@@ -29,10 +29,14 @@ Kurallar:
    - ÇOK ÖNEMLİ: Haberin kendi linkini, gazete linkini veya ana sayfa linkini ASLA ticket_url yapma!
    - Bilet satın alma linki yoksa bu alan KESİNLİKLE null olmalıdır.
 
-5. SEO Optimizasyonu:
+5. SEO Optimizasyonu ve Zengin İçerik:
    - title: Etkinliğin resmi, temiz adı. Gereksiz gazete manşeti eklerini ("Müjde", "Açıklandı", "Biletler Satışta") ayıkla.
    - summary: Arama motorlarında öne çıkacak, en fazla 160 karakterlik vurucu Türkçe özet.
-   - description: Zengin, okunabilir markdown metin (etkinliğin konusu, sanatçılar, mekana ulaşım, ziyaret notları).
+   - description: Kapsamlı ve zengin Markdown metin (en az 350-550 kelime). Şu alt başlıkları mutlaka içermelidir:
+     * Giriş paragrafı (etkinliğin sanatsal/kültürel önemi, teması ve şehre katkısı)
+     * ## Etkinlik ve Sahne Detayları (eserin/konserin/serginin tematik detayları, repertuvar, öne çıkan anlar)
+     * ## Sanatçılar ve Kadro (sahne alacak sanatçılar, yönetmen, küratör veya topluluk hakkında editoryal bilgi)
+     * ## Mekân ve Katılım Rehberi (mekânın konumu, akustiği/atmosferi, ulaşım tüyoları, varsa bilet/ücretsiz katılım ve giriş kuralları)
    - meta_title: Arama sonuçlarında tıklanma sağlayan SEO başlığı (Örn: "Hamlet Oyunu | Harbiye Sahnesi İstanbul") (max 60 karakter).
    - meta_description: Arama motoru snippet'i (max 155 karakter).
 

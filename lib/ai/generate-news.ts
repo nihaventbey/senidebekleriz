@@ -4,11 +4,14 @@ import { filterImageCandidatesBySize } from "@/lib/ai/extract-page-images";
 import { slugify } from "@/lib/slugify";
 import { stripHtmlTags } from "@/lib/events/sources/ktb-rss";
 
+export type NewsDepth = "standard" | "deep" | "comprehensive";
+
 type GenerateNewsInput = {
   topic: string;
   sourceUrl?: string;
   fallbackText?: string;
   cityName?: string;
+  depth?: NewsDepth;
 };
 
 export type NewsCategory =
@@ -27,6 +30,7 @@ export type GeneratedNews = {
   city_slug?: string | null;
   cover_image?: string | null;
   uploaded_images?: string[];
+  word_count?: number;
 };
 
 const CATEGORY_EDITORIAL_GUIDELINES: Record<NewsCategory, string> = {
@@ -116,25 +120,56 @@ function sanitizeText(raw: string): string {
     .trim();
 }
 
-const NEWS_SYSTEM_PROMPT = `Sen Türkiye kültür, sanat, tarih ve kültürel miras odaklı kıdemli bir haber şefisin. Seni de Bekleriz (senidebekleriz.com) platformu için editoryal derinliği yüksek, akıcı, zengin ve özgün Türkçe kültür-sanat haberleri hazırlıyorsun.
+function buildSystemPrompt(depth: NewsDepth = "deep"): string {
+  const depthInstructions = {
+    standard: `
+DERİNLİK SEVİYESİ: STANDART HABER (Hedef: 500 - 750 kelime)
+Yapı:
+1. 5N1K Giriş Paragrafı (haberin özü, ne, ne zaman, nerede, nasıl, neden, kim)
+2. ## Gelişmeler ve Kültürel Bağlam (2-3 doyurucu paragraf)
+3. ## Program, Katılım ve Mekân Detayları (tarih, saat, katılım koşulları, mekan bilgisi)
+4. ## Sıkça Sorulan Sorular (2 pratik soru-cevap)
+5. ## Kaynak ve Detaylar (kaynak atfı)`,
+    deep: `
+DERİNLİK SEVİYESİ: KAPSAMLI DOSYA HABER (Hedef: 800 - 1300 kelime)
+Bu yazı yüzeysel bir haber bülteni değil; derinlikli bir kültür-sanat dosyasıdır. Aşağıdaki 7 bölümün HER BİRİNİ ayrıntılı ve akıcı Türkçe ile yazmalısın:
+1. 5N1K Editoryal Giriş (2 kapsamlı paragraf: Güncel gelişme, kente ve sanat dünyasına etkisi, haberin taşıdığı kültürel vizyon)
+2. ## Tarihsel ve Kültürel Arka Plan (2-3 paragraf: Konunun kökeni, tarihi dönem veya akım, önceki yıllardaki gelişmeler, mekânın veya sanat dalının tarihçesi)
+3. ## Program, Eserler ve Sanatçılar (2-3 paragraf: Etkinliğin omurgası, öne çıkan eserler/oyunlar/sanatçılar, küratör veya yönetmen yaklaşımı, repertuvar/koleksiyon detayları)
+4. ## Mekân, Mimari ve Kültürel Atmosfer (2 paragraf: Etkinliğin gerçekleştiği yapının tarihi dokusu, mimari özellikleri, akustiği ve ziyaretçiye sunduğu his)
+5. ## Ziyaretçi & Katılımcı Rehberi (2 paragraf: Ulaşım tüyoları, ideal ziyaret gün/saatleri, katılım ve başvuru koşulları, biletleme veya ücretsiz giriş prosedürleri, yaş/kontenjan sınırları)
+6. ## Sıkça Sorulan Sorular (3-4 maddelik pratik SSS; her madde '### 1. Soru...' formatında ve net bir yanıtla)
+7. ## Editoryal Değerlendirme & Kaynak (Kültür masası değerlendirmesi ve temiz kaynak bağlantısı)`,
+    comprehensive: `
+DERİNLİK SEVİYESİ: DERİNLEMESİNE KÜLTÜR VE GEZİ REHBERİ (Hedef: 1300 - 2000+ kelime)
+Bu metin Türkiye'nin kültür mirası arşivine kalacak başvuru kaynağı niteliğinde dev bir rehber makaledir. Her bölümü geniş, zengin ve bilgi yoğun paragraflarla inşa et:
+1. Kapsamlı Editoryal Giriş & Kültürel Mirasın Anlamı (3 derinlikli paragraf)
+2. ## Derinlemesine Tarihsel Arka Plan & Arşivsel Bağlam (3-4 paragraf)
+3. ## Eser, Sanatçı ve Küratöryel İnceleme (3-4 paragraf)
+4. ## Mekânın Mimari Kimliği ve Şehir Dokusundaki Yeri (3 paragraf)
+5. ## Kapsamlı Ziyaretçi Rehberi ve Çevre Rotaları (3-4 paragraf: Ulaşım, yakın çevredeki tarihi/kültürel duraklar, bilet/ücretsiz erişim, en iyi deneyim ipuçları)
+6. ## Sıkça Sorulan Sorular (5-6 maddelik ayrıntılı SSS; '### 1. ...' formatında)
+7. ## Kültür Masası Perspektifi & Kaynakça`,
+  };
+
+  return `Sen Türkiye kültür, sanat, tarih ve kültürel miras alanında uzmanlaşmış kıdemli bir kültür araştırmacısı ve haber şefisin. Seni de Bekleriz (senidebekleriz.com) platformu için yüksek editoryal derinliğe sahip, akıcı, zengin ve özgün Türkçe kültür-sanat dosyaları hazırlıyorsun.
+
+${depthInstructions[depth]}
 
 KESİN EDİTORYAL KURALLAR:
-1. Kesinlikle hiçbir ham HTML etiketi (<a href=...>, <font>, <div>, <span>, vb.) üretme veya içeriğe dahil etme. Yalnızca saf Markdown formatı kullan.
-2. Başlık: Tıklama tuzağı (clickbait) olmayan, haberin özünü anlatan, kurum/kaynak sitesi sloganlarından ve " - Hürriyet", " - Belediye" gibi gazete takılarından arındırılmış saygın bir gazetecilik başlığı olsun.
-3. Özet: Haberin en can alıcı noktalarını 1-2 cümlede (120-180 karakter) aktaran, ilgi çekici ve temiz bir özet olmalıdır.
-4. İlk Paragraf: 5N1K (Ne, Nerede, Ne Zaman, Nasıl, Neden, Kim) özetini akıcı ve editoryal bir dille vermelidir.
-5. Gövde Paragrafları: Konuyu derinlemesine ele alan, mantıklı akışa sahip en az 2 veya 3 alt başlık (## Alt Başlık) içermelidir.
-6. Program/Katılım Bilgileri: Eğer haber bir gezi, sergi, atölye, festival veya gösteri içeriyorsa; tarih, mekan, ilçe, katılım şartları veya başvuru detayları için özel bir alt başlık oluştur (örneğin: "## Program ve Katılım Detayları" veya "## Tarih ve Güzergâh Bilgileri").
-7. Uzunluk: En az 300-400 kelime arasında, bilgi yoğun ve doyurucu bir metin olmalıdır.
-8. Kaynak Atfı: Metnin en sonunda mutlaka "## Kaynak ve Detaylar" başlığı altında temiz markdown formatında kaynak atfı bulunmalıdır.
-9. Kategori: Yalnızca şu 6 kategoriden biri seçilmelidir: "arkeoloji" | "restorasyon" | "muze_sergi" | "kultur_sanat" | "festival_haberleri" | "genel".
-10. Çıktı Formatı: Yanıt yalnızca ve kesinlikle aşağıdaki JSON şemasına uygun olmalıdır:
+1. KESİNLİKLE HİÇBİR HAM HTML ETİKETİ (<a href=...>, <font>, <div>, <span>, vb.) ÜRETME. Yalnızca temiz Markdown formatı kullan.
+2. BAŞLIK: Tıklama tuzağı (clickbait) olmayan, haberin özünü anlatan, kurum/kaynak sitelerinin sloganlarından ve " - Hürriyet", " - Belediye" gibi gazete takılarından tamamen arındırılmış saygın bir gazetecilik başlığı üret.
+3. ÖZET: Haberin can alıcı noktalarını 1-2 cümlede (130-180 karakter) aktaran, merak uyandıran, arama motorlarında öne çıkacak temiz bir editoryal özet olsun.
+4. KÜLTÜREL BAĞLAM SENTEZİ: Kaynak siteden gelen metin kısa (1-2 paragraf) olsa dahi; Türkiye'nin tarihi, sanat tarihi, mimarisi, arkeolojisi, edebiyatı ve şehir dokusuna dair engin genel kültür bilgini devreye sokarak yukarıda belirtilen tüm alt başlıkları doyurucu, derinlikli ve akıcı Türkçe paragraflarla geliştir. Asla yüzeysel veya kısa bırakma. Fikri veya tarihi bilgileri zenginleştirirken somut tarihleri, yerleri ve kişi isimlerini kaynak metne sadık tut.
+5. SIKÇA SORULAN SORULAR BÖLÜMÜ: Mutlaka okuyucunun aklına gelebilecek pratik soruları (Örn: "Ücretsiz mi?", "Ulaşım nasıl sağlanır?", "Kimler katılabilir?", "Kayıt gerekiyor mu?") '### 1. ...', '### 2. ...' biçiminde ele al.
+6. ÇIKTI FORMATI: Yanıt yalnızca ve kesinlikle aşağıdaki JSON şemasına uygun olmalıdır:
 {
   "title": "Haber Başlığı",
   "summary": "1-2 cümlelik temiz editoryal özet",
-  "category": "arkeoloji",
-  "content": "Markdown formatında en az 300 kelimelik zengin haber metni"
+  "category": "muze_sergi",
+  "content": "Markdown formatında tüm alt başlıkları, SSS ve kaynak bölümünü içeren derinlikli metin"
 }`;
+}
 
 export async function generateNewsDraft(
   input: GenerateNewsInput
@@ -209,11 +244,15 @@ export async function generateNewsDraft(
     .filter(Boolean)
     .join("\n\n");
 
+  const requestedDepth: NewsDepth = input.depth || "deep";
+  const systemPrompt = buildSystemPrompt(requestedDepth);
+
   try {
     const parsed = await callGeminiJson<Omit<GeneratedNews, "cover_image" | "uploaded_images">>({
-      systemPrompt: NEWS_SYSTEM_PROMPT,
+      systemPrompt,
       userPrompt,
-      temperature: 0.35,
+      temperature: 0.38,
+      maxOutputTokens: 8192,
     });
 
     if (!parsed.title || !parsed.content) {
@@ -228,6 +267,8 @@ export async function generateNewsDraft(
       .replace(/<font\b[^>]*>(.*?)<\/font>/gi, "$1")
       .replace(/<[^>]+>/g, "");
 
+    const wordCount = cleanContent.trim().split(/\s+/).filter(Boolean).length;
+
     return {
       title: cleanTitle,
       summary: cleanSummary,
@@ -235,6 +276,7 @@ export async function generateNewsDraft(
       category: parsed.category || inferredCategory,
       cover_image: candidateCoverImage,
       uploaded_images: fetchedImages,
+      word_count: wordCount,
     };
   } catch (error) {
     console.warn(
@@ -291,13 +333,17 @@ export async function generateNewsDraft(
         : "Seni de Bekleriz Kültür ve Sanat Masası."
     );
 
+    const finalFallbackContent = contentSections.join("\n");
+    const fallbackWordCount = finalFallbackContent.trim().split(/\s+/).filter(Boolean).length;
+
     return {
       title: cleanTitle,
       summary: cleanSummary,
-      content: contentSections.join("\n"),
+      content: finalFallbackContent,
       category: inferredCategory,
       cover_image: candidateCoverImage,
       uploaded_images: fetchedImages,
+      word_count: fallbackWordCount,
     };
   }
 }

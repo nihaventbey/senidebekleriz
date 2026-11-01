@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
       sourceUrl?: string;
       cityName?: string;
       fallbackText?: string;
+      depth?: "standard" | "deep" | "comprehensive";
     };
 
     const topic = body.topic?.trim() || "";
@@ -43,6 +44,7 @@ export async function POST(req: NextRequest) {
       sourceUrl: sourceUrl || undefined,
       cityName: body.cityName?.trim(),
       fallbackText: body.fallbackText,
+      depth: body.depth || "deep",
     });
 
     return NextResponse.json(draft);

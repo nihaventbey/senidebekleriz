@@ -2,12 +2,14 @@ type GeminiJsonRequest = {
   systemPrompt: string;
   userPrompt: string;
   temperature?: number;
+  maxOutputTokens?: number;
 };
 
 export async function callGeminiJson<T>({
   systemPrompt,
   userPrompt,
   temperature = 0.5,
+  maxOutputTokens = 8192,
 }: GeminiJsonRequest): Promise<T> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -41,6 +43,7 @@ export async function callGeminiJson<T>({
       ],
       generationConfig: {
         temperature,
+        maxOutputTokens,
         responseMimeType: "application/json",
       },
     }),
@@ -72,6 +75,7 @@ export async function callGeminiText({
   systemPrompt,
   userPrompt,
   temperature = 0.7,
+  maxOutputTokens = 8192,
 }: GeminiJsonRequest): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -105,6 +109,7 @@ export async function callGeminiText({
       ],
       generationConfig: {
         temperature,
+        maxOutputTokens,
       },
     }),
   });

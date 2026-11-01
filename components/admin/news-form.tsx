@@ -91,6 +91,7 @@ export function NewsForm({
   const [savePending, startSaveTransition] = useTransition();
   const [aiSourceUrl, setAiSourceUrl] = useState(initialSourceUrl || defaultValues.source_url || "");
   const [aiTopic, setAiTopic] = useState("");
+  const [aiDepth, setAiDepth] = useState<"standard" | "deep" | "comprehensive">("deep");
 
   function handleTitleChange(value: string) {
     setTitle(value);
@@ -115,6 +116,7 @@ export function NewsForm({
             topic: aiTopic.trim(),
             sourceUrl: targetUrl,
             cityName: cities.find((c) => c.slug === citySlug)?.name,
+            depth: aiDepth,
           }),
         });
 
@@ -134,7 +136,8 @@ export function NewsForm({
           setAiSourceUrl(targetUrl);
         }
 
-        toast.success("AI haber taslağı başarıyla oluşturuldu! ✨");
+        const countMsg = data.word_count ? ` (${data.word_count} kelime)` : "";
+        toast.success(`AI haber taslağı başarıyla oluşturuldu! ✨${countMsg}`);
       } catch (err: any) {
         toast.error(err.message || "Taslak üretilemedi");
       }
@@ -232,7 +235,7 @@ export function NewsForm({
             />
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="ai-topic" className="text-xs font-medium">
                 Haber Konusu (Opsiyonel)
@@ -244,6 +247,35 @@ export function NewsForm({
                 placeholder="Örn: Göbeklitepe'de yeni keşif"
                 className="h-9 text-xs"
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="ai-depth" className="text-xs font-medium">
+                İçerik Derinliği
+              </Label>
+              <Select
+                value={aiDepth}
+                onValueChange={(val) => {
+                  if (val === "standard" || val === "deep" || val === "comprehensive") {
+                    setAiDepth(val);
+                  }
+                }}
+              >
+                <SelectTrigger id="ai-depth" className="h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="deep" className="text-xs">
+                    📚 Kapsamlı Dosya (~1000 Kelime)
+                  </SelectItem>
+                  <SelectItem value="comprehensive" className="text-xs">
+                    🏛️ Kültür Rehberi (~1500+ Kelime)
+                  </SelectItem>
+                  <SelectItem value="standard" className="text-xs">
+                    ⚡ Hızlı Haber (~500 Kelime)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex items-end">
