@@ -13,7 +13,7 @@ import {
   resolvePublisherUrl,
 } from "@/lib/discovery/resolve-google-news-url";
 import { fetchGoogleNewsItems } from "@/lib/discovery/sources/google-news-rss";
-import { fetchKtbRssItems } from "@/lib/events/sources/ktb-rss";
+import { fetchKtbRssItems, stripHtmlTags } from "@/lib/events/sources/ktb-rss";
 import type { RawFeedItem } from "@/lib/events/types";
 import type {
   DiscoverContentResult,
@@ -215,7 +215,7 @@ export async function discoverContent(): Promise<DiscoverContentResult> {
       const batchInput: BatchClassifyInput[] = candidates.map((c, index) => ({
         id: index,
         title: c.displayTitle,
-        snippet: c.item.description,
+        snippet: stripHtmlTags(c.item.description).slice(0, 500),
         sourceName: c.publisherName || c.item.sourceName,
       }));
 
@@ -241,7 +241,7 @@ export async function discoverContent(): Promise<DiscoverContentResult> {
             title: cand.displayTitle,
             source_url: cand.sourceUrl,
             source_name: cand.publisherName || cand.item.sourceName,
-            snippet: cand.item.description.slice(0, 500),
+            snippet: stripHtmlTags(cand.item.description).slice(0, 500),
             content_type: classified.content_type,
             city_slug: classified.city_slug,
             published_at_source: parsePubDate(cand.item.pubDate),

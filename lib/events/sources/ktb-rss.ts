@@ -7,18 +7,45 @@ function decodeEntities(text: string): string {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&ndash;/g, "–")
+    .replace(/&mdash;/g, "—")
+    .replace(/&rsquo;/g, "’")
+    .replace(/&lsquo;/g, "‘")
+    .replace(/&rdquo;/g, "”")
+    .replace(/&ldquo;/g, "“")
+    .replace(/&hellip;/g, "…")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, code) =>
+      String.fromCharCode(parseInt(code, 16))
+    )
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
     .trim();
 }
 
+export function stripHtmlTags(html: string): string {
+  const withoutTags = html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ");
+
+  return decodeEntities(withoutTags)
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function stripTags(html: string): string {
-  return decodeEntities(html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " "));
+  return stripHtmlTags(html);
 }
 
 function getTag(block: string, tag: string): string {
-  const cdata = new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>`, "i");
+  const cdata = new RegExp(
+    `<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>`,
+    "i"
+  );
   const cdataMatch = block.match(cdata);
-  if (cdataMatch) return decodeEntities(cdataMatch[1]);
+  if (cdataMatch) return stripTags(cdataMatch[1]);
 
   const plain = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i");
   const plainMatch = block.match(plain);

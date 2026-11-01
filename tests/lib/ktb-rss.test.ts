@@ -46,4 +46,22 @@ describe("parseKtbRssXml", () => {
     const items = parseKtbRssXml(SAMPLE_RSS, "KTB", 1);
     expect(items).toHaveLength(1);
   });
+
+  it("strips raw HTML links and font tags from CDATA description", () => {
+    const RSS_WITH_HTML = `<?xml version="1.0" encoding="UTF-8"?>
+    <rss version="2.0">
+      <channel>
+        <title>Google News RSS</title>
+        <item>
+          <title><![CDATA[Haber Başlığı]]></title>
+          <link>https://news.google.com/rss/articles/123</link>
+          <description><![CDATA[<a href="https://news.google.com/rss/articles/123" target="_blank">Haber Başlığı</a>&nbsp;&nbsp;<font color="#6f6f6f">Hürriyet</font>]]></description>
+        </item>
+      </channel>
+    </rss>`;
+    const items = parseKtbRssXml(RSS_WITH_HTML, "Google News");
+    expect(items[0].description).toBe("Haber Başlığı Hürriyet");
+    expect(items[0].description).not.toContain("<a");
+    expect(items[0].description).not.toContain("<font");
+  });
 });
