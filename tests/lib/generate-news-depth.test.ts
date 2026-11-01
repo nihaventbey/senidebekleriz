@@ -13,6 +13,7 @@ describe("generateNewsDraft", () => {
     expect(draft.title).toContain("Antik Tiyatro");
     expect(draft.category).toBe("arkeoloji");
     expect(draft.word_count).toBeGreaterThan(30);
+    expect(draft.content.startsWith("# ")).toBe(false);
     expect(draft.content).toContain("## Gelişmeler ve Kültürel Detaylar");
     expect(draft.content).toContain("## Kaynak ve Detaylar");
     expect(draft.content).not.toContain("<a ");

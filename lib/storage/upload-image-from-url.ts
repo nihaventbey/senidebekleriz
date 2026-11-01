@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { BROWSER_USER_AGENT } from "@/lib/ai/extract-page-images";
 
 export const MEDIA_BUCKET = "media";
 
@@ -71,12 +72,14 @@ export async function uploadImageFromUrl(
   storagePath: string
 ): Promise<string | null> {
   try {
+    const origin = new URL(imageUrl).origin;
     const response = await fetch(imageUrl, {
       headers: {
-        "User-Agent": "SeniDeBekleriz/1.0 (media import)",
-        Accept: "image/*",
+        "User-Agent": BROWSER_USER_AGENT,
+        Referer: origin,
+        Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
       },
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(12000),
       redirect: "follow",
     });
 

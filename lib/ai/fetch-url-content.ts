@@ -1,4 +1,4 @@
-import { extractPageImageUrls } from "@/lib/ai/extract-page-images";
+import { extractPageImageUrls, BROWSER_USER_AGENT } from "@/lib/ai/extract-page-images";
 
 export type FetchedUrlContent = {
   url: string;
@@ -84,8 +84,9 @@ function extractArticleParagraphs(html: string): string[] {
   // Try to find targeted article content container first
   const containerPatterns = [
     /<article[^>]*>([\s\S]*?)<\/article>/i,
+    /<main[^>]*>([\s\S]*?)<\/main>/i,
     /<div[^>]+itemprop=["']articleBody["'][^>]*>([\s\S]*?)<\/div>/i,
-    /<div[^>]+class=["'][^"']*(?:article-body|news-content|entry-content|detail-content|haber-metni|icerik-detay|post-content)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+    /<div[^>]+class=["'][^"']*(?:article-body|news-content|entry-content|detail-content|haber-metni|icerik-detay|post-content|news-detail|content-text|story-body|article__content|article-text|haber-detay)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
   ];
 
   let targetHtml = cleaned;
@@ -253,12 +254,21 @@ export async function fetchUrlContent(
   const response = await fetch(url, {
     headers: {
       "User-Agent":
-        options?.userAgent ||
-        "SeniDeBekleriz/1.0 (content research; admin draft)",
-      Accept: "text/html,application/xhtml+xml",
-      "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.8",
+        options?.userAgent || BROWSER_USER_AGENT,
+      Accept:
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+      "Sec-Ch-Ua":
+        '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+      "Sec-Ch-Ua-Mobile": "?0",
+      "Sec-Ch-Ua-Platform": '"Windows"',
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "none",
+      "Sec-Fetch-User": "?1",
+      "Upgrade-Insecure-Requests": "1",
     },
-    signal: AbortSignal.timeout(20000),
+    signal: AbortSignal.timeout(15000),
     redirect: "follow",
   });
 

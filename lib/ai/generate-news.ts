@@ -113,9 +113,12 @@ function detectCategory(text: string): NewsCategory {
 }
 
 function sanitizeText(raw: string): string {
-  return stripHtmlTags(raw)
+  if (!raw) return "";
+  let text = stripHtmlTags(raw);
+  return text
     .replace(/<[^>]+>/g, " ")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Strip markdown links inside summaries
+    .replace(/https?:\/\/news\.google\.com\S*/gi, "") // Never allow raw Google News tracking URLs
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -261,8 +264,9 @@ export async function generateNewsDraft(
 
     const cleanTitle = cleanPublisherSuffixes(sanitizeText(parsed.title));
     const cleanSummary = sanitizeText(parsed.summary || cleanTitle);
-    // Extra safety: sanitize any unexpected raw HTML from content
+    // Extra safety: sanitize any unexpected raw HTML and strip redundant leading H1 from content
     let cleanContent = parsed.content
+      .replace(/^#\s+[^\n]+\n+/, "")
       .replace(/<a\b[^>]*>(.*?)<\/a>/gi, "$1")
       .replace(/<font\b[^>]*>(.*?)<\/font>/gi, "$1")
       .replace(/<[^>]+>/g, "");
@@ -301,11 +305,8 @@ export async function generateNewsDraft(
       cleanSummary = pageParagraphs[0].slice(0, 200);
     }
 
-    const contentSections: string[] = [
-      `# ${cleanTitle}`,
-      "",
-      cleanSummary,
-    ];
+    // Do NOT prepend `# ${cleanTitle}` as the page template already renders <h1>{news.title}</h1>
+    const contentSections: string[] = [cleanSummary];
 
     if (pageParagraphs.length >= 2) {
       contentSections.push("", "## Gelişmeler ve Kültürel Detaylar");
@@ -316,12 +317,16 @@ export async function generateNewsDraft(
         contentSections.push(pageParagraphs.slice(2, 6).join("\n\n"));
       }
     } else {
+      const sanitizedFallback = input.fallbackText ? sanitizeText(input.fallbackText) : "";
+      const fallbackBody =
+        sanitizedFallback && sanitizedFallback !== cleanSummary && sanitizedFallback.length > 50
+          ? sanitizedFallback
+          : `${cleanTitle} başlığıyla duyurulan kültür ve sanat gelişmesi, şehrin kültürel ajandasında yerini aldı. Detaylar ve etkinlik takvimi resmi kaynaklar doğrultusunda ziyaretçilerin bilgisine sunulmaktadır.`;
+
       contentSections.push(
         "",
         "## Gelişmeler ve Kültürel Detaylar",
-        input.fallbackText && sanitizeText(input.fallbackText).length > 50
-          ? sanitizeText(input.fallbackText)
-          : `${cleanTitle} başlığıyla duyurulan kültür ve sanat gelişmesi, şehrin kültürel ajandasında yerini aldı. Detaylar ve etkinlik takvimi resmi kaynaklar doğrultusunda ziyaretçilerin bilgisine sunulmaktadır.`
+        fallbackBody
       );
     }
 

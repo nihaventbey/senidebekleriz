@@ -25,14 +25,21 @@ function decodeEntities(text: string): string {
 }
 
 export function stripHtmlTags(html: string): string {
-  const withoutTags = html
+  if (!html) return "";
+  // Decode entities first so encoded tags (&lt;a ...&gt;) become inspectable
+  let text = decodeEntities(html);
+  // Strip script, style, and HTML tags
+  text = text
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<[^>]+>/g, " ");
 
-  return decodeEntities(withoutTags)
-    .replace(/\s+/g, " ")
-    .trim();
+  // Second pass in case of double entity encoding (&amp;lt;a&gt;)
+  if (text.includes("&lt;") || text.includes("&gt;") || text.includes("&amp;")) {
+    text = decodeEntities(text).replace(/<[^>]+>/g, " ");
+  }
+
+  return text.replace(/\s+/g, " ").trim();
 }
 
 function stripTags(html: string): string {

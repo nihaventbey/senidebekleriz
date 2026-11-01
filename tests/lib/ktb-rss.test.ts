@@ -64,4 +64,23 @@ describe("parseKtbRssXml", () => {
     expect(items[0].description).not.toContain("<a");
     expect(items[0].description).not.toContain("<font");
   });
+
+  it("strips entity-encoded HTML tags from standard XML description", () => {
+    const RSS_WITH_ENCODED_HTML = `<?xml version="1.0" encoding="UTF-8"?>
+    <rss version="2.0">
+      <channel>
+        <title>Google News RSS</title>
+        <item>
+          <title>Büyükşehir Gezileri</title>
+          <link>https://news.google.com/rss/articles/456</link>
+          <description>&lt;a href="https://news.google.com/rss/articles/456" target="_blank"&gt;Büyükşehir Gezileri Başlıyor&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color="#6f6f6f"&gt;Tekirdağ Büyükşehir Belediyesi&lt;/font&gt;</description>
+        </item>
+      </channel>
+    </rss>`;
+    const items = parseKtbRssXml(RSS_WITH_ENCODED_HTML, "Google News");
+    expect(items[0].description).toBe("Büyükşehir Gezileri Başlıyor Tekirdağ Büyükşehir Belediyesi");
+    expect(items[0].description).not.toContain("<a");
+    expect(items[0].description).not.toContain("&lt;");
+    expect(items[0].description).not.toContain("<font");
+  });
 });
