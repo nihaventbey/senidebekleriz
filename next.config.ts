@@ -13,39 +13,19 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
-        source: "/sehir/:slug",
-        destination: "/etkinlikler/:slug",
-        permanent: true,
-      },
-      {
-        source: "/sehirler",
-        destination: "/etkinlikler",
-        permanent: true,
-      },
-      {
         source: "/mekan/:slug",
         destination: "/etkinlikler",
-        permanent: true,
+        permanent: false,
       },
       {
         source: "/kategori/:slug",
-        destination: "/haberler?kategori=:slug",
-        permanent: true,
+        destination: "/haberler",
+        permanent: false,
       },
       {
         source: "/kategoriler",
         destination: "/haberler",
-        permanent: true,
-      },
-      {
-        source: "/blog",
-        destination: "/haberler",
-        permanent: true,
-      },
-      {
-        source: "/blog/:slug",
-        destination: "/haber/:slug",
-        permanent: true,
+        permanent: false,
       },
     ];
   },

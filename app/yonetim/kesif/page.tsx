@@ -2,12 +2,14 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "lucide-react";
 import {
   countPendingDiscoveries,
   getDiscoveredContentPaginated,
 } from "@/lib/data/admin-discovery";
 import { DiscoveryList } from "@/components/admin/discovery-list";
 import { DiscoverySyncButton } from "@/components/admin/discovery-sync-button";
+import { getCurrentQuarterInfo } from "@/lib/discovery/quarter";
 import type { DiscoveryContentType, DiscoveryStatus } from "@/lib/discovery/types";
 
 export const metadata: Metadata = {
@@ -22,6 +24,7 @@ type Props = {
 
 export default async function AdminDiscoveryPage({ searchParams }: Props) {
   const { durum, tip, sayfa, limit } = await searchParams;
+  const quarterInfo = getCurrentQuarterInfo();
 
   const status: DiscoveryStatus | undefined =
     durum === "pending_review" ||
@@ -74,6 +77,15 @@ export default async function AdminDiscoveryPage({ searchParams }: Props) {
               </Badge>
             )}
           </p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+              <Calendar className="h-3.5 w-3.5" />
+              Aktif Dönem: {quarterInfo.label}
+            </span>
+            <span className="text-xs text-muted-foreground hidden sm:inline">
+              · Yalnızca {quarterInfo.year} {quarterInfo.quarter}. çeyrek haberleri taranır
+            </span>
+          </div>
         </div>
         <DiscoverySyncButton />
       </div>

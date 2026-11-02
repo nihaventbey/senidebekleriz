@@ -139,6 +139,7 @@ export function EventsExplorer({
   const [selectedType, setSelectedType] = useState<string>(initialType);
   const [selectedCity, setSelectedCity] = useState<string>(initialCity);
   const [selectedDateFilter, setSelectedDateFilter] = useState<string>("all");
+  const [onlyFree, setOnlyFree] = useState<boolean>(false);
 
   // Filtering & Sorting
   const filteredEvents = useMemo(() => {
@@ -167,7 +168,12 @@ export function EventsExplorer({
       list = list.filter((e) => e.citySlug === selectedCity);
     }
 
-    // 4. Date Filter
+    // 4. Free Events Filter
+    if (onlyFree) {
+      list = list.filter((e) => e.isFree);
+    }
+
+    // 5. Date Filter
     if (selectedDateFilter === "this_week") {
       const weekAhead = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
       list = list.filter((e) => {
@@ -186,7 +192,7 @@ export function EventsExplorer({
 
     // Always ensure closest upcoming date is first
     return sortEventsByClosestUpcoming(list);
-  }, [initialEvents, searchQuery, selectedType, selectedCity, selectedDateFilter]);
+  }, [initialEvents, searchQuery, selectedType, selectedCity, selectedDateFilter, onlyFree]);
 
   const hasActiveFilters =
     searchQuery.trim() !== "" ||
@@ -326,6 +332,19 @@ export function EventsExplorer({
               </button>
             );
           })}
+
+          <button
+            type="button"
+            onClick={() => setOnlyFree(!onlyFree)}
+            className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ml-auto ${
+              onlyFree
+                ? "bg-emerald-600 text-white shadow-xs font-bold ring-2 ring-emerald-500/40"
+                : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20"
+            }`}
+          >
+            <span>🎁</span>
+            <span>Sadece Ücretsizler</span>
+          </button>
         </div>
 
         {/* Row 3: Popular City Chips */}

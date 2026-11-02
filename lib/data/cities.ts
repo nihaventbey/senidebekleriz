@@ -67,6 +67,23 @@ export async function getAllCities(): Promise<CityData[]> {
   }
 }
 
+export async function getPopularCities(limit = 6): Promise<CityData[]> {
+  const all = await getAllCities();
+  // Prefer cities that have cover images or prominent cultural hubs
+  const priority = ["istanbul", "ankara", "izmir", "mardin", "edirne", "bursa", "sanliurfa", "antalya", "trabzon"];
+  const sorted = [...all].sort((a, b) => {
+    const aIndex = priority.indexOf(a.slug);
+    const bIndex = priority.indexOf(b.slug);
+    if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+    if (aIndex !== -1) return -1;
+    if (bIndex !== -1) return 1;
+    if (a.coverImage && !b.coverImage) return -1;
+    if (!a.coverImage && b.coverImage) return 1;
+    return a.name.localeCompare(b.name, "tr");
+  });
+  return sorted.slice(0, limit);
+}
+
 export async function getCityBySlug(slug: string): Promise<CityData | undefined> {
   try {
     const { data, error } = await supabaseAdmin

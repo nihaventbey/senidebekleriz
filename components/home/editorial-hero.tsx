@@ -89,25 +89,29 @@ export function EditorialHero({ featuredNews, latestEvents }: Props) {
                 {/* Header & Content overlaid on bottom */}
                 <div className="relative z-20 p-6 sm:p-8 space-y-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge className="bg-primary text-primary-foreground font-semibold text-xs border-0 shadow-sm">
+                    <span className="flex items-center gap-1 rounded-full bg-rose-600 px-3 py-1 text-xs font-black uppercase tracking-wider text-white shadow-md">
+                      <Sparkles className="h-3 w-3" />
+                      Günün Manşeti
+                    </span>
+                    <Badge className="bg-primary/90 text-primary-foreground font-bold text-xs border-0 shadow-sm backdrop-blur-sm">
                       {CATEGORY_LABELS[leadNews.category] || "Kültür Haberi"}
                     </Badge>
                     {leadNews.cityName && (
-                      <span className="flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-xs font-medium text-white">
+                      <span className="flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-xs font-semibold text-white">
                         <MapPin className="h-3 w-3" />
                         {leadNews.cityName}
                       </span>
                     )}
-                    <span className="text-xs text-white/80">
+                    <span className="text-xs text-white/80 font-medium ml-auto">
                       {formatDate(leadNews.publishedAt)}
                     </span>
                   </div>
 
-                  <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-tight">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white leading-tight drop-shadow-sm">
                     {leadNews.title}
                   </h2>
 
-                  <p className="line-clamp-2 text-sm text-white/90 leading-relaxed max-w-2xl font-normal">
+                  <p className="line-clamp-2 text-sm sm:text-base text-white/90 leading-relaxed max-w-2xl font-normal">
                     {leadNews.summary}
                   </p>
                 </div>
@@ -115,14 +119,14 @@ export function EditorialHero({ featuredNews, latestEvents }: Props) {
             )}
 
             {/* Secondary Stories Stack (5 Columns) */}
-            <div className="flex flex-col gap-4 lg:col-span-5">
-              {secondaryNews.map((news) => (
+            <div className="flex flex-col gap-3.5 lg:col-span-5">
+              {secondaryNews.map((news, i) => (
                 <article
                   key={news.id}
-                  className="group relative flex items-center gap-4 p-3.5 rounded-2xl border border-border/60 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-primary/40"
+                  className="group relative flex items-center gap-4 p-3.5 rounded-3xl border border-border/60 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-primary/40"
                 >
-                  {/* Thumbnail Image */}
-                  <div className="relative h-24 w-28 shrink-0 overflow-hidden rounded-xl bg-muted">
+                  {/* Thumbnail Image with Number Ribbon */}
+                  <div className="relative h-24 w-28 shrink-0 overflow-hidden rounded-2xl bg-muted">
                     {news.coverImage ? (
                       <img
                         src={news.coverImage}
@@ -135,16 +139,19 @@ export function EditorialHero({ featuredNews, latestEvents }: Props) {
                         <Sparkles className="h-6 w-6 text-primary/40" />
                       </div>
                     )}
+                    <span className="absolute top-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-md bg-black/70 backdrop-blur-md text-[10px] font-black text-white">
+                      0{i + 2}
+                    </span>
                   </div>
 
                   {/* Text details */}
                   <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex items-center gap-2 text-[11px] font-semibold text-primary">
+                    <div className="flex items-center gap-2 text-[11px] font-bold text-primary">
                       <span>{CATEGORY_LABELS[news.category] || "Haber"}</span>
                       {news.cityName && (
                         <>
-                          <span className="text-muted-foreground/60">·</span>
-                          <span className="text-muted-foreground">{news.cityName}</span>
+                          <span className="text-muted-foreground/40">·</span>
+                          <span className="text-muted-foreground font-medium">{news.cityName}</span>
                         </>
                       )}
                     </div>

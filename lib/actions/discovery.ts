@@ -18,11 +18,16 @@ import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
 import { extractEventsFromBulletin } from "@/lib/ai/extract-multi-events";
 
 function revalidateDiscoveryPaths() {
-  revalidatePath("/yonetim/kesif");
-  revalidatePath("/yonetim/etkinlikler");
-  revalidatePath("/yonetim/yazilar");
-  revalidatePath("/yonetim/haberler");
-  revalidatePath("/");
+  try {
+    revalidatePath("/yonetim/kesif");
+    revalidatePath("/yonetim/etkinlikler");
+    revalidatePath("/yonetim/yazilar");
+    revalidatePath("/yonetim/haberler");
+    revalidatePath("/");
+  } catch (err) {
+    // Gracefully handle calls outside Next.js request context
+    console.warn("revalidateDiscoveryPaths skipped:", err);
+  }
 }
 
 async function markDiscoveryImported(

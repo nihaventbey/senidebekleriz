@@ -15,9 +15,8 @@ const navItems = [
   { href: "/haberler", label: "Haberler" },
   { href: "/etkinlikler", label: "Etkinlik Takvimi" },
   { href: "/etkinlikler?zaman=haftasonu", label: "Bu Hafta Sonu" },
-  { href: "/etkinlikler/sergi", label: "Sergiler" },
-  { href: "/etkinlikler/tiyatro", label: "Tiyatro & Sahne" },
-  { href: "/etkinlikler/festival", label: "Festivaller" },
+  { href: "/blog", label: "Gezi & Rehber" },
+  { href: "/sehirler", label: "81 Şehir" },
 ];
 
 type HeaderProps = {

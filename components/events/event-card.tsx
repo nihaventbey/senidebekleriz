@@ -48,6 +48,11 @@ export function EventSlideCard({ event }: { event: PublicEvent }) {
           >
             {TYPE_LABELS[event.eventType] || "Kültür"}
           </Badge>
+          {event.isFree && (
+            <Badge className="bg-emerald-600 text-white font-bold text-[11px] sm:text-xs border-0">
+              Ücretsiz
+            </Badge>
+          )}
           {expired && (
             <Badge
               variant="outline"

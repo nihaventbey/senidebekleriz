@@ -43,6 +43,16 @@ export function Footer({ brand }: FooterProps) {
                 </Link>
               </li>
               <li>
+                <Link href="/blog" className="transition-colors hover:text-foreground">
+                  Gezi Rehberleri &amp; Dosyalar
+                </Link>
+              </li>
+              <li>
+                <Link href="/sehirler" className="transition-colors hover:text-foreground">
+                  81 İl Portalları
+                </Link>
+              </li>
+              <li>
                 <Link href="/etkinlikler?zaman=haftasonu" className="transition-colors hover:text-foreground">
                   Bu Hafta Sonu Ne Var?
                 </Link>
@@ -55,11 +65,6 @@ export function Footer({ brand }: FooterProps) {
               <li>
                 <Link href="/etkinlikler?tur=tiyatro" className="transition-colors hover:text-foreground">
                   Tiyatro &amp; Sahne Sanatları
-                </Link>
-              </li>
-              <li>
-                <Link href="/etkinlikler?tur=festival" className="transition-colors hover:text-foreground">
-                  Festivaller
                 </Link>
               </li>
             </ul>

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import type { PublicEvent } from "@/lib/data/events";
 
 export type HeatmapCity = {
   name: string;
@@ -260,19 +261,57 @@ const DEFAULT_HEATMAP_CITIES: HeatmapCity[] = [
   },
 ];
 
-export function TurkeyCulturalHeatmap() {
-  const [activeCity, setActiveCity] = useState<HeatmapCity>(DEFAULT_HEATMAP_CITIES[0]);
+export function TurkeyCulturalHeatmap({ events }: { events?: PublicEvent[] } = {}) {
+  const dynamicCities = useMemo(() => {
+    if (!events || events.length === 0) return DEFAULT_HEATMAP_CITIES;
+
+    const countMap: Record<string, number> = {};
+    const latestEventMap: Record<string, PublicEvent> = {};
+
+    for (const e of events) {
+      if (!e.citySlug) continue;
+      countMap[e.citySlug] = (countMap[e.citySlug] || 0) + 1;
+      if (!latestEventMap[e.citySlug]) {
+        latestEventMap[e.citySlug] = e;
+      }
+    }
+
+    return DEFAULT_HEATMAP_CITIES.map((city) => {
+      const realCount = countMap[city.slug];
+      const realLatest = latestEventMap[city.slug];
+
+      if (realCount && realCount > 0 && realLatest) {
+        return {
+          ...city,
+          eventCount: realCount,
+          featuredEvent: {
+            title: realLatest.title,
+            type: realLatest.eventType,
+            date: realLatest.startsAt
+              ? new Date(realLatest.startsAt).toLocaleDateString("tr-TR", {
+                  day: "numeric",
+                  month: "long",
+                })
+              : "Güncel",
+          },
+        };
+      }
+      return city;
+    });
+  }, [events]);
+
+  const [activeCity, setActiveCity] = useState<HeatmapCity>(() => dynamicCities[0] || DEFAULT_HEATMAP_CITIES[0]);
   const [activeFilter, setActiveFilter] = useState<string>("all");
 
   const filteredCities = useMemo(() => {
-    if (activeFilter === "all") return DEFAULT_HEATMAP_CITIES;
-    return DEFAULT_HEATMAP_CITIES.filter((city) => {
+    if (activeFilter === "all") return dynamicCities;
+    return dynamicCities.filter((city) => {
       if (!city.featuredEvent) return false;
       return city.featuredEvent.type === activeFilter;
     });
-  }, [activeFilter]);
+  }, [dynamicCities, activeFilter]);
 
-  const maxEvents = Math.max(...DEFAULT_HEATMAP_CITIES.map((c) => c.eventCount));
+  const maxEvents = Math.max(...dynamicCities.map((c) => c.eventCount), 1);
 
   function getIntensityBadge(count: number) {
     if (count >= 15) {

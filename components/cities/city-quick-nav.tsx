@@ -10,33 +10,41 @@ import {
   Map,
   Compass,
   FileText,
+  Calendar,
+  Newspaper,
 } from "lucide-react";
 
 type CityQuickNavProps = {
-  hasPlaces: boolean;
-  hasGuide: boolean;
-  hasCulture: boolean;
+  hasPlaces?: boolean;
+  hasGuide?: boolean;
+  hasCulture?: boolean;
+  hasEvents?: boolean;
+  hasNews?: boolean;
 };
 
 export function CityQuickNav({
   hasPlaces,
   hasGuide,
   hasCulture,
+  hasEvents,
+  hasNews,
 }: CityQuickNavProps) {
   const items = [
     { id: "genel-bakis", label: "Genel Bakış", icon: Compass },
-    ...(hasPlaces ? [{ id: "mekanlar", label: "Gezilecek Yerler", icon: MapPin }] : []),
+    ...(hasEvents ? [{ id: "etkinlikler", label: "Etkinlikler", icon: Calendar }] : []),
+    ...(hasNews ? [{ id: "haberler", label: "Haberler", icon: Newspaper }] : []),
+    ...(hasGuide ? [{ id: "rehber", label: "Gezi Rehberi", icon: FileText }] : []),
+    ...(hasPlaces ? [{ id: "mekanlar", label: "Öne Çıkan Duraklar", icon: MapPin }] : []),
     ...(hasPlaces ? [{ id: "harita", label: "Harita", icon: Map }] : []),
     ...(hasCulture
       ? [
-          { id: "edebiyat", label: "Edebiyat & Kitap", icon: BookOpen },
-          { id: "sinema", label: "Sinema & Film", icon: Film },
-          { id: "muzik", label: "Müzik & Ezgiler", icon: Music },
-          { id: "tarih", label: "Tarihi Olaylar", icon: History },
-          { id: "sanatcilar", label: "Sanat İnsanları", icon: Users },
+          { id: "edebiyat", label: "Edebiyat", icon: BookOpen },
+          { id: "sinema", label: "Sinema", icon: Film },
+          { id: "muzik", label: "Müzik", icon: Music },
+          { id: "tarih", label: "Tarih", icon: History },
+          { id: "sanatcilar", label: "Sanatçılar", icon: Users },
         ]
       : []),
-    ...(hasGuide ? [{ id: "rehber", label: "Gezi Rehberi", icon: FileText }] : []),
   ];
 
   const handleScroll = (id: string) => {

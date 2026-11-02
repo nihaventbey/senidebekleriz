@@ -1,8 +1,17 @@
 import { parseKtbRssXml } from "@/lib/events/sources/ktb-rss";
 import type { RawFeedItem } from "@/lib/events/types";
+import { getCurrentQuarterInfo } from "@/lib/discovery/quarter";
 
-export function buildGoogleNewsRssUrl(query: string): string {
-  const q = encodeURIComponent(query);
+export function buildGoogleNewsRssUrl(query: string, enforceQuarter = true): string {
+  let finalQuery = query.trim();
+
+  // If query doesn't specify a time operator, append active quarter boundary (e.g. after:2026-10-01)
+  if (enforceQuarter && !/(\bafter:|\bwhen:|\bbefore:)/i.test(finalQuery)) {
+    const qInfo = getCurrentQuarterInfo();
+    finalQuery = `${finalQuery} after:${qInfo.startDateStr}`;
+  }
+
+  const q = encodeURIComponent(finalQuery);
   return `https://news.google.com/rss/search?q=${q}&hl=tr&gl=TR&ceid=TR:tr`;
 }
 

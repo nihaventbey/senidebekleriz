@@ -20,16 +20,17 @@ export type ExtractedSubEvent = {
   starts_at: string | null;
   ends_at: string | null;
   ticket_url?: string | null;
+  is_free?: boolean;
   meta_title?: string | null;
   meta_description?: string | null;
 };
 
 const MULTI_EVENT_PROMPT = `Sen bir kültür-sanat bülteni ve etkinlik ajandası uzmanısın.
-Sana verilen metin bir aylık bülten, şehir etkinlik rehberi, festival takvimi veya haftalık kültür programıdır.
-Görevin bu metin içindeki TÜM TEKİL VE BAĞIMSIZ etkinlikleri (tiyatrolar, konserler, sergiler, festivaller, atölyeler) ayrıştırıp bir dizi (array) olarak döndürmektir.
+Sana verilen metin bir aylık bülten, şehir etkinlik rehberi, festival takvimi, haftalık kültür programı veya bir etkinlik haberidir.
+Görevin bu metin içindeki TÜM TEKİL VE BAĞIMSIZ etkinlikleri (tiyatrolar, konserler, sergiler, festivaller, atölyeler, söyleşiler) ayrıştırıp bir dizi (array) olarak döndürmektir.
 
 Kurallar:
-1. Metindeki her bir farklı etkinliği ayrı bir obje olarak çıkar (en fazla 15 adet en önemli etkinliği al).
+1. Metinde birden fazla etkinlik varsa her bir farklı etkinliği ayrı bir obje olarak çıkar (en fazla 15 adet). Metinde tek bir etkinlik veya festival haberi bile olsa onu 1 elemanlı dizi olarak çıkar; ASLA boş dizi döndürme!
 2. Şehir (city_slug): Metindeki şehri tespit et. Şu slug'lardan biri olmalıdır: ${CITY_SLUGS} (veya null).
 3. event_type: "tiyatro" | "konser" | "sergi" | "festival" | "duyuru" | "diger"
 4. starts_at & ends_at: ISO 8601 (YYYY-MM-DDTHH:mm:ss+03:00) formatında olmalıdır.
@@ -39,6 +40,7 @@ Kurallar:
 6. summary: Etkinlik için 1-2 cümlelik (max 160 karakter) temiz Türkçe özet.
 7. meta_title: SEO başlığı (max 60 karakter).
 8. meta_description: SEO açıklaması (max 155 karakter).
+9. is_free: boolean. Etkinlik ücretsiz, halka açık, katılım serbest ise veya bilet gerekmiyorsa true; ücretli bilet satışı varsa false yap.
 
 Yanıt yalnızca geçerli JSON olmalıdır:
 {
@@ -53,6 +55,7 @@ Yanıt yalnızca geçerli JSON olmalıdır:
       "starts_at": "2026-10-15T20:00:00+03:00",
       "ends_at": null,
       "ticket_url": null,
+      "is_free": true,
       "meta_title": "...",
       "meta_description": "..."
     }
@@ -83,7 +86,12 @@ export async function extractEventsFromBulletin(input: {
   }
 
   if (pageText.length < 50) {
-    throw new Error("Bülten sayfasından yeterli metin okunamadı");
+    const combinedFallback = [input.fallbackTitle, input.fallbackText].filter(Boolean).join("\n\n");
+    if (combinedFallback.length >= 20) {
+      pageText = combinedFallback;
+    } else {
+      throw new Error("Bülten sayfasından yeterli metin okunamadı");
+    }
   }
 
   const userPrompt = [
@@ -94,18 +102,44 @@ export async function extractEventsFromBulletin(input: {
     .filter(Boolean)
     .join("\n\n");
 
-  const response = await callGeminiJson<{ events: ExtractedSubEvent[] }>({
+  const response = await callGeminiJson<any>({
     systemPrompt: MULTI_EVENT_PROMPT,
     userPrompt,
     temperature: 0.3,
   });
 
-  const parsedEvents = response.events || [];
+  let parsedEvents: ExtractedSubEvent[] = [];
+  if (Array.isArray(response)) {
+    parsedEvents = response;
+  } else if (response && typeof response === "object") {
+    parsedEvents =
+      response.events ||
+      response.etkinlikler ||
+      response.items ||
+      response.data ||
+      response.sub_events ||
+      [];
+  }
+
+  // Graceful fallback: If AI returned an empty array, construct a single event from page title & text
   if (parsedEvents.length === 0) {
-    throw new Error("Metin içinde tekil etkinlikler ayrıştırılamadı");
+    const fallbackTitle = input.fallbackTitle || "Kültür Etkinliği";
+    parsedEvents.push({
+      title: fallbackTitle,
+      summary: (input.fallbackText || pageText).slice(0, 160),
+      description: pageText.slice(0, 1000),
+      event_type: "duyuru",
+      city_slug: null,
+      venue_name: null,
+      starts_at: null,
+      ends_at: null,
+      meta_title: `${fallbackTitle} | Etkinlik Takvimi`,
+      meta_description: (input.fallbackText || pageText).slice(0, 155),
+    });
   }
 
   const savedEvents: Array<{ id: string; title: string; slug: string; date: string | null }> = [];
+  let lastError: Error | null = null;
 
   for (let i = 0; i < parsedEvents.length; i++) {
     const item = parsedEvents[i];
@@ -125,9 +159,12 @@ export async function extractEventsFromBulletin(input: {
     }
 
     // Assign image if candidate available
-    const candidateImage = imageUrls[i % imageUrls.length] || null;
+    const candidateImage = imageUrls[i % (imageUrls.length || 1)] || null;
     const storedCover = await ensureStoredCoverImage(candidateImage, "events", slug);
     const cleanedTicket = cleanTicketUrl(item.ticket_url, input.url);
+
+    // Sub-events from a bulletin must have a distinct source_url to prevent unique constraint violation on idx_cultural_events_source_url
+    const subSourceUrl = `${input.url}#sub-${slug}`;
 
     const { data, error } = await supabaseAdmin
       .from("cultural_events")
@@ -139,7 +176,7 @@ export async function extractEventsFromBulletin(input: {
         event_type: item.event_type || "duyuru",
         status: "pending_review",
         source_name: input.sourceName || "Kültür Bülteni",
-        source_url: input.url,
+        source_url: subSourceUrl,
         ticket_url: cleanedTicket,
         city_slug: item.city_slug || null,
         venue_name: item.venue_name || null,
@@ -151,6 +188,8 @@ export async function extractEventsFromBulletin(input: {
         raw_payload: {
           extracted_from_bulletin: true,
           bulletin_url: input.url,
+          original_sub_index: i + 1,
+          is_free: Boolean(item.is_free),
         },
         updated_at: new Date().toISOString(),
       })
@@ -164,7 +203,14 @@ export async function extractEventsFromBulletin(input: {
         slug: data.slug,
         date: data.starts_at,
       });
+    } else if (error) {
+      console.error(`Sub-event insert failed [${item.title}]:`, error);
+      lastError = new Error(error.message);
     }
+  }
+
+  if (savedEvents.length === 0 && lastError) {
+    throw new Error(`Etkinlikler kaydedilemedi: ${lastError.message}`);
   }
 
   return {

@@ -21,10 +21,18 @@ export type PublicEvent = {
   metaTitle: string | null;
   metaDescription: string | null;
   isFeatured: boolean;
+  isFree: boolean;
   publishedAt: string | null;
 };
 
 function mapEvent(row: CulturalEventRow): PublicEvent {
+  const isFree =
+    row.raw_payload?.is_free === true ||
+    row.raw_payload?.price_type === "free" ||
+    /\b(ücretsiz|halka açık|katılım serbest|bilet gerekmez|ücretsizdir)\b/i.test(
+      `${row.title} ${row.summary || ""} ${row.description || ""}`
+    );
+
   return {
     id: row.id,
     title: row.title,
@@ -44,6 +52,7 @@ function mapEvent(row: CulturalEventRow): PublicEvent {
     metaTitle: row.meta_title,
     metaDescription: row.meta_description,
     isFeatured: row.is_featured,
+    isFree,
     publishedAt: row.published_at,
   };
 }
@@ -132,6 +141,7 @@ export async function getFeaturedEvents(limit = 8): Promise<PublicEvent[]> {
 export async function getPublishedEvents(options?: {
   citySlug?: string;
   eventType?: EventType;
+  isFree?: boolean;
   includePast?: boolean;
   limit?: number;
 }): Promise<PublicEvent[]> {
@@ -160,9 +170,13 @@ export async function getPublishedEvents(options?: {
   const mapped = ((data || []) as CulturalEventRow[]).map(mapEvent);
   
   // Filter out past events unless explicitly requested
-  const filtered = options?.includePast
+  let filtered = options?.includePast
     ? mapped
     : mapped.filter((e) => !isEventExpired(e));
+
+  if (options?.isFree) {
+    filtered = filtered.filter((e) => e.isFree);
+  }
 
   return sortEventsByClosestUpcoming(filtered);
 }

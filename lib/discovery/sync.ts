@@ -1,4 +1,10 @@
 import {
+  getCurrentQuarterInfo,
+  isDateInActiveQuarter,
+  hasPastYearInTitle,
+  type QuarterInfo,
+} from "@/lib/discovery/quarter";
+import {
   classifyDiscoveryBatch,
   classifyDiscoveryItem,
   type BatchClassifyInput,
@@ -113,7 +119,48 @@ async function isDuplicateUrl(sourceUrl: string, googleNewsUrl?: string) {
   return false;
 }
 
+async function cleanupOutdatedPendingDiscoveries(quarterInfo: QuarterInfo) {
+  try {
+    // 1. Mark pending items published before the active quarter start as rejected
+    await supabaseAdmin
+      .from("discovered_content")
+      .update({
+        status: "rejected",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("status", "pending_review")
+      .lt("published_at_source", quarterInfo.startDateStr);
+
+    // 2. Also reject pending items that mention past years in the title
+    const { data: pendingItems } = await supabaseAdmin
+      .from("discovered_content")
+      .select("id, title")
+      .eq("status", "pending_review");
+
+    if (pendingItems) {
+      const pastYearIds = pendingItems
+        .filter((it) => hasPastYearInTitle(it.title, quarterInfo.year))
+        .map((it) => it.id);
+
+      if (pastYearIds.length > 0) {
+        await supabaseAdmin
+          .from("discovered_content")
+          .update({
+            status: "rejected",
+            updated_at: new Date().toISOString(),
+          })
+          .in("id", pastYearIds);
+      }
+    }
+  } catch (err) {
+    console.warn("cleanupOutdatedPendingDiscoveries skipped:", err);
+  }
+}
+
 export async function discoverContent(): Promise<DiscoverContentResult> {
+  const quarterInfo = getCurrentQuarterInfo();
+  await cleanupOutdatedPendingDiscoveries(quarterInfo);
+
   const sources = await getActiveDiscoverySources();
   const result: DiscoverContentResult = {
     sourcesProcessed: 0,
@@ -166,6 +213,16 @@ export async function discoverContent(): Promise<DiscoverContentResult> {
 
         const rawUrl = item.link.trim();
         if (!rawUrl) {
+          result.itemsSkipped += 1;
+          continue;
+        }
+
+        // Active Quarter check: Skip past years or dates before current quarter
+        if (hasPastYearInTitle(item.title, quarterInfo.year)) {
+          result.itemsSkipped += 1;
+          continue;
+        }
+        if (!isDateInActiveQuarter(item.pubDate)) {
           result.itemsSkipped += 1;
           continue;
         }

@@ -184,6 +184,10 @@ export function DiscoveryList({
         }
         if (action === "multi") {
           const count = result?.extractedCount || 0;
+          if (count === 0) {
+            toast.error("Etkinlik ayrıştırılamadı", "Metin içinden geçerli bir alt etkinlik çıkarılamadı.");
+            return;
+          }
           toast.success(`Bültenden ${count} adet bağımsız etkinlik ayrıştırıldı! 🎭`);
           router.push("/yonetim/etkinlikler?durum=pending_review");
           return;

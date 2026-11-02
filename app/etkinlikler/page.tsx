@@ -50,7 +50,7 @@ export default async function EventsPage({ searchParams }: Props) {
       <EventsJsonLd events={events} />
 
       {/* 1. Interactive Turkey Cultural Heatmap */}
-      <TurkeyCulturalHeatmap />
+      <TurkeyCulturalHeatmap events={events} />
 
       {/* 2. Interactive Explorer UI */}
       <div className="container mx-auto px-4">

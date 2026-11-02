@@ -38,6 +38,7 @@ import {
   Zap,
   Camera,
   Bot,
+  Layers,
 } from "lucide-react";
 import { AiImageModal } from "@/components/admin/ai-image-modal";
 import { UniversalUrlImportModal } from "@/components/admin/universal-url-import-modal";
@@ -51,6 +52,7 @@ import {
   importDiscoveryAsNews,
   importDiscoveryAsEvent,
   importDiscoveryAsArticle,
+  disaggregateDiscoveryBulletin,
   rejectDiscovery,
 } from "@/lib/actions/discovery";
 import { triggerAutopilotAction } from "@/lib/actions/autopilot";
@@ -184,8 +186,8 @@ export function DashboardCockpit({
 
   function runDiscoveryAction(
     id: string,
-    action: "news" | "event" | "article" | "reject",
-    fn: () => Promise<{ slug: string } | void>
+    action: "news" | "event" | "article" | "reject" | "multi",
+    fn: () => Promise<any>
   ) {
     setPendingId(id);
     setPendingAction(action);
@@ -195,6 +197,12 @@ export function DashboardCockpit({
         if (action === "reject") {
           toast.success("Keşif kaydı reddedildi");
           router.refresh();
+          return;
+        }
+        if (action === "multi") {
+          const count = result?.extractedCount || 0;
+          toast.success(`Bültenden ${count} adet bağımsız etkinlik ayrıştırıldı! 🎭`);
+          router.push("/yonetim/etkinlikler?durum=pending_review");
           return;
         }
         if (result && typeof result === "object" && "slug" in result) {
@@ -294,94 +302,114 @@ export function DashboardCockpit({
 
           {/* Action Suite - Temiz & Düzenli Hiyerarşi */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
-            <Button
-              asChild
-              size="sm"
-              className="h-9 px-3.5 text-xs font-semibold gap-1.5 bg-primary text-primary-foreground shadow-xs"
-            >
-              <Link href="/yonetim/haberler/yeni">
-                <Plus className="h-3.5 w-3.5" />
-                <span>Yeni Haber</span>
-              </Link>
-            </Button>
+            {/* 1. Hızlı İçerik Üret Grubu */}
+            <div className="flex items-center gap-1.5 rounded-xl bg-muted/40 p-1 border border-border/50">
+              <Button
+                asChild
+                size="sm"
+                className="h-8 px-3 text-xs font-semibold gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+              >
+                <Link href="/yonetim/haberler/yeni">
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Haber</span>
+                </Link>
+              </Button>
 
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="h-9 px-3.5 text-xs font-semibold gap-1.5 shadow-xs"
-            >
-              <Link href="/yonetim/etkinlikler/yeni">
-                <Plus className="h-3.5 w-3.5" />
-                <span>Yeni Etkinlik</span>
-              </Link>
-            </Button>
+              <Button
+                asChild
+                size="sm"
+                className="h-8 px-3 text-xs font-semibold gap-1.5 bg-purple-600 hover:bg-purple-700 text-white shadow-xs"
+              >
+                <Link href="/yonetim/etkinlikler/yeni">
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Etkinlik</span>
+                </Link>
+              </Button>
 
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => setIsUniversalImportModalOpen(true)}
-              className="h-9 px-3 text-xs font-medium gap-1.5 shadow-xs"
-            >
-              <Zap className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-              <span>URL&apos;den Çek</span>
-            </Button>
+              <Button
+                asChild
+                size="sm"
+                className="h-8 px-3 text-xs font-semibold gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+              >
+                <Link href="/yonetim/yazilar/yeni">
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Rehber</span>
+                </Link>
+              </Button>
+            </div>
 
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => setIsAiImageModalOpen(true)}
-              className="h-9 px-3 text-xs font-medium gap-1.5 shadow-xs"
-            >
-              <Wand2 className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-              <span>AI Görsel</span>
-            </Button>
+            {/* 2. Yapay Zeka & Otomasyon Araçları */}
+            <div className="flex items-center gap-1.5 rounded-xl bg-muted/40 p-1 border border-border/50">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsUniversalImportModalOpen(true)}
+                className="h-8 px-2.5 text-xs font-medium gap-1 text-foreground hover:bg-background shadow-xs"
+                title="Herhangi bir URL linkinden yapay zeka ile otomatik taslak çıkar"
+              >
+                <Zap className="h-3.5 w-3.5 text-blue-500" />
+                <span>URL&apos;den Çek</span>
+              </Button>
 
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => setIsSocialModalOpen(true)}
-              className="h-9 px-3 text-xs font-medium gap-1.5 shadow-xs"
-            >
-              <Camera className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-              <span>Sosyal Stüdyo</span>
-            </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsAiImageModalOpen(true)}
+                className="h-8 px-2.5 text-xs font-medium gap-1 text-foreground hover:bg-background shadow-xs"
+                title="Yapay zeka ile kültür & mekan görseli üret"
+              >
+                <Wand2 className="h-3.5 w-3.5 text-amber-500" />
+                <span>AI Görsel</span>
+              </Button>
 
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={isAutopilotRunning}
-              onClick={handleRunAutopilot}
-              className="h-9 px-3 text-xs font-semibold gap-1.5 shadow-xs border-primary/30 text-primary hover:bg-primary/10"
-              title="Son 24 saatte içerik girilmemişse otomatik yayınlar"
-            >
-              {isAutopilotRunning ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Bot className="h-3.5 w-3.5 text-primary" />
-              )}
-              <span>AI Oto-Pilot</span>
-            </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsSocialModalOpen(true)}
+                className="h-8 px-2.5 text-xs font-medium gap-1 text-foreground hover:bg-background shadow-xs"
+                title="Instagram ve sosyal medya paylaşım görselleri hazırla"
+              >
+                <Camera className="h-3.5 w-3.5 text-purple-500" />
+                <span>Sosyal Stüdyo</span>
+              </Button>
 
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={isAutopilotRunning}
+                onClick={handleRunAutopilot}
+                className="h-8 px-2.5 text-xs font-semibold gap-1 text-emerald-600 dark:text-emerald-400 hover:bg-background shadow-xs"
+                title="Son 24 saatte içerik girilmemişse otomatik yayınlar"
+              >
+                {isAutopilotRunning ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Bot className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                )}
+                <span>Oto-Pilot</span>
+              </Button>
+            </div>
+
+            {/* 3. Canlı Keşif Radarı */}
             <DiscoverySyncButton />
           </div>
         </div>
 
-        {/* Quick AI Launcher - Header içine entegre şık arama çubuğu */}
+        {/* Quick AI Launcher - Header içine entegre şık akıllı link dönüştürücü */}
         <div className="mt-5 pt-4 border-t border-border/60">
           <form onSubmit={handleQuickAiSubmit} className="flex flex-col sm:flex-row items-center gap-2.5">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground/80 shrink-0">
               <Sparkles className="h-3.5 w-3.5 text-primary" />
-              <span>Hızlı Haber Başlat:</span>
+              <span>Akıllı Link Dönüştürücü:</span>
             </div>
             <div className="relative flex-1 w-full">
               <Input
                 type="url"
-                placeholder="Kültür Bakanlığı, AA, TRT veya haber linki yapıştırın (https://...)"
+                placeholder="Kültür Bakanlığı, haber sitesi, belediye bülteni veya etkinlik linki yapıştırın (https://...)"
                 value={quickAiUrl}
                 onChange={(e) => setQuickAiUrl(e.target.value)}
                 className="h-9 text-xs pl-3 pr-8 bg-background/80"
@@ -408,132 +436,157 @@ export function DashboardCockpit({
               ) : (
                 <Send className="h-3 w-3" />
               )}
-              <span>{isQuickImportPending ? "Çekiliyor..." : "Dönüştür"}</span>
+              <span>{isQuickImportPending ? "Çözümleniyor..." : "İçeriğe Dönüştür"}</span>
             </Button>
           </form>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            💡 Yapıştırılan link otomatik taranır ve içerik tipine göre (Haber, Etkinlik, Gezi Rehberi) yayına hazır taslak oluşturulur.
+          </p>
         </div>
       </section>
 
-      {/* 2. Core Cockpit KPI Cards (Tutarlı & Modern 6'lı Izgara) */}
-      <section className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">
-        {/* Card 1: Kültür Haberleri */}
-        <Link
-          href="/yonetim/haberler"
-          className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm hover:border-primary/50"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">Kültür Haberleri</span>
-            <Newspaper className="h-4 w-4 text-blue-500 opacity-80 group-hover:scale-105 transition-transform" />
+      {/* 2. Core Cockpit KPI Sections (Mantıksal İki Ana Grup) */}
+      <div className="space-y-4">
+        <div>
+          <div className="flex items-center justify-between mb-2.5 px-1">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <Newspaper className="h-3.5 w-3.5 text-primary" />
+              <span>Günlük Yayıncılık &amp; Ajanda Akışı</span>
+            </h2>
+            <span className="text-[11px] text-muted-foreground">Aktif İçerik Havuzu</span>
           </div>
-          <div className="mt-2 text-2xl font-extrabold text-foreground">
-            {stats.newsTotal.toLocaleString("tr-TR")}
-          </div>
-          <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
-            <span className="text-emerald-600 font-semibold">{stats.newsPublished} yayında</span>
-            {stats.newsDraft > 0 && (
-              <>
-                <span>·</span>
-                <span className="text-amber-600 font-medium">{stats.newsDraft} taslak</span>
-              </>
-            )}
-          </div>
-        </Link>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+            {/* Card 1: Kültür Haberleri */}
+            <Link
+              href="/yonetim/haberler"
+              className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm hover:border-primary/50"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground">Kültür Haberleri</span>
+                <Newspaper className="h-4 w-4 text-blue-500 opacity-80 group-hover:scale-105 transition-transform" />
+              </div>
+              <div className="mt-2 text-2xl font-extrabold text-foreground">
+                {stats.newsTotal.toLocaleString("tr-TR")}
+              </div>
+              <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                <span className="text-emerald-600 font-semibold">{stats.newsPublished} yayında</span>
+                {stats.newsDraft > 0 && (
+                  <>
+                    <span>·</span>
+                    <span className="text-amber-600 font-medium">{stats.newsDraft} taslak</span>
+                  </>
+                )}
+              </div>
+            </Link>
 
-        {/* Card 2: Etkinlikler */}
-        <Link
-          href="/yonetim/etkinlikler"
-          className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm hover:border-primary/50"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">Etkinlikler</span>
-            <CalendarDays className="h-4 w-4 text-purple-500 opacity-80 group-hover:scale-105 transition-transform" />
-          </div>
-          <div className="mt-2 text-2xl font-extrabold text-foreground">
-            {stats.eventsTotal.toLocaleString("tr-TR")}
-          </div>
-          <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
-            <span className="text-emerald-600 font-semibold">{stats.eventsPublished} yayında</span>
-            {stats.eventsPending > 0 && (
-              <>
-                <span>·</span>
-                <span className="text-amber-600 font-semibold">{stats.eventsPending} onayda</span>
-              </>
-            )}
-          </div>
-        </Link>
+            {/* Card 2: Etkinlikler */}
+            <Link
+              href="/yonetim/etkinlikler"
+              className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm hover:border-primary/50"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground">Etkinlik Ajandası</span>
+                <CalendarDays className="h-4 w-4 text-purple-500 opacity-80 group-hover:scale-105 transition-transform" />
+              </div>
+              <div className="mt-2 text-2xl font-extrabold text-foreground">
+                {stats.eventsTotal.toLocaleString("tr-TR")}
+              </div>
+              <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                <span className="text-emerald-600 font-semibold">{stats.eventsPublished} yayında</span>
+                {stats.eventsPending > 0 && (
+                  <>
+                    <span>·</span>
+                    <span className="text-amber-600 font-semibold">{stats.eventsPending} onayda</span>
+                  </>
+                )}
+              </div>
+            </Link>
 
-        {/* Card 3: Keşif Kuyruğu */}
-        <Link
-          href="/yonetim/kesif"
-          className={`group rounded-2xl border p-4 transition-all hover:shadow-sm ${
-            stats.pendingDiscoveries > 0
-              ? "border-amber-500/40 bg-amber-500/5 hover:border-amber-500/60"
-              : "border-border/70 bg-card hover:border-primary/50"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">Keşif Kuyruğu</span>
-            <Compass className="h-4 w-4 text-amber-500 opacity-80 group-hover:scale-105 transition-transform" />
-          </div>
-          <div className="mt-2 text-2xl font-extrabold text-foreground">
-            {stats.pendingDiscoveries.toLocaleString("tr-TR")}
-          </div>
-          <p className="mt-1 text-[11px] text-muted-foreground truncate">
-            {stats.pendingDiscoveries > 0 ? `${stats.pendingDiscoveries} onay bekliyor` : "Kuyruk temiz"}
-          </p>
-        </Link>
+            {/* Card 3: Keşif Kuyruğu */}
+            <Link
+              href="/yonetim/kesif"
+              className={`group rounded-2xl border p-4 transition-all hover:shadow-sm ${
+                stats.pendingDiscoveries > 0
+                  ? "border-amber-500/40 bg-amber-500/5 hover:border-amber-500/60"
+                  : "border-border/70 bg-card hover:border-primary/50"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground">Keşif Kuyruğu (AI)</span>
+                <Compass className="h-4 w-4 text-amber-500 opacity-80 group-hover:scale-105 transition-transform" />
+              </div>
+              <div className="mt-2 text-2xl font-extrabold text-foreground">
+                {stats.pendingDiscoveries.toLocaleString("tr-TR")}
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground truncate">
+                {stats.pendingDiscoveries > 0 ? `${stats.pendingDiscoveries} onay bekliyor` : "Kuyruk temiz"}
+              </p>
+            </Link>
 
-        {/* Card 4: Gezi Rehberleri / Blog */}
-        <Link
-          href="/yonetim/yazilar"
-          className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm hover:border-primary/50"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">Rehber &amp; Yazı</span>
-            <BookOpen className="h-4 w-4 text-indigo-500 opacity-80 group-hover:scale-105 transition-transform" />
+            {/* Card 4: Gezi Rehberleri / Blog */}
+            <Link
+              href="/yonetim/yazilar"
+              className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm hover:border-primary/50"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground">Rehber &amp; Yazılar</span>
+                <BookOpen className="h-4 w-4 text-indigo-500 opacity-80 group-hover:scale-105 transition-transform" />
+              </div>
+              <div className="mt-2 text-2xl font-extrabold text-foreground">
+                {stats.articles.toLocaleString("tr-TR")}
+              </div>
+              <div className="mt-1 text-[11px] text-muted-foreground truncate">
+                {stats.publishedArticles} yayında ({readiness.citiesWithGuide}/81 İl)
+              </div>
+            </Link>
           </div>
-          <div className="mt-2 text-2xl font-extrabold text-foreground">
-            {stats.articles.toLocaleString("tr-TR")}
-          </div>
-          <div className="mt-1 text-[11px] text-muted-foreground truncate">
-            {stats.publishedArticles} yayında ({readiness.citiesWithGuide}/81 İl)
-          </div>
-        </Link>
+        </div>
 
-        {/* Card 5: Mekanlar */}
-        <Link
-          href="/yonetim/mekanlar"
-          className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm hover:border-primary/50"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">Kültür Mekanları</span>
-            <MapPinned className="h-4 w-4 text-teal-500 opacity-80 group-hover:scale-105 transition-transform" />
+        <div>
+          <div className="flex items-center justify-between mb-2.5 px-1">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <MapPinned className="h-3.5 w-3.5 text-teal-500" />
+              <span>Şehir &amp; Mekan Kataloğu</span>
+            </h2>
+            <span className="text-[11px] text-muted-foreground">Veritabanı &amp; İller</span>
           </div>
-          <div className="mt-2 text-2xl font-extrabold text-foreground">
-            {stats.places.toLocaleString("tr-TR")}
-          </div>
-          <div className="mt-1 text-[11px] text-muted-foreground truncate">
-            {stats.indexablePlaces} indekslenebilir
-          </div>
-        </Link>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2">
+            {/* Card 5: Mekanlar */}
+            <Link
+              href="/yonetim/mekanlar"
+              className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm hover:border-primary/50"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground">Kültür &amp; Sanat Mekanları</span>
+                <MapPinned className="h-4 w-4 text-teal-500 opacity-80 group-hover:scale-105 transition-transform" />
+              </div>
+              <div className="mt-2 text-2xl font-extrabold text-foreground">
+                {stats.places.toLocaleString("tr-TR")}
+              </div>
+              <div className="mt-1 text-[11px] text-muted-foreground truncate">
+                {stats.indexablePlaces} indekslenebilir kültür mekanı (müze, antik kent, tiyatro vb.)
+              </div>
+            </Link>
 
-        {/* Card 6: 81 Şehir */}
-        <Link
-          href="/yonetim/sehirler"
-          className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm hover:border-primary/50"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">81 İl Kapsamı</span>
-            <Building2 className="h-4 w-4 text-emerald-500 opacity-80 group-hover:scale-105 transition-transform" />
+            {/* Card 6: 81 Şehir */}
+            <Link
+              href="/yonetim/sehirler"
+              className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm hover:border-primary/50"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground">81 İl Portalları</span>
+                <Building2 className="h-4 w-4 text-emerald-500 opacity-80 group-hover:scale-105 transition-transform" />
+              </div>
+              <div className="mt-2 text-2xl font-extrabold text-foreground">
+                {stats.cities.toLocaleString("tr-TR")}
+              </div>
+              <p className="mt-1 text-[11px] text-emerald-600 font-semibold truncate">
+                Tüm iller tanımlı · Şehir rehberleri ve kapak fotoğrafları
+              </p>
+            </Link>
           </div>
-          <div className="mt-2 text-2xl font-extrabold text-foreground">
-            {stats.cities.toLocaleString("tr-TR")}
-          </div>
-          <p className="mt-1 text-[11px] text-emerald-600 font-semibold truncate">
-            Tamamı Tanımlı
-          </p>
-        </Link>
-      </section>
+        </div>
+      </div>
 
       {/* 4. Live Discovery Queue & Quick Triage Stream */}
       <div className="space-y-4 rounded-3xl border border-border/80 bg-card p-5 sm:p-6 shadow-xs">
@@ -552,7 +605,7 @@ export function DashboardCockpit({
                 )}
               </h2>
               <p className="text-xs text-muted-foreground">
-                Google Haberler ve Kültür Portalı&apos;ndan taranan maddeleri tek tıkla habere veya etkinliğe dönüştürün.
+                Google Haberler, AA ve kültür portallarından taranan maddeleri tek tıkla habere dönüştürün, etkinliğe ekleyin veya bülten ise alt etkinliklerine ayrıştırın.
               </p>
             </div>
           </div>
@@ -612,62 +665,82 @@ export function DashboardCockpit({
                     </a>
                   </div>
 
-                  {/* Quick Action Buttons */}
-                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center pt-2 sm:pt-0">
-                    <Button
-                      size="sm"
-                      disabled={busy}
-                      onClick={() =>
-                        runDiscoveryAction(item.id, "news", () =>
-                          importDiscoveryAsNews(item.id)
-                        )
-                      }
-                      className="h-8 px-3 text-xs font-bold gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
-                      title="Kültür Haberi Yap"
-                    >
-                      {busy && pendingAction === "news" ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Newspaper className="h-3.5 w-3.5" />
-                      )}
-                      <span>Habere Dönüştür</span>
-                    </Button>
+                    {/* Quick Action Buttons */}
+                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 self-end sm:self-center pt-2 sm:pt-0">
+                      <Button
+                        size="sm"
+                        disabled={busy}
+                        onClick={() =>
+                          runDiscoveryAction(item.id, "news", () =>
+                            importDiscoveryAsNews(item.id)
+                          )
+                        }
+                        className="h-8 px-2.5 sm:px-3 text-xs font-bold gap-1 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                        title="Kültür Haberi Yap"
+                      >
+                        {busy && pendingAction === "news" ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Newspaper className="h-3.5 w-3.5" />
+                        )}
+                        <span>Haber Yap</span>
+                      </Button>
 
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      disabled={busy}
-                      onClick={() =>
-                        runDiscoveryAction(item.id, "event", () =>
-                          importDiscoveryAsEvent(item.id)
-                        )
-                      }
-                      className="h-8 px-3 text-xs font-semibold gap-1.5"
-                      title="Etkinlik Yap"
-                    >
-                      {busy && pendingAction === "event" ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <CalendarDays className="h-3.5 w-3.5" />
-                      )}
-                      <span>Etkinlik</span>
-                    </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={busy}
+                        onClick={() =>
+                          runDiscoveryAction(item.id, "event", () =>
+                            importDiscoveryAsEvent(item.id)
+                          )
+                        }
+                        className="h-8 px-2.5 sm:px-3 text-xs font-semibold gap-1"
+                        title="Tekil Etkinlik Olarak Ekle"
+                      >
+                        {busy && pendingAction === "event" ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <CalendarDays className="h-3.5 w-3.5" />
+                        )}
+                        <span>Etkinlik</span>
+                      </Button>
 
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={busy}
-                      onClick={() =>
-                        runDiscoveryAction(item.id, "reject", () =>
-                          rejectDiscovery(item.id)
-                        )
-                      }
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
-                      title="Reddet"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        disabled={busy}
+                        onClick={() =>
+                          runDiscoveryAction(item.id, "multi", () =>
+                            disaggregateDiscoveryBulletin(item.id)
+                          )
+                        }
+                        className="h-8 px-2.5 sm:px-3 text-xs font-semibold gap-1 bg-purple-600 hover:bg-purple-700 text-white shadow-xs"
+                        title="Bülten içindeki tüm alt etkinlikleri ayrıştır"
+                      >
+                        {busy && pendingAction === "multi" ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Layers className="h-3.5 w-3.5" />
+                        )}
+                        <span>Ayrıştır</span>
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={busy}
+                        onClick={() =>
+                          runDiscoveryAction(item.id, "reject", () =>
+                            rejectDiscovery(item.id)
+                          )
+                        }
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                        title="Reddet"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
                 </div>
               );
             })}

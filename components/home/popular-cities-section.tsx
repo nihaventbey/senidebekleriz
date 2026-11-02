@@ -1,62 +1,69 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { MapPin, ArrowRight, Building2 } from "lucide-react";
 import type { CityData } from "@/lib/data/cities";
-
-function CityThumbnail({ city }: { city: CityData }) {
-  return (
-    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted sm:h-11 sm:w-11 md:h-14 md:w-14 md:rounded-lg">
-      {city.coverImage ? (
-        <img
-          src={city.coverImage}
-          alt=""
-          className="h-full w-full object-cover"
-          loading="lazy"
-        />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center bg-primary/10">
-          <MapPin className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" />
-        </div>
-      )}
-    </div>
-  );
-}
 
 type Props = {
   cities: CityData[];
 };
 
 export function PopularCitiesSection({ cities }: Props) {
+  if (!cities || cities.length === 0) return null;
+
   return (
-    <section className="container mx-auto px-4 py-8 md:py-12">
-      <div className="mb-4 flex items-end justify-between gap-3 md:mb-6">
+    <section className="container mx-auto px-4 py-8 sm:py-12">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-border/50 pb-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight md:text-3xl">
-            Popüler Şehirler
+          <div className="flex items-center gap-1.5 mb-1 text-xs font-bold uppercase tracking-wider text-primary">
+            <Building2 className="h-3.5 w-3.5" />
+            <span>81 İl Kültür Rotası</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+            Şehirlerin Kültür &amp; Sanat Ajandası
           </h2>
-          <p className="mt-1 text-xs text-muted-foreground md:mt-2 md:text-base">
-            Türkiye&apos;nin en çok ziyaret edilen şehirlerini keşfet.
+          <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+            Türkiye&apos;nin önde gelen kültür şehirlerini, antik kentlerini ve yerel etkinliklerini keşfedin.
           </p>
         </div>
-        <Button variant="outline" size="sm" asChild className="shrink-0">
-          <Link href="/sehirler">Tümü</Link>
-        </Button>
+        <Link
+          href="/sehirler"
+          className="group inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-primary hover:underline shrink-0"
+        >
+          <span>Tüm 81 İli Görüntüle</span>
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
         {cities.map((city) => (
           <Link
             key={city.slug}
             href={`/sehir/${city.slug}`}
-            className="group flex items-center gap-2 rounded-lg border border-border/60 bg-card/80 p-2 transition-colors hover:border-primary/40 hover:bg-muted/40 sm:gap-2.5 sm:p-2.5 md:flex-col md:items-center md:p-3 md:text-center"
+            className="group relative flex flex-col justify-end overflow-hidden rounded-2xl border border-border/60 bg-card p-3.5 shadow-xs transition-all duration-300 hover:shadow-lg hover:border-primary/50 aspect-[4/5]"
           >
-            <CityThumbnail city={city} />
-            <div className="min-w-0 flex-1 md:flex-none">
-              <p className="truncate text-sm font-semibold leading-tight group-hover:text-primary">
+            {/* Background image & gradient */}
+            <div className="absolute inset-0 bg-muted">
+              {city.coverImage ? (
+                <img
+                  src={city.coverImage}
+                  alt={city.name}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="h-full w-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center">
+                  <MapPin className="h-8 w-8 text-primary/40" />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
+            </div>
+
+            {/* City Info on bottom */}
+            <div className="relative z-10 space-y-0.5">
+              <span className="text-[10px] font-semibold text-primary/90 uppercase tracking-wider block">
+                {city.region || "Türkiye"}
+              </span>
+              <p className="text-base font-bold text-white leading-tight group-hover:text-primary transition-colors">
                 {city.name}
-              </p>
-              <p className="truncate text-[10px] text-muted-foreground sm:text-[11px]">
-                {city.region}
               </p>
             </div>
           </Link>
