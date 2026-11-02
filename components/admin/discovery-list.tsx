@@ -32,6 +32,7 @@ import {
   importDiscoveryAsNews,
   disaggregateDiscoveryBulletin,
   rejectDiscovery,
+  bulkImportDiscovery,
   bulkRejectDiscovery,
   bulkDeleteDiscovery,
   deleteAllDiscoveredContentByFilter,
@@ -91,6 +92,28 @@ export function DiscoveryList({
         next.add(id);
       }
       return next;
+    });
+  }
+
+  function handleBulkImport() {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (
+      !confirm(
+        `${ids.length} adet içeriği otomatik olarak içeri aktarıp taslak oluşturmak istediğinize emin misiniz?`
+      )
+    )
+      return;
+
+    startTransition(async () => {
+      try {
+        const res = await bulkImportDiscovery(ids);
+        toast.success(`${res.count} adet içerik başarıyla içe aktarıldı! 🎉`);
+        setSelectedIds(new Set());
+        router.refresh();
+      } catch (err: any) {
+        toast.error("Toplu içe aktarma hatası", err.message);
+      }
     });
   }
 
@@ -286,6 +309,18 @@ export function DiscoveryList({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              disabled={isPending}
+              onClick={handleBulkImport}
+              className="h-8 text-xs font-bold gap-1.5 shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Seçilenleri İçe Aktar ({selectedIds.size})</span>
+            </Button>
+
             <Button
               type="button"
               variant="outline"

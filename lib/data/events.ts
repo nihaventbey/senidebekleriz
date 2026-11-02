@@ -140,6 +140,7 @@ export async function getFeaturedEvents(limit = 8): Promise<PublicEvent[]> {
 
 export async function getPublishedEvents(options?: {
   citySlug?: string;
+  citySlugs?: string[];
   eventType?: EventType;
   isFree?: boolean;
   includePast?: boolean;
@@ -148,7 +149,9 @@ export async function getPublishedEvents(options?: {
   let query = publishedFilter()
     .order("published_at", { ascending: false });
 
-  if (options?.citySlug) {
+  if (options?.citySlugs && options.citySlugs.length > 0) {
+    query = query.in("city_slug", options.citySlugs);
+  } else if (options?.citySlug) {
     query = query.eq("city_slug", options.citySlug);
   }
 

@@ -55,11 +55,9 @@ export const adminNavSections: NavSection[] = [
     ],
   },
   {
-    title: "Katalog & Şehir Rehberi",
+    title: "Şehirler & Keşif",
     items: [
-      { href: "/yonetim/mekanlar", label: "Kültür Mekanları", icon: MapPinned },
       { href: "/yonetim/sehirler", label: "81 İl Portalları", icon: Building2 },
-      { href: "/yonetim/kategoriler", label: "Kategoriler", icon: Tags },
     ],
   },
   {

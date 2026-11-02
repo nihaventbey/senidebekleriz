@@ -83,6 +83,7 @@ export async function getFeaturedNews(limit = 5): Promise<PublicNewsArticle[]> {
 export async function getPublishedNews(options?: {
   category?: string;
   citySlug?: string;
+  citySlugs?: string[];
   limit?: number;
 }): Promise<PublicNewsArticle[]> {
   let query = supabaseAdmin
@@ -95,7 +96,9 @@ export async function getPublishedNews(options?: {
     query = query.eq("category", options.category);
   }
 
-  if (options?.citySlug && options.citySlug !== "all") {
+  if (options?.citySlugs && options.citySlugs.length > 0) {
+    query = query.in("city_slug", options.citySlugs);
+  } else if (options?.citySlug && options.citySlug !== "all") {
     query = query.eq("city_slug", options.citySlug);
   }
 

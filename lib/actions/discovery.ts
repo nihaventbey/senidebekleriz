@@ -330,6 +330,37 @@ export async function importDiscoveryAsNews(id: string) {
   return { slug: data.slug };
 }
 
+export async function bulkImportDiscovery(ids: string[]) {
+  if (!ids || ids.length === 0) return { success: true, count: 0, errors: [] };
+
+  let importedCount = 0;
+  const errors: string[] = [];
+
+  for (const id of ids) {
+    try {
+      const item = await getDiscoveredContentById(id);
+      if (!item || item.status !== "pending_review") continue;
+
+      if (item.content_type === "event") {
+        await importDiscoveryAsEvent(id);
+        importedCount++;
+      } else if (item.content_type === "article") {
+        await importDiscoveryAsArticle(id);
+        importedCount++;
+      } else {
+        await importDiscoveryAsNews(id);
+        importedCount++;
+      }
+    } catch (err: any) {
+      console.error(`bulkImportDiscovery error for ${id}:`, err);
+      errors.push(err.message || String(err));
+    }
+  }
+
+  revalidateDiscoveryPaths();
+  return { success: true, count: importedCount, errors };
+}
+
 export async function bulkRejectDiscovery(ids: string[]) {
   if (!ids || ids.length === 0) return { success: true, count: 0 };
 

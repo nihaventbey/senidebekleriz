@@ -7,8 +7,10 @@ type GeminiJsonRequest = {
 
 const FALLBACK_MODELS = [
   process.env.GEMINI_MODEL || "gemini-3.5-flash",
+  "gemini-3.6-flash",
   "gemini-3.5-flash-lite",
   "gemini-flash-latest",
+  "gemini-flash-lite-latest",
 ].filter((m, i, arr) => arr.indexOf(m) === i);
 
 export async function callGeminiJson<T>({

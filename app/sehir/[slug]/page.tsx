@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,29 +9,24 @@ import {
   Compass,
   Calendar,
   Newspaper,
-  Ticket,
-  Sparkles,
   Clock,
   BookOpen,
+  Sparkles,
 } from "lucide-react";
 import { getCityBySlug, getAllCities } from "@/lib/data/cities";
 import { getCityCultureData } from "@/lib/data/city-culture";
 import { AdBanner } from "@/components/ads/ad-banner";
-import { getPlacesByCity } from "@/lib/data/places";
 import { getCityGuidePage } from "@/lib/data/pages";
 import { getCityArticle } from "@/lib/data/articles";
 import { getPublishedEvents } from "@/lib/data/events";
 import { getPublishedNews } from "@/lib/data/news";
 import { renderMarkdown } from "@/lib/markdown";
 import { MarkdownContent } from "@/components/markdown/markdown-content";
-import { CityMap } from "@/components/maps/city-map-wrapper";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buildBreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
-import { PlaceImageComponent } from "@/components/place/place-image";
-import { getPlaceCardExcerpt } from "@/lib/content/place-quality";
 import { CityQuickNav } from "@/components/cities/city-quick-nav";
 import { CityCultureSection } from "@/components/cities/city-culture-section";
-import { checkMuzekartStatus } from "@/lib/places/muzekart";
+import { turkeyCities } from "@/data/turkey-cities";
 
 export const revalidate = 3600;
 
@@ -85,21 +79,36 @@ export default async function CityPage({
     notFound();
   }
 
-  const [allPlaces, cityArticle, cityGuidePage, cityEvents, cityNews] = await Promise.all([
-    getPlacesByCity(slug),
+  // Find regional cities for fallback if this city has no active events or news
+  const regionalCitySlugs = turkeyCities
+    .filter((c) => c.region === city.region && c.slug !== city.slug)
+    .map((c) => c.slug);
+
+  const [cityArticle, cityGuidePage, cityEvents, cityNews] = await Promise.all([
     getCityArticle(slug),
     getCityGuidePage(slug),
     getPublishedEvents({ citySlug: slug, limit: 12 }),
     getPublishedNews({ citySlug: slug, limit: 6 }),
   ]);
+
+  // Regional fallback if city has 0 events or 0 news
+  const [regionalEvents, regionalNews] = await Promise.all([
+    cityEvents.length === 0 && regionalCitySlugs.length > 0
+      ? getPublishedEvents({ citySlugs: regionalCitySlugs, limit: 6 })
+      : Promise.resolve([]),
+    cityNews.length === 0 && regionalCitySlugs.length > 0
+      ? getPublishedNews({ citySlugs: regionalCitySlugs, limit: 6 })
+      : Promise.resolve([]),
+  ]);
+
   const hasGuide = Boolean(cityArticle || cityGuidePage);
-
-  // Filter top quality places (with cover image or featured or description)
-  const topPlaces = allPlaces
-    .filter((p) => p.cover_image || p.is_featured || p.description)
-    .slice(0, 9);
-
   const cultureData = getCityCultureData(slug, city.name);
+
+  const displayEvents = cityEvents.length > 0 ? cityEvents : regionalEvents;
+  const isRegionalEvents = cityEvents.length === 0 && regionalEvents.length > 0;
+
+  const displayNews = cityNews.length > 0 ? cityNews : regionalNews;
+  const isRegionalNews = cityNews.length === 0 && regionalNews.length > 0;
 
   const cityJsonLd = [
     {
@@ -152,11 +161,15 @@ export default async function CityPage({
               >
                 {city.region} Bölgesi
               </Badge>
-              {cityEvents.length > 0 && (
+              {cityEvents.length > 0 ? (
                 <Badge className="bg-amber-500 text-slate-950 font-bold backdrop-blur-sm">
                   {cityEvents.length} Güncel Etkinlik
                 </Badge>
-              )}
+              ) : isRegionalEvents ? (
+                <Badge variant="outline" className="border-amber-400/60 text-amber-200 backdrop-blur-sm">
+                  {regionalEvents.length} Bölgesel Etkinlik
+                </Badge>
+              ) : null}
               {cityNews.length > 0 && (
                 <Badge variant="outline" className="border-white/30 text-white backdrop-blur-sm">
                   {cityNews.length} Kültür Haberi
@@ -167,7 +180,7 @@ export default async function CityPage({
               {city.name}
             </h1>
             <p className="mt-4 text-base font-normal leading-relaxed text-white/90 sm:text-lg md:text-xl">
-              {cultureData.tagline}
+              {cultureData?.tagline || city.description?.slice(0, 160)}
             </p>
           </div>
         </div>
@@ -175,11 +188,10 @@ export default async function CityPage({
 
       {/* Quick Navigation Bar */}
       <CityQuickNav
-        hasPlaces={topPlaces.length > 0}
         hasGuide={hasGuide}
         hasCulture={Boolean(cultureData)}
-        hasEvents={cityEvents.length > 0}
-        hasNews={cityNews.length > 0}
+        hasEvents={displayEvents.length > 0}
+        hasNews={displayNews.length > 0}
       />
 
       <div className="container mx-auto px-4 pb-16 space-y-12">
@@ -222,32 +234,36 @@ export default async function CityPage({
           </div>
         </section>
 
-        {/* 1. ŞEHİR ETKİNLİK AJANDASI */}
-        {cityEvents.length > 0 && (
+        {/* 1. ŞEHİR VEYA BÖLGESEL ETKİNLİK AJANDASI */}
+        {displayEvents.length > 0 ? (
           <section id="etkinlikler" className="scroll-mt-24 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-border/60 pb-4">
               <div>
                 <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary mb-1">
                   <Calendar className="h-3.5 w-3.5" />
-                  <span>Şehir Ajandası</span>
+                  <span>{isRegionalEvents ? `${city.region} Bölge Ajandası` : "Şehir Ajandası"}</span>
                 </div>
                 <h2 className="text-2xl font-black tracking-tight text-foreground">
-                  {city.name} Yaklaşan Etkinlikler
+                  {isRegionalEvents
+                    ? `${city.region} Bölgesi Yaklaşan Etkinlikler`
+                    : `${city.name} Yaklaşan Etkinlikler`}
                 </h2>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                  Tiyatro, konser, sergi ve festival takvimi.
+                  {isRegionalEvents
+                    ? `${city.name} için henüz ilan girilmedi. Yakın çevre ${city.region} illerindeki popüler kültür ve sanat takvimi:`
+                    : "Konser, tiyatro, sergi ve festival takvimi."}
                 </p>
               </div>
               <Button asChild variant="outline" size="sm" className="shrink-0 text-xs font-semibold">
-                <Link href={`/etkinlikler?sehir=${city.slug}`}>
-                  <span>Tüm {city.name} Etkinlikleri</span>
+                <Link href={isRegionalEvents ? "/etkinlikler" : `/etkinlikler?sehir=${city.slug}`}>
+                  <span>{isRegionalEvents ? "Tüm Türkiye Etkinlikleri" : `Tüm ${city.name} Etkinlikleri`}</span>
                   <ArrowRight className="h-3.5 w-3.5 ml-1" />
                 </Link>
               </Button>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {cityEvents.map((event) => (
+              {displayEvents.map((event) => (
                 <Link
                   key={event.id}
                   href={`/etkinlik/${event.slug}`}
@@ -255,9 +271,16 @@ export default async function CityPage({
                 >
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between gap-2">
-                      <Badge variant="secondary" className="text-[10px] capitalize">
-                        {event.eventType}
-                      </Badge>
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant="secondary" className="text-[10px] capitalize">
+                          {event.eventType}
+                        </Badge>
+                        {event.cityName && event.citySlug !== city.slug && (
+                          <Badge variant="outline" className="text-[10px] border-primary/40 text-primary">
+                            {event.cityName}
+                          </Badge>
+                        )}
+                      </div>
                       {event.isFree && (
                         <Badge className="bg-emerald-600 text-white text-[10px] font-bold border-0">
                           Ücretsiz
@@ -291,34 +314,54 @@ export default async function CityPage({
               ))}
             </div>
           </section>
+        ) : (
+          <section id="etkinlikler" className="scroll-mt-24 rounded-2xl border border-dashed border-border/80 bg-muted/30 p-8 text-center space-y-3">
+            <Calendar className="h-8 w-8 text-muted-foreground mx-auto" />
+            <h3 className="text-base font-bold text-foreground">
+              {city.name} İçin Yaklaşan Etkinlik Bulunmuyor
+            </h3>
+            <p className="text-xs text-muted-foreground max-w-md mx-auto">
+              Şehirdeki kültür-sanat etkinliklerinden ilk haberdar olmak veya kendi etkinliğinizi paylaşmak için bizi takip edin.
+            </p>
+            <div className="pt-2">
+              <Button asChild size="sm" variant="outline">
+                <Link href="/etkinlikler">
+                  <span>Tüm Türkiye Etkinlik Takvimi</span>
+                  <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                </Link>
+              </Button>
+            </div>
+          </section>
         )}
 
-        {/* 2. ŞEHİR KÜLTÜR HABERLERİ */}
-        {cityNews.length > 0 && (
+        {/* 2. ŞEHİR VEYA BÖLGESEL KÜLTÜR HABERLERİ */}
+        {displayNews.length > 0 && (
           <section id="haberler" className="scroll-mt-24 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-border/60 pb-4">
               <div>
                 <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary mb-1">
                   <Newspaper className="h-3.5 w-3.5" />
-                  <span>Kültür Gündemi</span>
+                  <span>{isRegionalNews ? `${city.region} Bölgesi Gündemi` : "Kültür Gündemi"}</span>
                 </div>
                 <h2 className="text-2xl font-black tracking-tight text-foreground">
-                  {city.name} Kültür &amp; Sanat Haberleri
+                  {isRegionalNews
+                    ? `${city.region} Bölgesi Kültür & Sanat Haberleri`
+                    : `${city.name} Kültür & Sanat Haberleri`}
                 </h2>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                  Arkeolojik kazılar, tarihi restorasyonlar ve yerel sanat haberleri.
+                  Arkeolojik kazılar, tarihi restorasyonlar ve güncel kültür haberleri.
                 </p>
               </div>
               <Button asChild variant="outline" size="sm" className="shrink-0 text-xs font-semibold">
-                <Link href={`/haberler?sehir=${city.slug}`}>
-                  <span>Tüm {city.name} Haberleri</span>
+                <Link href={isRegionalNews ? "/haberler" : `/haberler?sehir=${city.slug}`}>
+                  <span>{isRegionalNews ? "Tüm Haberler" : `Tüm ${city.name} Haberleri`}</span>
                   <ArrowRight className="h-3.5 w-3.5 ml-1" />
                 </Link>
               </Button>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {cityNews.map((item) => (
+              {displayNews.map((item) => (
                 <Link
                   key={item.id}
                   href={`/haber/${item.slug}`}
@@ -336,9 +379,16 @@ export default async function CityPage({
                   )}
                   <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
-                        {item.category}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                          {item.category}
+                        </span>
+                        {item.cityName && item.citySlug !== city.slug && (
+                          <Badge variant="outline" className="text-[9px] py-0 px-1 border-muted-foreground/30">
+                            {item.cityName}
+                          </Badge>
+                        )}
+                      </div>
                       <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2 mt-1">
                         {item.title}
                       </h3>
@@ -364,102 +414,7 @@ export default async function CityPage({
           />
         </div>
 
-        {/* 3. ÖNE ÇIKAN TARİHİ VE KÜLTÜREL DURAKLAR */}
-        {topPlaces.length > 0 && (
-          <section id="mekanlar" className="scroll-mt-24 space-y-6">
-            <div className="flex items-end justify-between border-b border-border/60 pb-4">
-              <div>
-                <h2 className="text-xl font-bold tracking-tight md:text-2xl">
-                  {city.name}&apos;da Öne Çıkan Kültürel Duraklar
-                </h2>
-                <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
-                  Müzeler, saraylar, ören yerleri ve tarihi anıtlar.
-                </p>
-              </div>
-              <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary/80">
-                {topPlaces.length} Seçkin Durak
-              </span>
-            </div>
-
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {topPlaces.map((place) => {
-                const muzekart = checkMuzekartStatus({
-                  name: place.name,
-                  description: place.description,
-                  wikidata_id: place.wikidata_id,
-                  is_featured: place.is_featured,
-                });
-
-                return (
-                  <div key={place.slug}>
-                    <Card className="h-full border-border/60 overflow-hidden shadow-xs hover:shadow-md transition-shadow">
-                      <div className="relative h-44 w-full bg-muted">
-                        {place.is_featured && (
-                          <Badge className="absolute left-3 top-3 z-10">
-                            Öne Çıkan
-                          </Badge>
-                        )}
-                        {muzekart.isValid && (
-                          <Badge className="absolute right-3 top-3 z-10 bg-emerald-600/90 text-white backdrop-blur-xs text-[10px] px-1.5 py-0.5 font-medium shadow-xs">
-                            🎫 MüzeKart
-                          </Badge>
-                        )}
-                        <PlaceImageComponent
-                          wikidataId={place.wikidata_id}
-                          placeName={place.name}
-                          cityName={city.name}
-                          coverImage={place.cover_image}
-                          className="h-full w-full"
-                        />
-                      </div>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base font-bold">{place.name}</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                          {getPlaceCardExcerpt(place.name, place.description)}
-                        </p>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-2">
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-primary" />
-                            <span>{city.name}</span>
-                          </div>
-                          {muzekart.isValid && (
-                            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                              MüzeKart ile Ücretsiz
-                            </span>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* 4. HARİTA */}
-        {topPlaces.length > 0 && (
-          <section id="harita" className="scroll-mt-24">
-            <div className="mb-4">
-              <h2 className="text-xl font-bold tracking-tight md:text-2xl">
-                Harita Üzerinde {city.name}
-              </h2>
-              <p className="text-xs text-muted-foreground sm:text-sm">
-                Kültürel durakların şehir genelindeki coğrafi konumları.
-              </p>
-            </div>
-            <div className="overflow-hidden rounded-2xl border">
-              <CityMap
-                center={[city.lat, city.lng]}
-                places={topPlaces}
-              />
-            </div>
-          </section>
-        )}
-
-        {/* 5. KÜLTÜR BÖLÜMÜ */}
+        {/* 3. KÜLTÜR BÖLÜMÜ (Edebiyat, Sinema, Müzik, Sanatçılar) */}
         {cultureData && (
           <CityCultureSection
             data={cultureData}
@@ -467,7 +422,7 @@ export default async function CityPage({
           />
         )}
 
-        {/* 6. GEZİ REHBERİ MAKALESİ */}
+        {/* 4. GEZİ REHBERİ MAKALESİ (Varsa 44 derinlemesine dosyadan biri) */}
         {cityArticle && (
           <section
             id="rehber"
@@ -491,6 +446,7 @@ export default async function CityPage({
           </section>
         )}
 
+        {/* Sayfa Sonu Yönlendirmeleri */}
         <div className="mt-12 pt-6 border-t border-border/60 flex items-center justify-between">
           <Link
             href="/sehirler"
@@ -511,4 +467,3 @@ export default async function CityPage({
     </div>
   );
 }
-
