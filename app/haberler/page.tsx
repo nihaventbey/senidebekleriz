@@ -21,7 +21,8 @@ export const metadata: Metadata = {
   },
 };
 
-export const revalidate = 3600;
+// 2 hours Edge CDN caching (revalidated on-demand on news publish)
+export const revalidate = 7200;
 
 type Props = {
   searchParams: Promise<{ kategori?: string; sehir?: string }>;

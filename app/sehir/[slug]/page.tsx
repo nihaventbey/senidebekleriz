@@ -28,7 +28,8 @@ import { CityQuickNav } from "@/components/cities/city-quick-nav";
 import { CityCultureSection } from "@/components/cities/city-culture-section";
 import { turkeyCities } from "@/data/turkey-cities";
 
-export const revalidate = 3600;
+// 24 hours ISR caching with on-demand revalidation on news/events import
+export const revalidate = 86400;
 
 export async function generateStaticParams() {
   const cities = await getAllCities();

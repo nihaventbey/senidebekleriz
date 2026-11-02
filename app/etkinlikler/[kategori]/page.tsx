@@ -9,7 +9,8 @@ import { EventsJsonLd } from "@/components/seo/events-jsonld";
 import { getCityName, isValidCitySlug } from "@/lib/cities/lookup";
 import { turkeyCities } from "@/data/turkey-cities";
 
-export const revalidate = 60;
+// 1 hour ISR caching with on-demand revalidation on publish
+export const revalidate = 3600;
 
 export const EVENT_CATEGORY_META: Record<
   string,

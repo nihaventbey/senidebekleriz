@@ -14,7 +14,7 @@ import { AdBanner } from "@/components/ads/ad-banner";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getSiteUrl } from "@/lib/agents/site";
 
-export const revalidate = 3600; // 1 hour revalidation for fresh culture news & events
+export const revalidate = 7200; // 2 hours Edge CDN caching (revalidated on-demand on content publish)
 
 export default async function HomePage() {
   const [featuredNews, latestNews, upcomingEvents, publishedArticles, popularCities] =

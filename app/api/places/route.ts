@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     { items, total: items.length },
     {
       headers: {
-        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
       },
     }
   );

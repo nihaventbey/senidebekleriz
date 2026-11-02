@@ -1,16 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/sync-events",
-      "schedule": "0 5 * * *"
-    },
-    {
       "path": "/api/cron/discover-content",
-      "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/cron/auto-pilot",
-      "schedule": "0 10 * * *"
+      "schedule": "0 6 * * *"
     }
   ]
 }

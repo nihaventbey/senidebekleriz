@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 import { getBrandSettings } from "@/lib/data/site-settings";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400;
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const brand = await getBrandSettings();

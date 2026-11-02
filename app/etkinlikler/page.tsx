@@ -22,8 +22,8 @@ export const metadata: Metadata = {
   },
 };
 
-// 60 seconds Edge CDN caching for fast updates
-export const revalidate = 60;
+// 1 hour ISR caching with on-demand revalidation on publish
+export const revalidate = 3600;
 
 type Props = {
   searchParams: Promise<{ sehir?: string; tip?: string }>;

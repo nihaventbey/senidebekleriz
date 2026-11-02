@@ -29,7 +29,8 @@ import {
   NEWS_CATEGORY_COLORS,
 } from "@/components/news/news-card";
 
-export const revalidate = 3600;
+// 24 hours Edge CDN caching (revalidated on-demand when edited)
+export const revalidate = 86400;
 
 export async function generateStaticParams() {
   const slugs = await getNewsSlugs();

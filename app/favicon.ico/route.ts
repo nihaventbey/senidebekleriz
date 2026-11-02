@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getBrandSettings } from "@/lib/data/site-settings";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// Edge CDN Caching: Prevent hundreds of thousands of useless serverless function invocations
+export const revalidate = 86400;
 
 const DEFAULT_SVG_FAVICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <circle cx="50" cy="50" r="48" fill="#0D9488" />
@@ -23,7 +23,7 @@ export async function GET() {
         return new NextResponse(buffer, {
           headers: {
             "Content-Type": contentType,
-            "Cache-Control": "public, max-age=0, must-revalidate",
+            "Cache-Control": "public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000",
           },
         });
       }
@@ -35,7 +35,7 @@ export async function GET() {
   return new NextResponse(DEFAULT_SVG_FAVICON, {
     headers: {
       "Content-Type": "image/svg+xml",
-      "Cache-Control": "public, max-age=0, must-revalidate",
+      "Cache-Control": "public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000",
     },
   });
 }
