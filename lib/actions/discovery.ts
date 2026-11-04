@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 import { importEventFromUrl } from "@/lib/ai/import-event-from-url";
 import { generateNewsDraft } from "@/lib/ai/generate-news";
 import { generateArticleDraft } from "@/lib/ai/generate-article";
+import { resolveFallbackCulturalImage } from "@/lib/ai/extract-page-images";
 import { getCityName, normalizeCitySlug } from "@/lib/cities/lookup";
 import { getDiscoveredContentById } from "@/lib/data/admin-discovery";
-import { uniqueEventSlug } from "@/lib/events/slug";
 import { discoverContent } from "@/lib/discovery/sync";
 import {
   isGoogleNewsArticleUrl,
@@ -23,9 +23,10 @@ function revalidateDiscoveryPaths() {
     revalidatePath("/yonetim/etkinlikler");
     revalidatePath("/yonetim/yazilar");
     revalidatePath("/yonetim/haberler");
+    revalidatePath("/haberler");
+    revalidatePath("/etkinlikler");
     revalidatePath("/");
   } catch (err) {
-    // Gracefully handle calls outside Next.js request context
     console.warn("revalidateDiscoveryPaths skipped:", err);
   }
 }
@@ -140,7 +141,6 @@ export async function importDiscoveryAsEvent(id: string) {
     };
   }
 
-  // Generate guaranteed unique slug
   const baseSlug = slugify(imported.title || item.title || "etkinlik");
   let slug = baseSlug.slice(0, 100);
   let counter = 1;
@@ -154,7 +154,20 @@ export async function importDiscoveryAsEvent(id: string) {
     slug = `${baseSlug.slice(0, 90)}-${counter++}`;
   }
 
-  const rawCover = imported.cover_image || item.cover_image || (item.raw_payload as any)?.image_url || null;
+  let rawCover =
+    imported.cover_image ||
+    item.cover_image ||
+    (item.raw_payload as any)?.image_url ||
+    null;
+
+  if (!rawCover) {
+    rawCover = await resolveFallbackCulturalImage({
+      title: imported.title || item.title,
+      cityName: getCityName(imported.city_slug || item.city_slug),
+      category: "kultur_sanat",
+    });
+  }
+
   const storedCoverImage = await ensureStoredCoverImage(rawCover, "events", slug);
 
   const { data, error } = await supabaseAdmin
@@ -175,7 +188,9 @@ export async function importDiscoveryAsEvent(id: string) {
       ends_at: imported.ends_at || null,
       cover_image: storedCoverImage,
       meta_title: imported.meta_title || null,
-      meta_description: imported.meta_description || (imported.summary || item.snippet || item.title).slice(0, 155),
+      meta_description:
+        imported.meta_description ||
+        (imported.summary || item.snippet || item.title).slice(0, 155),
       raw_payload: {
         discovery_id: item.id,
         image_urls: imported.image_urls,
@@ -226,8 +241,25 @@ export async function importDiscoveryAsArticle(id: string) {
     slug = `${baseSlug.slice(0, 90)}-${counter++}`;
   }
 
-  const rawCover = draft.cover_image || item.cover_image || (item.raw_payload as any)?.image_url || null;
-  const storedCoverImage = await ensureStoredCoverImage(rawCover, "articles", slug);
+  let rawCover =
+    draft.cover_image ||
+    item.cover_image ||
+    (item.raw_payload as any)?.image_url ||
+    null;
+
+  if (!rawCover) {
+    rawCover = await resolveFallbackCulturalImage({
+      title: draft.title || item.title,
+      cityName,
+      category: "genel",
+    });
+  }
+
+  const storedCoverImage = await ensureStoredCoverImage(
+    rawCover,
+    "articles",
+    slug
+  );
 
   const { data, error } = await supabaseAdmin
     .from("articles")
@@ -264,23 +296,60 @@ export async function importDiscoveryAsNews(id: string) {
   // Check if news with this source_url already exists
   const { data: existingNews } = await supabaseAdmin
     .from("cultural_news")
-    .select("id, slug")
+    .select("id, slug, content, cover_image")
     .eq("source_url", publisherUrl)
     .maybeSingle();
 
-  if (existingNews) {
+  const existingWordCount = existingNews?.content
+    ? existingNews.content.trim().split(/\s+/).length
+    : 0;
+
+  if (existingNews && existingWordCount >= 150 && existingNews.cover_image) {
     await markDiscoveryImported(id, "cultural_news", existingNews.id);
     revalidateDiscoveryPaths();
     return { slug: existingNews.slug };
   }
 
   const cityName = getCityName(item.city_slug) || undefined;
+  const coverImageHint =
+    item.cover_image || (item.raw_payload as any)?.image_url || null;
+
   const draft = await generateNewsDraft({
     topic: item.title,
     sourceUrl: publisherUrl,
     fallbackText: item.snippet || undefined,
     cityName,
+    coverImageHint,
   });
+
+  if (existingNews) {
+    const rawCover =
+      draft.cover_image || existingNews.cover_image || coverImageHint || null;
+    const storedCoverImage = await ensureStoredCoverImage(
+      rawCover,
+      "news",
+      existingNews.slug
+    );
+
+    const { error: updateErr } = await supabaseAdmin
+      .from("cultural_news")
+      .update({
+        title: draft.title || item.title,
+        summary: draft.summary,
+        content: draft.content,
+        cover_image: storedCoverImage,
+        category: draft.category || "genel",
+        city_slug: normalizeCitySlug(item.city_slug || draft.city_slug),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existingNews.id);
+
+    if (updateErr) throw new Error(updateErr.message);
+
+    await markDiscoveryImported(id, "cultural_news", existingNews.id);
+    revalidateDiscoveryPaths();
+    return { slug: existingNews.slug };
+  }
 
   const baseSlug = slugify(draft.title || item.title || "haber");
   let slug = baseSlug.slice(0, 100);
@@ -295,7 +364,7 @@ export async function importDiscoveryAsNews(id: string) {
     slug = `${baseSlug.slice(0, 90)}-${counter++}`;
   }
 
-  const rawCover = draft.cover_image || item.cover_image || (item.raw_payload as any)?.image_url || null;
+  const rawCover = draft.cover_image || coverImageHint || null;
   const storedCoverImage = await ensureStoredCoverImage(rawCover, "news", slug);
 
   const { data, error } = await supabaseAdmin
@@ -307,7 +376,7 @@ export async function importDiscoveryAsNews(id: string) {
       content: draft.content,
       cover_image: storedCoverImage,
       category: draft.category || "genel",
-      city_slug: normalizeCitySlug(item.city_slug),
+      city_slug: normalizeCitySlug(item.city_slug || draft.city_slug),
       source_name: item.source_name,
       source_url: publisherUrl,
       is_published: false,
@@ -317,7 +386,10 @@ export async function importDiscoveryAsNews(id: string) {
     .single();
 
   if (error) {
-    if (error.message?.includes("cultural_news") || error.message?.includes("schema cache")) {
+    if (
+      error.message?.includes("cultural_news") ||
+      error.message?.includes("schema cache")
+    ) {
       throw new Error(
         "Veritabanında 'cultural_news' tablosu eksik. Lütfen Supabase SQL Editor'da '015_cultural_news.sql' migration dosyasını çalıştırın."
       );
@@ -415,12 +487,15 @@ export async function disaggregateDiscoveryBulletin(id: string) {
   }
 
   const publisherUrl = await resolveDiscoveryUrl(item);
+  const coverImageHint =
+    item.cover_image || (item.raw_payload as any)?.image_url || null;
 
   const res = await extractEventsFromBulletin({
     url: publisherUrl,
     fallbackTitle: item.title,
     fallbackText: item.snippet || undefined,
     sourceName: item.source_name || undefined,
+    coverImageHint,
   });
 
   if (res.extractedCount > 0) {
@@ -430,4 +505,3 @@ export async function disaggregateDiscoveryBulletin(id: string) {
 
   return res;
 }
-

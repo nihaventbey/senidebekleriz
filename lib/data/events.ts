@@ -160,7 +160,7 @@ export async function getPublishedEvents(options?: {
   }
 
   if (options?.limit) {
-    query = query.limit(options.limit);
+    query = query.limit(Math.max(options.limit * 4, 60));
   }
 
   const { data, error } = await query;
@@ -181,7 +181,8 @@ export async function getPublishedEvents(options?: {
     filtered = filtered.filter((e) => e.isFree);
   }
 
-  return sortEventsByClosestUpcoming(filtered);
+  const sorted = sortEventsByClosestUpcoming(filtered);
+  return options?.limit ? sorted.slice(0, options.limit) : sorted;
 }
 
 export async function getPublishedEventSlugs(): Promise<

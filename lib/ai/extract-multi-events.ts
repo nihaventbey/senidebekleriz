@@ -1,7 +1,11 @@
 import { turkeyCities } from "@/data/turkey-cities";
 import { callGeminiJson } from "@/lib/ai/gemini-client";
 import { fetchUrlContent } from "@/lib/ai/fetch-url-content";
-import { filterImageCandidatesBySize } from "@/lib/ai/extract-page-images";
+import {
+  filterImageCandidatesBySize,
+  resolveFallbackCulturalImage,
+} from "@/lib/ai/extract-page-images";
+import { detectTurkishCityInText } from "@/lib/discovery/classify-content";
 import { uniqueEventSlug } from "@/lib/events/slug";
 import { cleanTicketUrl } from "@/lib/events/ticket-url";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
@@ -25,22 +29,28 @@ export type ExtractedSubEvent = {
   meta_description?: string | null;
 };
 
-const MULTI_EVENT_PROMPT = `Sen bir kültür-sanat bülteni ve etkinlik ajandası uzmanısın.
-Sana verilen metin bir aylık bülten, şehir etkinlik rehberi, festival takvimi, haftalık kültür programı veya bir etkinlik haberidir.
-Görevin bu metin içindeki TÜM TEKİL VE BAĞIMSIZ etkinlikleri (tiyatrolar, konserler, sergiler, festivaller, atölyeler, söyleşiler) ayrıştırıp bir dizi (array) olarak döndürmektir.
+function buildMultiEventPrompt(): string {
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const currentYear = new Date().getFullYear();
+
+  return `Sen Türkiye'nin kültür-sanat bülteni ve etkinlik ajandası uzmanısın. Bugünün tarihi: ${todayIso} (Yıl: ${currentYear}).
+Sana verilen metin bir aylık bülten, şehir etkinlik rehberi, festival takvimi, haftalık kültür programı, biletleme sayfası veya bir etkinlik haberidir.
+Görevin bu metin içindeki TÜM TEKİL VE BAĞIMSIZ Türkiye etkinliklerini (tiyatrolar, konserler, sergiler, festivaller, operalar, baleler, atölyeler, söyleşiler) ayrıştırıp bir dizi (array) olarak döndürmektir.
 
 Kurallar:
-1. Metinde birden fazla etkinlik varsa her bir farklı etkinliği ayrı bir obje olarak çıkar (en fazla 15 adet). Metinde tek bir etkinlik veya festival haberi bile olsa onu 1 elemanlı dizi olarak çıkar; ASLA boş dizi döndürme!
-2. Şehir (city_slug): Metindeki şehri tespit et. Şu slug'lardan biri olmalıdır: ${CITY_SLUGS} (veya null).
+1. Metinde birden fazla etkinlik varsa her bir farklı etkinliği ayrı bir obje olarak çıkar (en fazla 12 adet). Metinde tek bir etkinlik veya festival haberi bile olsa onu 1 elemanlı dizi olarak çıkar; ASLA boş dizi döndürme!
+2. Şehir (city_slug): Metindeki Türkiye şehrini tespit et. Şu slug'lardan biri olmalıdır: ${CITY_SLUGS} (veya null).
 3. event_type: "tiyatro" | "konser" | "sergi" | "festival" | "duyuru" | "diger"
 4. starts_at & ends_at: ISO 8601 (YYYY-MM-DDTHH:mm:ss+03:00) formatında olmalıdır.
-   - Belirtilen gün ve saatleri kesinlikle çevir (Örn: "15 Ekim 20:00" -> "2026-10-15T20:00:00+03:00").
-   - Saat yoksa tiyatro/konser 20:00, sergi 10:00 varsay.
-5. ticket_url: YALNIZCA o spesifik etkinliğin bilet satış linki (Biletix, Passo, Biletinial, Mobilet vb.) varsa yaz; yoksa null yap!
-6. summary: Etkinlik için 1-2 cümlelik (max 160 karakter) temiz Türkçe özet.
-7. meta_title: SEO başlığı (max 60 karakter).
-8. meta_description: SEO açıklaması (max 155 karakter).
-9. is_free: boolean. Etkinlik ücretsiz, halka açık, katılım serbest ise veya bilet gerekmiyorsa true; ücretli bilet satışı varsa false yap.
+   - Yıl belirtilmemişse ${currentYear} yılını kullan (Örn: "7 Kasım 21:00" -> "${currentYear}-11-07T21:00:00+03:00").
+   - Saat yoksa tiyatro/konser için 20:00, sergi/müze için 10:00, festival için 12:00 varsay.
+5. venue_name: Etkinliğin gerçekleştiği sahne, kültür merkezi, müze veya konser mekanının tam adı (Örn: "Harbiye Cemil Topuzlu Açıkhava Tiyatrosu", "AKM Türk Telekom Opera Salonu", "CSO Ada Ankara").
+6. ticket_url: YALNIZCA o spesifik etkinliğin bilet satış linki (Biletix, Passo, Biletinial, Bubilet, Mobilet vb.) varsa yaz; yoksa null yap!
+7. summary: Etkinlik için 1-2 cümlelik (max 160 karakter) temiz Türkçe özet.
+8. description: Etkinliğin içeriğini, sanatçılarını, programını ve mekan atmosferini anlatan 2-3 paragraflık doyurucu Markdown açıklama.
+9. meta_title: SEO başlığı (max 60 karakter).
+10. meta_description: SEO açıklaması (max 155 karakter).
+11. is_free: boolean. Etkinlik ücretsiz, halka açık, katılım serbest ise true; ücretli bilet satışı varsa false yap.
 
 Yanıt yalnızca geçerli JSON olmalıdır:
 {
@@ -49,27 +59,34 @@ Yanıt yalnızca geçerli JSON olmalıdır:
       "title": "...",
       "summary": "...",
       "description": "...",
-      "event_type": "tiyatro",
+      "event_type": "konser",
       "city_slug": "istanbul",
       "venue_name": "...",
-      "starts_at": "2026-10-15T20:00:00+03:00",
+      "starts_at": "${currentYear}-11-07T20:00:00+03:00",
       "ends_at": null,
       "ticket_url": null,
-      "is_free": true,
+      "is_free": false,
       "meta_title": "...",
       "meta_description": "..."
     }
   ]
 }`;
+}
 
 export async function extractEventsFromBulletin(input: {
   url: string;
   fallbackTitle?: string;
   fallbackText?: string;
   sourceName?: string;
+  coverImageHint?: string | null;
 }): Promise<{
   extractedCount: number;
-  events: Array<{ id: string; title: string; slug: string; date: string | null }>;
+  events: Array<{
+    id: string;
+    title: string;
+    slug: string;
+    date: string | null;
+  }>;
 }> {
   let pageText = input.fallbackText || "";
   let imageUrls: string[] = [];
@@ -78,6 +95,7 @@ export async function extractEventsFromBulletin(input: {
     const fetched = await fetchUrlContent(input.url, {
       maxTextLength: 16000,
       fallbackText: input.fallbackText,
+      minTextLength: 20,
     });
     pageText = fetched.pageText || pageText;
     imageUrls = await filterImageCandidatesBySize(fetched.imageUrls);
@@ -85,68 +103,122 @@ export async function extractEventsFromBulletin(input: {
     console.warn("fetchUrlContent in extractEventsFromBulletin fallback:", err);
   }
 
-  if (pageText.length < 50) {
-    const combinedFallback = [input.fallbackTitle, input.fallbackText].filter(Boolean).join("\n\n");
-    if (combinedFallback.length >= 20) {
-      pageText = combinedFallback;
-    } else {
-      throw new Error("Bülten sayfasından yeterli metin okunamadı");
-    }
+  const combinedFallback = [input.fallbackTitle, input.fallbackText, pageText]
+    .filter(Boolean)
+    .join("\n\n")
+    .trim();
+
+  if (pageText.length < 30) {
+    pageText = combinedFallback || input.url;
   }
 
+  const defaultCitySlug = detectTurkishCityInText(combinedFallback);
+
   const userPrompt = [
-    `Bülten URL: ${input.url}`,
+    `Bülten / Kaynak URL: ${input.url}`,
     input.fallbackTitle ? `Başlık: ${input.fallbackTitle}` : null,
-    `Bülten Metni:\n${pageText.slice(0, 10000)}`,
+    defaultCitySlug ? `Tespit Edilen Şehir İpucu: ${defaultCitySlug}` : null,
+    `Bülten Metni:\n${pageText.slice(0, 11000)}`,
   ]
     .filter(Boolean)
     .join("\n\n");
 
-  const response = await callGeminiJson<any>({
-    systemPrompt: MULTI_EVENT_PROMPT,
-    userPrompt,
-    temperature: 0.3,
-  });
-
   let parsedEvents: ExtractedSubEvent[] = [];
-  if (Array.isArray(response)) {
-    parsedEvents = response;
-  } else if (response && typeof response === "object") {
-    parsedEvents =
-      response.events ||
-      response.etkinlikler ||
-      response.items ||
-      response.data ||
-      response.sub_events ||
-      [];
-  }
 
-  // Graceful fallback: If AI returned an empty array, construct a single event from page title & text
-  if (parsedEvents.length === 0) {
-    const fallbackTitle = input.fallbackTitle || "Kültür Etkinliği";
-    parsedEvents.push({
-      title: fallbackTitle,
-      summary: (input.fallbackText || pageText).slice(0, 160),
-      description: pageText.slice(0, 1000),
-      event_type: "duyuru",
-      city_slug: null,
-      venue_name: null,
-      starts_at: null,
-      ends_at: null,
-      meta_title: `${fallbackTitle} | Etkinlik Takvimi`,
-      meta_description: (input.fallbackText || pageText).slice(0, 155),
+  try {
+    const response = await callGeminiJson<any>({
+      systemPrompt: buildMultiEventPrompt(),
+      userPrompt,
+      temperature: 0.3,
+      maxOutputTokens: 8192,
     });
+
+    if (Array.isArray(response)) {
+      parsedEvents = response;
+    } else if (response && typeof response === "object") {
+      parsedEvents =
+        response.events ||
+        response.etkinlikler ||
+        response.items ||
+        response.data ||
+        response.sub_events ||
+        [];
+    }
+  } catch (aiErr) {
+    console.warn("extractEventsFromBulletin AI call fallback:", aiErr);
   }
 
-  const savedEvents: Array<{ id: string; title: string; slug: string; date: string | null }> = [];
+  // Graceful fallback: If AI returned an empty array or failed, construct event(s) from page title & text
+  if (!Array.isArray(parsedEvents) || parsedEvents.length === 0) {
+    const fallbackTitle = (input.fallbackTitle || "Kültür Sanat Etkinliği")
+      .replace(/\s*[-–|]\s*[^–|-]+$/, "")
+      .trim();
+    parsedEvents = [
+      {
+        title: fallbackTitle,
+        summary: (input.fallbackText || pageText || fallbackTitle).slice(0, 160),
+        description: pageText.slice(0, 2000),
+        event_type: /\b(konser|resital|orkestra)\b/i.test(combinedFallback)
+          ? "konser"
+          : /\b(tiyatro|oyun|sahne|opera|bale)\b/i.test(combinedFallback)
+          ? "tiyatro"
+          : /\b(sergi|müze|bienal)\b/i.test(combinedFallback)
+          ? "sergi"
+          : /\b(festival|şenlik)\b/i.test(combinedFallback)
+          ? "festival"
+          : "duyuru",
+        city_slug: defaultCitySlug,
+        venue_name: null,
+        starts_at: null,
+        ends_at: null,
+        meta_title: `${fallbackTitle} | Etkinlik Takvimi`.slice(0, 60),
+        meta_description: (input.fallbackText || pageText || fallbackTitle).slice(
+          0,
+          155
+        ),
+      },
+    ];
+  }
+
+  // Pre-upload up to 3 candidate images in parallel to avoid N sequential uploads timing out
+  if (imageUrls.length === 0 && input.coverImageHint) {
+    imageUrls = [input.coverImageHint];
+  }
+  if (imageUrls.length === 0) {
+    const fallbackImg = await resolveFallbackCulturalImage({
+      title: input.fallbackTitle || parsedEvents[0]?.title || "Kültür Sanat",
+      cityName: defaultCitySlug,
+      category: "kultur_sanat",
+    });
+    if (fallbackImg) imageUrls = [fallbackImg];
+  }
+
+  const storedCoversPool = (
+    await Promise.all(
+      imageUrls.slice(0, 3).map((imgUrl, idx) =>
+        ensureStoredCoverImage(
+          imgUrl,
+          "events",
+          `${uniqueEventSlug(input.fallbackTitle || "etkinlik")}-${idx}`
+        )
+      )
+    )
+  ).filter((u): u is string => Boolean(u));
+
+  const savedEvents: Array<{
+    id: string;
+    title: string;
+    slug: string;
+    date: string | null;
+  }> = [];
   let lastError: Error | null = null;
 
   for (let i = 0; i < parsedEvents.length; i++) {
     const item = parsedEvents[i];
-    if (!item.title) continue;
+    if (!item || !item.title) continue;
 
-    // Unique slug
-    let slug = uniqueEventSlug(item.title);
+    const baseSlug = uniqueEventSlug(item.title);
+    let slug = baseSlug;
     let counter = 1;
     while (true) {
       const { data: exists } = await supabaseAdmin
@@ -155,36 +227,78 @@ export async function extractEventsFromBulletin(input: {
         .eq("slug", slug)
         .maybeSingle();
       if (!exists) break;
-      slug = `${uniqueEventSlug(item.title)}-${counter++}`;
+      slug = `${baseSlug.slice(0, 85)}-${counter++}`;
     }
 
-    // Assign image if candidate available
-    const candidateImage = imageUrls[i % (imageUrls.length || 1)] || null;
-    const storedCover = await ensureStoredCoverImage(candidateImage, "events", slug);
-    const cleanedTicket = cleanTicketUrl(item.ticket_url, input.url);
+    const storedCover =
+      storedCoversPool.length > 0
+        ? storedCoversPool[i % storedCoversPool.length]
+        : imageUrls[0] || null;
 
-    // Sub-events from a bulletin must have a distinct source_url to prevent unique constraint violation on idx_cultural_events_source_url
-    const subSourceUrl = `${input.url}#sub-${slug}`;
+    const cleanedTicket = cleanTicketUrl(item.ticket_url, input.url);
+    const resolvedCity =
+      item.city_slug ||
+      detectTurkishCityInText(
+        `${item.title} ${item.venue_name || ""} ${item.summary || ""}`
+      ) ||
+      defaultCitySlug;
+
+    const subSourceUrl = `${input.url}#sub-${baseSlug}`;
+
+    // Check if this subSourceUrl was already extracted before
+    const { data: existingSub } = await supabaseAdmin
+      .from("cultural_events")
+      .select("id, title, slug, starts_at")
+      .eq("source_url", subSourceUrl)
+      .maybeSingle();
+
+    if (existingSub) {
+      savedEvents.push({
+        id: existingSub.id,
+        title: existingSub.title,
+        slug: existingSub.slug,
+        date: existingSub.starts_at,
+      });
+      continue;
+    }
+
+    const validTypes: EventType[] = [
+      "tiyatro",
+      "konser",
+      "sergi",
+      "festival",
+      "duyuru",
+      "diger",
+    ];
+    const safeEventType: EventType = validTypes.includes(item.event_type as EventType)
+      ? (item.event_type as EventType)
+      : "duyuru";
 
     const { data, error } = await supabaseAdmin
       .from("cultural_events")
       .insert({
-        title: item.title,
+        title: item.title.trim(),
         slug,
         summary: (item.summary || item.title).slice(0, 160),
-        description: item.description || null,
-        event_type: item.event_type || "duyuru",
+        description: item.description || item.summary || null,
+        event_type: safeEventType,
         status: "pending_review",
         source_name: input.sourceName || "Kültür Bülteni",
         source_url: subSourceUrl,
         ticket_url: cleanedTicket,
-        city_slug: item.city_slug || null,
+        city_slug: resolvedCity,
         venue_name: item.venue_name || null,
         starts_at: item.starts_at || null,
         ends_at: item.ends_at || null,
         cover_image: storedCover,
-        meta_title: item.meta_title || `${item.title} | Etkinlik Takvimi`,
-        meta_description: item.meta_description || item.summary,
+        meta_title: (
+          item.meta_title || `${item.title} | Etkinlik Takvimi`
+        ).slice(0, 60),
+        meta_description: (
+          item.meta_description ||
+          item.summary ||
+          item.title
+        ).slice(0, 155),
         raw_payload: {
           extracted_from_bulletin: true,
           bulletin_url: input.url,

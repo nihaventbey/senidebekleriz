@@ -6,7 +6,7 @@ import {
 } from "@/lib/discovery/quarter";
 import {
   classifyDiscoveryBatch,
-  classifyDiscoveryItem,
+  isRejectedNonTurkishOrCommercialContent,
   type BatchClassifyInput,
 } from "@/lib/discovery/classify-content";
 import {
@@ -28,14 +28,10 @@ import type {
 import { eventSourceUrlExists } from "@/lib/events/dedupe";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-const MAX_NEW_ITEMS_PER_RUN = 30;
+const MAX_NEW_ITEMS_PER_RUN = 35;
 const MIN_CONFIDENCE = 0.55;
 const ITEMS_PER_SOURCE = 8;
 const MAX_CLASSIFY_BATCH = 6;
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 async function getActiveDiscoverySources(): Promise<DiscoverySourceRow[]> {
   const { data, error } = await supabaseAdmin
@@ -66,6 +62,7 @@ async function insertDiscoveredItem(input: {
   snippet: string;
   content_type: string;
   city_slug: string | null;
+  cover_image: string | null;
   published_at_source: string | null;
   raw_payload: Record<string, unknown>;
 }): Promise<boolean> {
@@ -81,9 +78,6 @@ async function insertDiscoveredItem(input: {
 
   if (error) {
     if (error.code === "23505") return false; // Duplicate source_url
-    // PostgreSQL check constraint (23514) fallback:
-    // If table constraint restricts content_type (e.g. only accepts 'event', 'article', 'unknown', 'skip'),
-    // insert as 'article' and annotate inferred_content_type in raw_payload so it is never dropped.
     if (error.code === "23514" && input.content_type === "news") {
       const fallbackPayload = {
         ...payloadToInsert,
@@ -131,25 +125,34 @@ async function cleanupOutdatedPendingDiscoveries(quarterInfo: QuarterInfo) {
       .eq("status", "pending_review")
       .lt("published_at_source", quarterInfo.startDateStr);
 
-    // 2. Also reject pending items that mention past years in the title
+    // 2. Reject pending items that mention past years or non-Turkish/commercial content
     const { data: pendingItems } = await supabaseAdmin
       .from("discovered_content")
-      .select("id, title")
+      .select("id, title, snippet, source_url, source_name")
       .eq("status", "pending_review");
 
     if (pendingItems) {
-      const pastYearIds = pendingItems
-        .filter((it) => hasPastYearInTitle(it.title, quarterInfo.year))
+      const rejectIds = pendingItems
+        .filter(
+          (it) =>
+            hasPastYearInTitle(it.title, quarterInfo.year) ||
+            isRejectedNonTurkishOrCommercialContent({
+              title: it.title,
+              snippet: it.snippet || undefined,
+              sourceUrl: it.source_url,
+              sourceName: it.source_name || undefined,
+            })
+        )
         .map((it) => it.id);
 
-      if (pastYearIds.length > 0) {
+      if (rejectIds.length > 0) {
         await supabaseAdmin
           .from("discovered_content")
           .update({
             status: "rejected",
             updated_at: new Date().toISOString(),
           })
-          .in("id", pastYearIds);
+          .in("id", rejectIds);
       }
     }
   } catch (err) {
@@ -197,7 +200,6 @@ export async function discoverContent(): Promise<DiscoverContentResult> {
 
       result.itemsFetched += rawItems.length;
 
-      // Filter and resolve items
       type PreparedCandidate = {
         item: RawFeedItem;
         sourceUrl: string;
@@ -223,6 +225,19 @@ export async function discoverContent(): Promise<DiscoverContentResult> {
           continue;
         }
         if (!isDateInActiveQuarter(item.pubDate)) {
+          result.itemsSkipped += 1;
+          continue;
+        }
+
+        // Reject obvious non-Turkish or commercial painting sales pages early
+        if (
+          isRejectedNonTurkishOrCommercialContent({
+            title: item.title,
+            snippet: item.description,
+            sourceUrl: rawUrl,
+            sourceName: item.publisherName || item.sourceName,
+          })
+        ) {
           result.itemsSkipped += 1;
           continue;
         }
@@ -253,6 +268,18 @@ export async function discoverContent(): Promise<DiscoverContentResult> {
           ? cleanGoogleNewsTitle(item.title, publisherName)
           : item.title.trim();
 
+        if (
+          isRejectedNonTurkishOrCommercialContent({
+            title: displayTitle,
+            snippet: item.description,
+            sourceUrl,
+            sourceName: publisherName || item.sourceName,
+          })
+        ) {
+          result.itemsSkipped += 1;
+          continue;
+        }
+
         candidates.push({
           item,
           sourceUrl,
@@ -274,6 +301,7 @@ export async function discoverContent(): Promise<DiscoverContentResult> {
         title: c.displayTitle,
         snippet: stripHtmlTags(c.item.description).slice(0, 500),
         sourceName: c.publisherName || c.item.sourceName,
+        sourceUrl: c.sourceUrl,
       }));
 
       const classifications = await classifyDiscoveryBatch(batchInput);
@@ -301,6 +329,7 @@ export async function discoverContent(): Promise<DiscoverContentResult> {
             snippet: stripHtmlTags(cand.item.description).slice(0, 500),
             content_type: classified.content_type,
             city_slug: classified.city_slug,
+            cover_image: cand.item.imageUrl || null,
             published_at_source: parsePubDate(cand.item.pubDate),
             raw_payload: {
               feed_source_id: source.id,
@@ -309,6 +338,7 @@ export async function discoverContent(): Promise<DiscoverContentResult> {
               pubDate: cand.item.pubDate,
               google_news_url: cand.googleNewsUrl,
               publisher_site: cand.item.publisherSite,
+              image_url: cand.item.imageUrl || null,
             },
           });
 

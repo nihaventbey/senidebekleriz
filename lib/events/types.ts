@@ -20,6 +20,7 @@ export type RawFeedItem = {
   sourceName: string;
   publisherName?: string;
   publisherSite?: string;
+  imageUrl?: string;
 };
 
 export type NormalizedEventDraft = {

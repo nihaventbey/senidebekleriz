@@ -1,4 +1,5 @@
 import type { RawFeedItem } from "@/lib/events/types";
+import { isLikelyContentImage } from "@/lib/ai/extract-page-images";
 
 function decodeEntities(text: string): string {
   return text
@@ -46,17 +47,22 @@ function stripTags(html: string): string {
   return stripHtmlTags(html);
 }
 
-function getTag(block: string, tag: string): string {
+function getTagRaw(block: string, tag: string): string {
   const cdata = new RegExp(
     `<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>`,
     "i"
   );
   const cdataMatch = block.match(cdata);
-  if (cdataMatch) return stripTags(cdataMatch[1]);
+  if (cdataMatch) return cdataMatch[1];
 
   const plain = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i");
   const plainMatch = block.match(plain);
-  return plainMatch ? stripTags(plainMatch[1]) : "";
+  return plainMatch ? plainMatch[1] : "";
+}
+
+function getTag(block: string, tag: string): string {
+  const raw = getTagRaw(block, tag);
+  return raw ? stripTags(raw) : "";
 }
 
 function getSourceBlock(block: string): { url?: string; name?: string } {
@@ -69,6 +75,43 @@ function getSourceBlock(block: string): { url?: string; name?: string } {
     url: match[1] || undefined,
     name: match[2] ? stripTags(match[2]) : undefined,
   };
+}
+
+function extractItemImage(block: string): string | undefined {
+  // 1. <media:content url="..."> or <media:thumbnail url="..."> or <enclosure url="...">
+  const mediaAttrMatches = [
+    ...block.matchAll(
+      /<(?:media:content|media:thumbnail|enclosure)\b[^>]*\burl=["']([^"']+)["'][^>]*>/gi
+    ),
+  ];
+  for (const m of mediaAttrMatches) {
+    const candidate = decodeEntities(m[1]).trim();
+    if (candidate.startsWith("http") && isLikelyContentImage(candidate)) {
+      return candidate;
+    }
+  }
+
+  // 2. <image><url>...</url></image> or <media:Url>...</media:Url>
+  const imageTag = getTag(block, "image");
+  if (imageTag.startsWith("http") && isLikelyContentImage(imageTag)) {
+    return imageTag;
+  }
+
+  // 3. <img src="..."> inside description or content:encoded
+  const rawDesc =
+    getTagRaw(block, "content:encoded") || getTagRaw(block, "description");
+  if (rawDesc) {
+    const decoded = decodeEntities(rawDesc);
+    const imgMatches = [...decoded.matchAll(/<img\b[^>]*\bsrc=["']([^"']+)["']/gi)];
+    for (const m of imgMatches) {
+      const candidate = m[1].trim();
+      if (candidate.startsWith("http") && isLikelyContentImage(candidate)) {
+        return candidate;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 export function parseKtbRssXml(
@@ -87,6 +130,7 @@ export function parseKtbRssXml(
       getTag(block, "description") || getTag(block, "content:encoded");
     const pubDate = getTag(block, "pubDate") || getTag(block, "dc:date");
     const publisher = getSourceBlock(block);
+    const imageUrl = extractItemImage(block);
 
     if (!title || !link) continue;
 
@@ -98,6 +142,7 @@ export function parseKtbRssXml(
       sourceName,
       publisherName: publisher.name,
       publisherSite: publisher.url,
+      imageUrl,
     });
   }
 

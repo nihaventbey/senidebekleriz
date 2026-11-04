@@ -1,4 +1,7 @@
-import { extractPageImageUrls, BROWSER_USER_AGENT } from "@/lib/ai/extract-page-images";
+import {
+  extractPageImageUrls,
+  BROWSER_USER_AGENT,
+} from "@/lib/ai/extract-page-images";
 
 export type FetchedUrlContent = {
   url: string;
@@ -6,6 +9,9 @@ export type FetchedUrlContent = {
   pageText: string;
   imageUrls: string[];
 };
+
+const SOCIAL_BOT_USER_AGENT =
+  "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)";
 
 export function decodeHtmlEntities(text: string): string {
   return text
@@ -75,7 +81,9 @@ function stripNonContentElements(html: string): string {
 
 function stripHtml(html: string): string {
   const cleaned = stripNonContentElements(html);
-  return decodeHtmlEntities(cleaned.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+  return decodeHtmlEntities(
+    cleaned.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
+  );
 }
 
 function extractArticleParagraphs(html: string): string[] {
@@ -98,18 +106,24 @@ function extractArticleParagraphs(html: string): string[] {
     }
   }
 
-  // Extract <p> tags
-  const pMatches = [...targetHtml.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)];
+  // Extract <p>, <h2>, <h3>, <h4>, <li> blocks in order
+  const blockMatches = [
+    ...targetHtml.matchAll(/<(p|h2|h3|h4|li)\b[^>]*>([\s\S]*?)<\/\1>/gi),
+  ];
   const paragraphs: string[] = [];
 
-  for (const match of pMatches) {
+  for (const match of blockMatches) {
+    const tag = match[1].toLowerCase();
     const text = decodeHtmlEntities(
-      match[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
+      match[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
     );
-    // Ignore cookie banners, share prompts, short boilerplate (<30 chars)
+    const minLen = tag.startsWith("h") ? 12 : 30;
+    // Ignore cookie banners, share prompts, short boilerplate
     if (
-      text.length >= 30 &&
-      !/^paylaş|fotoğraf:|yazar:|yorumlar|copyright|tüm hakları/i.test(text)
+      text.length >= minLen &&
+      !/^(paylaş|fotoğraf:|yazar:|yorumlar|copyright|tüm hakları|çerez politikası|bizi takip edin|ilgili haberler)/i.test(
+        text
+      )
     ) {
       paragraphs.push(text);
     }
@@ -186,14 +200,20 @@ function extractJsonLdText(html: string): string {
   return parts.join("\n\n");
 }
 
-export function extractPageTextFromHtml(html: string, maxLength = 16000): string {
+export function extractPageTextFromHtml(
+  html: string,
+  maxLength = 16000
+): string {
   const articleParagraphs = extractArticleParagraphs(html);
   const jsonLd = extractJsonLdText(html);
   const ogDescription = extractMetaContent(html, "property", "og:description");
   const metaDescription = extractMetaContent(html, "name", "description");
 
   // If we have clean article paragraphs (>100 chars), prioritize them
-  if (articleParagraphs.length > 0 && articleParagraphs.join(" ").length >= 100) {
+  if (
+    articleParagraphs.length > 0 &&
+    articleParagraphs.join(" ").length >= 100
+  ) {
     const paragraphsText = articleParagraphs.join("\n\n");
     const chunks = [
       paragraphsText,
@@ -208,14 +228,19 @@ export function extractPageTextFromHtml(html: string, maxLength = 16000): string
 
   // Fallback: general stripped HTML with headers/nav removed
   const chunks = [
-    stripHtml(html),
     ogDescription,
     metaDescription,
     jsonLd,
+    stripHtml(html),
   ].filter((part): part is string => Boolean(part && part.trim()));
 
   const unique = [...new Set(chunks)];
-  return unique.join("\n\n").replace(/\s+/g, " ").trim().slice(0, maxLength);
+  return unique
+    .join("\n\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, maxLength);
 }
 
 function extractTitle(html: string): string | undefined {
@@ -225,7 +250,9 @@ function extractTitle(html: string): string | undefined {
   if (ogMatch?.[1]) return decodeHtmlEntities(ogMatch[1].trim());
 
   const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-  return titleMatch?.[1] ? decodeHtmlEntities(titleMatch[1].trim()) : undefined;
+  return titleMatch?.[1]
+    ? decodeHtmlEntities(titleMatch[1].trim())
+    : undefined;
 }
 
 function mergeTextParts(...parts: Array<string | undefined>): string {
@@ -233,7 +260,8 @@ function mergeTextParts(...parts: Array<string | undefined>): string {
     .map((part) => part?.trim())
     .filter(Boolean)
     .join("\n\n")
-    .replace(/\s+/g, " ")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
@@ -251,10 +279,9 @@ export async function fetchUrlContent(
     throw new Error("Geçersiz URL");
   }
 
-  const response = await fetch(url, {
+  let response = await fetch(url, {
     headers: {
-      "User-Agent":
-        options?.userAgent || BROWSER_USER_AGENT,
+      "User-Agent": options?.userAgent || BROWSER_USER_AGENT,
       Accept:
         "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
       "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
@@ -268,9 +295,29 @@ export async function fetchUrlContent(
       "Sec-Fetch-User": "?1",
       "Upgrade-Insecure-Requests": "1",
     },
-    signal: AbortSignal.timeout(15000),
+    signal: AbortSignal.timeout(12000),
     redirect: "follow",
   });
+
+  // Retry with social crawler User-Agent if blocked by WAF (e.g. 403 / 406 on Euronews, etc.)
+  if (!response.ok && [403, 406, 429].includes(response.status)) {
+    try {
+      const retryRes = await fetch(url, {
+        headers: {
+          "User-Agent": SOCIAL_BOT_USER_AGENT,
+          Accept: "*/*",
+          "Accept-Language": "tr-TR,tr;q=0.9",
+        },
+        signal: AbortSignal.timeout(10000),
+        redirect: "follow",
+      });
+      if (retryRes.ok) {
+        response = retryRes;
+      }
+    } catch {
+      // Keep original response
+    }
+  }
 
   if (!response.ok) {
     throw new Error(`Sayfa alınamadı: ${response.status}`);

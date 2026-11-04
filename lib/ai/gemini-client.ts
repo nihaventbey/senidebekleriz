@@ -5,13 +5,75 @@ type GeminiJsonRequest = {
   maxOutputTokens?: number;
 };
 
-const FALLBACK_MODELS = [
-  process.env.GEMINI_MODEL || "gemini-3.5-flash",
-  "gemini-3.6-flash",
-  "gemini-3.5-flash-lite",
-  "gemini-flash-latest",
-  "gemini-flash-lite-latest",
-].filter((m, i, arr) => arr.indexOf(m) === i);
+function getCandidateModels(): string[] {
+  const envModel = process.env.GEMINI_MODEL?.trim();
+  const isDeprecatedEnvModel =
+    !envModel || /^gemini-(1\.|2\.)/i.test(envModel);
+
+  const models = [
+    isDeprecatedEnvModel ? "gemini-3.5-flash" : envModel,
+    "gemini-3.5-flash-lite",
+    "gemini-3.6-flash",
+    "gemini-flash-lite-latest",
+  ];
+
+  return models.filter((m, i, arr) => Boolean(m) && arr.indexOf(m) === i);
+}
+
+function buildGenerationConfig(
+  model: string,
+  temperature: number,
+  maxOutputTokens: number,
+  jsonMode: boolean
+) {
+  const supportsZeroThinking =
+    (model.includes("3.5-flash") || model.includes("3.6-flash")) &&
+    !model.includes("lite");
+
+  return {
+    temperature,
+    maxOutputTokens,
+    ...(jsonMode ? { responseMimeType: "application/json" } : {}),
+    ...(supportsZeroThinking
+      ? { thinkingConfig: { thinkingBudget: 0 } }
+      : {}),
+  };
+}
+
+function escapeUnescapedControlCharsInStrings(jsonText: string): string {
+  let result = "";
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < jsonText.length; i++) {
+    const ch = jsonText[i];
+    if (inString) {
+      if (escaped) {
+        result += ch;
+        escaped = false;
+      } else if (ch === "\\") {
+        result += ch;
+        escaped = true;
+      } else if (ch === '"') {
+        result += ch;
+        inString = false;
+      } else if (ch === "\n") {
+        result += "\\n";
+      } else if (ch === "\r") {
+        result += "\\r";
+      } else if (ch === "\t") {
+        result += "\\t";
+      } else {
+        result += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inString = true;
+      }
+      result += ch;
+    }
+  }
+  return result;
+}
 
 export async function callGeminiJson<T>({
   systemPrompt,
@@ -30,9 +92,10 @@ export async function callGeminiJson<T>({
     process.env.GEMINI_API_BASE ||
     "https://generativelanguage.googleapis.com/v1beta";
 
+  const candidateModels = getCandidateModels();
   let lastError: Error | null = null;
 
-  for (const model of FALLBACK_MODELS) {
+  for (const model of candidateModels) {
     try {
       const url = `${baseUrl}/models/${model}:generateContent`;
 
@@ -42,6 +105,7 @@ export async function callGeminiJson<T>({
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey,
         },
+        signal: AbortSignal.timeout(25000),
         body: JSON.stringify({
           systemInstruction: {
             parts: [{ text: systemPrompt }],
@@ -52,23 +116,29 @@ export async function callGeminiJson<T>({
               parts: [{ text: userPrompt }],
             },
           ],
-          generationConfig: {
+          generationConfig: buildGenerationConfig(
+            model,
             temperature,
             maxOutputTokens,
-            responseMimeType: "application/json",
-          },
+            true
+          ),
         }),
       });
 
       if (!response.ok) {
         const body = await response.text();
-        // If high demand (503) or rate limit (429), try next model
-        if (response.status === 503 || response.status === 429) {
-          console.warn(`Gemini ${model} returned ${response.status}. Trying fallback model...`);
-          lastError = new Error(`Gemini ${model} ${response.status}: ${body}`);
-          continue;
+        lastError = new Error(`Gemini ${model} ${response.status}: ${body}`);
+        // If invalid API key (401/403 with API_KEY_INVALID), no need to retry other models
+        if (
+          (response.status === 401 || response.status === 403) &&
+          body.includes("API_KEY_INVALID")
+        ) {
+          throw lastError;
         }
-        throw new Error(`Gemini isteği başarısız: ${response.status} ${body}`);
+        console.warn(
+          `Gemini ${model} returned ${response.status}. Trying next fallback model...`
+        );
+        continue;
       }
 
       const payload = (await response.json()) as {
@@ -79,11 +149,19 @@ export async function callGeminiJson<T>({
       };
 
       if (payload.error?.message) {
-        throw new Error(payload.error.message);
+        lastError = new Error(payload.error.message);
+        continue;
       }
 
-      const raw = payload.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!raw) throw new Error("Gemini yanıtı boş");
+      const parts = payload.candidates?.[0]?.content?.parts || [];
+      const textPart =
+        parts.find((p) => typeof p.text === "string" && p.text.trim().length > 0) ||
+        parts[0];
+      const raw = textPart?.text;
+      if (!raw) {
+        lastError = new Error("Gemini yanıtı boş");
+        continue;
+      }
 
       let cleaned = raw.trim();
       if (cleaned.startsWith("```json")) {
@@ -99,19 +177,30 @@ export async function callGeminiJson<T>({
       try {
         return JSON.parse(cleaned) as T;
       } catch (parseErr) {
-        // Attempt to extract the first valid JSON object or array
-        const jsonMatch = cleaned.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]) as T;
+        try {
+          return JSON.parse(escapeUnescapedControlCharsInStrings(cleaned)) as T;
+        } catch {
+          // Attempt to extract the first valid JSON object or array
+          const jsonMatch = cleaned.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+          if (jsonMatch) {
+            return JSON.parse(
+              escapeUnescapedControlCharsInStrings(jsonMatch[0])
+            ) as T;
+          }
+          lastError =
+            parseErr instanceof Error ? parseErr : new Error(String(parseErr));
+          continue;
         }
-        throw parseErr;
       }
     } catch (err: any) {
-      lastError = err;
-      if (err.message?.includes("503") || err.message?.includes("429")) {
-        continue;
+      lastError = err instanceof Error ? err : new Error(String(err));
+      if (lastError.message.includes("API_KEY_INVALID")) {
+        throw lastError;
       }
-      throw err;
+      console.warn(
+        `Gemini ${model} call failed (${lastError.message}). Trying next fallback model...`
+      );
+      continue;
     }
   }
 
@@ -131,54 +220,82 @@ export async function callGeminiText({
     );
   }
 
-  const model = process.env.GEMINI_MODEL || "gemini-3.5-flash";
   const baseUrl =
     process.env.GEMINI_API_BASE ||
     "https://generativelanguage.googleapis.com/v1beta";
 
-  const url = `${baseUrl}/models/${model}:generateContent`;
+  const candidateModels = getCandidateModels();
+  let lastError: Error | null = null;
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": apiKey,
-    },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: systemPrompt }],
-      },
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: userPrompt }],
+  for (const model of candidateModels) {
+    try {
+      const url = `${baseUrl}/models/${model}:generateContent`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
         },
-      ],
-      generationConfig: {
-        temperature,
-        maxOutputTokens,
-      },
-    }),
-  });
+        signal: AbortSignal.timeout(25000),
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: systemPrompt }],
+          },
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: userPrompt }],
+            },
+          ],
+          generationConfig: buildGenerationConfig(
+            model,
+            temperature,
+            maxOutputTokens,
+            false
+          ),
+        }),
+      });
 
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Gemini isteği başarısız: ${response.status} ${body}`);
+      if (!response.ok) {
+        const body = await response.text();
+        lastError = new Error(`Gemini ${model} ${response.status}: ${body}`);
+        if (
+          (response.status === 401 || response.status === 403) &&
+          body.includes("API_KEY_INVALID")
+        ) {
+          throw lastError;
+        }
+        continue;
+      }
+
+      const payload = (await response.json()) as {
+        candidates?: Array<{
+          content?: { parts?: Array<{ text?: string }> };
+        }>;
+        error?: { message?: string };
+      };
+
+      if (payload.error?.message) {
+        lastError = new Error(payload.error.message);
+        continue;
+      }
+
+      const raw = payload.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!raw) {
+        lastError = new Error("Gemini yanıtı boş");
+        continue;
+      }
+
+      return raw.trim();
+    } catch (err: any) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      if (lastError.message.includes("API_KEY_INVALID")) {
+        throw lastError;
+      }
+      continue;
+    }
   }
 
-  const payload = (await response.json()) as {
-    candidates?: Array<{
-      content?: { parts?: Array<{ text?: string }> };
-    }>;
-    error?: { message?: string };
-  };
-
-  if (payload.error?.message) {
-    throw new Error(payload.error.message);
-  }
-
-  const raw = payload.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!raw) throw new Error("Gemini yanıtı boş");
-
-  return raw.trim();
+  throw lastError || new Error("Gemini modelleri yanıt vermedi");
 }

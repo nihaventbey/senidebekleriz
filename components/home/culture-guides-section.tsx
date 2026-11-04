@@ -19,7 +19,7 @@ export function CultureGuidesSection({ articles }: Props) {
             <div className="flex items-center gap-2">
               <span className="flex h-5 items-center gap-1.5 rounded-full bg-indigo-500/10 px-2.5 text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
                 <Compass className="h-3.5 w-3.5" />
-                Kayıp Rıhtım Tarzı Dosyalar
+                Kültür Dosyaları &amp; Rotalar
               </span>
               <span className="text-xs text-muted-foreground hidden sm:inline">
                 · Tarih, Edebiyat &amp; Rotalar

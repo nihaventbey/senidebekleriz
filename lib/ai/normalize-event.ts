@@ -1,5 +1,6 @@
 import { turkeyCities } from "@/data/turkey-cities";
 import { callGeminiJson } from "@/lib/ai/gemini-client";
+import { detectTurkishCityInText } from "@/lib/discovery/classify-content";
 import type { NormalizedEventDraft, RawFeedItem } from "@/lib/events/types";
 import { cleanTicketUrl } from "@/lib/events/ticket-url";
 
@@ -162,14 +163,8 @@ export function heuristicNormalizeEvent(input: {
 }): FullNormalizedEvent {
   const text = `${input.pageTitle || ""} ${input.pageText}`.toLocaleLowerCase("tr");
 
-  // Determine city from 81 cities
-  let detectedCity: string | null = null;
-  for (const c of turkeyCities) {
-    if (text.includes(c.name.toLocaleLowerCase("tr")) || text.includes(c.slug)) {
-      detectedCity = c.slug;
-      break;
-    }
-  }
+  // Determine city from 81 cities safely with word boundaries
+  const detectedCity = detectTurkishCityInText(text);
 
   // Determine event type
   let eventType: NormalizedEventDraft["event_type"] = "duyuru";

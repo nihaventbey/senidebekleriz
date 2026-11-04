@@ -38,7 +38,7 @@ export function TrendingDossiers({ articles, news }: Props) {
 
   return (
     <section className="container mx-auto px-4 py-8 sm:py-12">
-      {/* Section Header - Ekşi Şeyler / Onedio Style */}
+      {/* Section Header */}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-border/60 pb-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
@@ -67,7 +67,7 @@ export function TrendingDossiers({ articles, news }: Props) {
         </Link>
       </div>
 
-      {/* Grid of 5 Numbered Items (Ekşi Şeyler Style 01 - 05) */}
+      {/* Grid of 5 Numbered Items (01 - 05) */}
       <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Top 1 Featured Card (Spans 2 columns on large screens) */}
         {items[0] && (

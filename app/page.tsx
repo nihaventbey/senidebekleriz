@@ -61,13 +61,13 @@ export default async function HomePage() {
       {/* 1. Canlı Sıcak Gündem Bandı (Trending Topics Ticker) */}
       <TrendingTicker />
 
-      {/* 2. Günün Manşetleri & Kültür Vitrini (Kayıp Rıhtım / Onedio Medya Hero) */}
+      {/* 2. Günün Manşetleri & Kültür Vitrini */}
       <EditorialHero
         featuredNews={featuredNews.length > 0 ? featuredNews : latestNews}
         latestEvents={upcomingEvents}
       />
 
-      {/* 3. Ekşi Şeyler & Onedio Tarzı "Günün Trendleri / En Çok İlgi Çeken Kültür Dosyaları" (01 - 05) */}
+      {/* 3. Günün Trendleri / En Çok İlgi Çeken Kültür Dosyaları (01 - 05) */}
       <TrendingDossiers
         articles={publishedArticles}
         news={latestNews}
@@ -85,7 +85,7 @@ export default async function HomePage() {
       {/* 4. İnteraktif "Bu Hafta Ne Var?" Şehir & Tür Filtreli Ajanda */}
       <HomeAgendaSection events={upcomingEvents} />
 
-      {/* 5. Kayıp Rıhtım Tarzı "Derinlemesine Kültür, Tarih & Şehir Rehberleri" */}
+      {/* 5. Derinlemesine Kültür, Tarih & Şehir Rehberleri */}
       <CultureGuidesSection articles={publishedArticles} />
 
       {/* 6. Kültür, Arkeoloji & Sanat Haberleri Akışı */}
