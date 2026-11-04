@@ -313,7 +313,7 @@ export function AdminNewsList({ newsList }: Props) {
 
                         {/* Edit */}
                         <Button variant="ghost" size="sm" asChild className="h-7 w-7 p-0 text-muted-foreground hover:text-primary">
-                          <Link href={`/yonetim/haberler/${item.slug}/duzenle`}>
+                          <Link href={`/yonetim/haberler/${item.slug}/duzenle`} prefetch={false}>
                             <Pencil className="h-3.5 w-3.5" />
                           </Link>
                         </Button>

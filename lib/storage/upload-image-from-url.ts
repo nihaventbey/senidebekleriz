@@ -1,4 +1,3 @@
-import sharp from "sharp";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { BROWSER_USER_AGENT } from "@/lib/ai/extract-page-images";
 
@@ -53,7 +52,9 @@ function normalizeWebpStoragePath(
  * resizes oversized dimensions down to MAX_IMAGE_DIMENSION, and encodes as WebP.
  */
 export async function convertBufferToCleanWebp(inputBuffer: Buffer): Promise<Buffer> {
-  return sharp(inputBuffer, { failOn: "none" })
+  const sharpMod = await import("sharp");
+  const sharpFn = sharpMod.default || sharpMod;
+  return sharpFn(inputBuffer, { failOn: "none" })
     .rotate() // Auto-orient based on EXIF before stripping metadata
     .resize({
       width: MAX_IMAGE_DIMENSION,
@@ -85,20 +86,27 @@ export async function uploadImageBuffer(
   }
   if (!bytes || bytes.length === 0 || bytes.length > MAX_IMAGE_BYTES) return null;
 
-  let webpBytes: Buffer;
-  try {
-    webpBytes = await convertBufferToCleanWebp(bytes);
-  } catch (err) {
-    console.error("[Storage] convertBufferToCleanWebp error:", err);
-    return null;
-  }
+  let finalBytes: Buffer = bytes;
+  let finalMime = "image/webp";
+  let finalPath = normalizeWebpStoragePath(storagePathOrOptions);
 
-  const pathWithWebp = normalizeWebpStoragePath(storagePathOrOptions);
+  try {
+    finalBytes = await convertBufferToCleanWebp(bytes);
+  } catch (err) {
+    console.warn("[Storage] convertBufferToCleanWebp fallback to original buffer:", err);
+    finalBytes = bytes;
+    finalMime = ALLOWED_MIME_TYPES.has(mime) ? mime : "image/jpeg";
+    if (typeof storagePathOrOptions === "string") {
+      const ext = finalMime.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
+      const withoutExt = storagePathOrOptions.replace(/\.(jpe?g|png|webp|avif|gif)$/i, "");
+      finalPath = `${withoutExt}.${ext}`;
+    }
+  }
 
   const { error } = await supabaseAdmin.storage
     .from(MEDIA_BUCKET)
-    .upload(pathWithWebp, webpBytes, {
-      contentType: "image/webp",
+    .upload(finalPath, finalBytes, {
+      contentType: finalMime,
       cacheControl: "31536000",
       upsert: true,
     });
@@ -108,7 +116,7 @@ export async function uploadImageBuffer(
     return null;
   }
 
-  return getMediaPublicUrl(pathWithWebp);
+  return getMediaPublicUrl(finalPath);
 }
 
 export async function uploadImageFromUrl(

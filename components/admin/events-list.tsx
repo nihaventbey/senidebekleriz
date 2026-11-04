@@ -325,7 +325,7 @@ export function EventsList({ events, filter }: Props) {
                           </Button>
                         )}
                         <Button variant="outline" size="sm" asChild className="gap-1 h-7 px-2 text-xs">
-                          <Link href={`/yonetim/etkinlikler/${event.slug}/duzenle`}>
+                          <Link href={`/yonetim/etkinlikler/${event.slug}/duzenle`} prefetch={false}>
                             <Pencil className="h-3 w-3 text-amber-600" />
                             <span>Düzenle</span>
                           </Link>

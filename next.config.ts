@@ -2,6 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  serverExternalPackages: ["sharp"],
+  outputFileTracingIncludes: {
+    "/*": [
+      "./node_modules/@img/**/*",
+      "./node_modules/sharp/**/*",
+    ],
+  },
   images: {
     remotePatterns: [
       {
