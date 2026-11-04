@@ -7,7 +7,6 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { AdBanner } from "@/components/ads/ad-banner";
 import { getEventBySlug, getPublishedEventSlugs, isEventExpired } from "@/lib/data/events";
 import { buildBreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
-import { getCityCoordinates } from "@/lib/cities/lookup";
 import { EventVenueMap } from "@/components/maps/event-venue-map";
 import { CulturalCoverPlaceholder } from "@/components/ui/cultural-cover-placeholder";
 import {
@@ -85,7 +84,6 @@ export default async function EventDetailPage({
 
   const dateLabel = formatDate(event.startsAt);
   const ctaUrl = event.ticketUrl || event.sourceUrl;
-  const coordinates = getCityCoordinates(event.cityName || event.citySlug);
 
   const eventJsonLd = [
     {
@@ -215,12 +213,11 @@ export default async function EventDetailPage({
         </div>
       )}
 
-      {/* Interactive Event Venue & Directions Map */}
+      {/* Interactive Event Venue & Directions Map (Only shown if venue is a real searchable address) */}
       <EventVenueMap
         venueName={event.venueName}
         cityName={event.cityName}
-        coordinates={coordinates}
-        className="mt-10"
+        eventTitle={event.title}
       />
 
       {event.sourceName && (

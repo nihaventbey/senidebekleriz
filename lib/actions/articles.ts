@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
 import { slugify } from "@/lib/slugify";
 import { getAdminArticleBySlug } from "@/lib/data/admin-articles";
 import { isValidCitySlug } from "@/lib/cities/lookup";
@@ -72,6 +73,11 @@ export async function createArticle(
   formData: FormData
 ): Promise<ArticleActionResult> {
   const data = articleFromForm(formData);
+  data.cover_image = await ensureStoredCoverImage(
+    data.cover_image,
+    "articles",
+    data.slug || data.title
+  );
 
   const { error } = await supabaseAdmin.from("articles").insert(data);
   if (error) throw new Error(error.message);
@@ -86,6 +92,11 @@ export async function updateArticle(
 ): Promise<ArticleActionResult> {
   const existing = await getAdminArticleBySlug(slug);
   const data = articleFromForm(formData);
+  data.cover_image = await ensureStoredCoverImage(
+    data.cover_image,
+    "articles",
+    data.slug || slug
+  );
 
   if (data.is_published) {
     data.published_at =

@@ -40,16 +40,11 @@ export function BlogHero({ articles, totalCount }: Props) {
       <div className="container relative mx-auto px-4">
         <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
           <div className="max-w-xl">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-800 dark:text-amber-300">
-              <PenLine className="h-3.5 w-3.5" />
-              Editör yazıları
-            </div>
-            <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
-              Gezi Rehberi
+            <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl lg:text-5xl">
+              Gezi &amp; Kültür Rehberleri
             </h1>
-            <p className="mt-4 text-lg leading-relaxed text-muted-foreground md:text-xl">
-              Rota önerileri, şehir hikâyeleri ve Türkiye&apos;yi anlatan özgün
-              yazılar — fotoğraf kolajından farklı, okumaya davet eden bir alan.
+            <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+              Antik kentler, müzeler ve şehir rotaları üzerine kapsamlı rehberler.
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">

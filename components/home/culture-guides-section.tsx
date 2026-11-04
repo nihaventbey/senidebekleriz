@@ -14,30 +14,16 @@ export function CultureGuidesSection({ articles }: Props) {
     <section className="border-t border-border/50 bg-muted/15 py-10 sm:py-16">
       <div className="container mx-auto px-4">
         {/* Header */}
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="flex h-5 items-center gap-1.5 rounded-full bg-indigo-500/10 px-2.5 text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                <Compass className="h-3.5 w-3.5" />
-                Kültür Dosyaları &amp; Rotalar
-              </span>
-              <span className="text-xs text-muted-foreground hidden sm:inline">
-                · Tarih, Edebiyat &amp; Rotalar
-              </span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Derinlemesine Kültür &amp; Şehir Rehberleri
-            </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl">
-              Antik kentlerden tarihi hanlara, edebiyat rotalarından yerel lezzet duraklarına Türkiye&apos;nin yaşayan mirası.
-            </p>
-          </div>
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+            Gezi &amp; Kültür Rehberleri
+          </h2>
 
           <Link
             href="/blog"
             className="group inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:underline shrink-0"
           >
-            <span>Tüm Kültür Rotalarını Gör</span>
+            <span>Tüm Rehberler</span>
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>

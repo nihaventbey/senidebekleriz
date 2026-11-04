@@ -11,24 +11,15 @@ export function PopularCitiesSection({ cities }: Props) {
 
   return (
     <section className="container mx-auto px-4 py-8 sm:py-12">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-border/50 pb-4">
-        <div>
-          <div className="flex items-center gap-1.5 mb-1 text-xs font-bold uppercase tracking-wider text-primary">
-            <Building2 className="h-3.5 w-3.5" />
-            <span>81 İl Kültür Rotası</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-            Şehirlerin Kültür &amp; Sanat Ajandası
-          </h2>
-          <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-            Türkiye&apos;nin önde gelen kültür şehirlerini, antik kentlerini ve yerel etkinliklerini keşfedin.
-          </p>
-        </div>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+          Popüler Şehirler
+        </h2>
         <Link
           href="/sehirler"
           className="group inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-primary hover:underline shrink-0"
         >
-          <span>Tüm 81 İli Görüntüle</span>
+          <span>81 İli Gör</span>
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
         </Link>
       </div>

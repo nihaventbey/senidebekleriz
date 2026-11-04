@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, X, Newspaper, Sparkles, Building2, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,14 @@ export function NewsExplorer({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
   const [selectedCity, setSelectedCity] = useState<string>(initialCity);
+
+  useEffect(() => {
+    setSelectedCategory(initialCategory || "all");
+  }, [initialCategory]);
+
+  useEffect(() => {
+    setSelectedCity(initialCity || "all");
+  }, [initialCity]);
 
   const filteredNews = useMemo(() => {
     let list = [...initialNews];

@@ -1,8 +1,63 @@
 import { turkeyCities } from "@/data/turkey-cities";
 import { callGeminiJson } from "@/lib/ai/gemini-client";
+import { normalizeCitySlug } from "@/lib/cities/lookup";
 import { detectTurkishCityInText } from "@/lib/discovery/classify-content";
-import type { NormalizedEventDraft, RawFeedItem } from "@/lib/events/types";
+import type { EventType, NormalizedEventDraft, RawFeedItem } from "@/lib/events/types";
 import { cleanTicketUrl } from "@/lib/events/ticket-url";
+
+const VALID_EVENT_TYPES = new Set<EventType>([
+  "tiyatro",
+  "konser",
+  "sergi",
+  "festival",
+  "duyuru",
+  "diger",
+]);
+
+export function sanitizeEventType(raw?: string | null, fallbackText?: string): EventType {
+  if (raw) {
+    const lower = raw.trim().toLocaleLowerCase("tr");
+    if (VALID_EVENT_TYPES.has(lower as EventType)) {
+      return lower as EventType;
+    }
+    if (/(tiyatro|oyun|sahne|opera|bale|müzikal|muzikal|stand-up|standup|gösteri|gosteri)/i.test(lower)) {
+      return "tiyatro";
+    }
+    if (/(konser|müzik|muzik|resital|orkestra|senfoni|caz|jazz|dinleti)/i.test(lower)) {
+      return "konser";
+    }
+    if (/(sergi|müze|muze|galeri|bienal|enstalasyon)/i.test(lower)) {
+      return "sergi";
+    }
+    if (/(festival|şenlik|senlik|karnaval)/i.test(lower)) {
+      return "festival";
+    }
+    if (/(atölye|atolye|söyleşi|soylesi|panel|sinema|film|gösterim)/i.test(lower)) {
+      return "diger";
+    }
+  }
+
+  if (fallbackText) {
+    const t = fallbackText.toLocaleLowerCase("tr");
+    if (/\b(tiyatro|oyun|sahne|perde|prömiyer|bale|opera)\b/i.test(t)) return "tiyatro";
+    if (/\b(sergi|sergisi|galeri|müze|bienal)\b/i.test(t)) return "sergi";
+    if (/\b(konser|konseri|resital|orkestra|senfoni)\b/i.test(t)) return "konser";
+    if (/\b(festival|festivali|şenlik)\b/i.test(t)) return "festival";
+  }
+
+  return "duyuru";
+}
+
+export function sanitizeIsoDate(raw?: string | null): string | null {
+  if (!raw || typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed || /^(null|undefined|belirtilmedi|yok)$/i.test(trimmed)) return null;
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const year = parsed.getFullYear();
+  if (year < 2020 || year > 2035) return null;
+  return parsed.toISOString();
+}
 
 const CITY_SLUGS = turkeyCities.map((c) => c.slug).join(", ");
 
@@ -161,36 +216,51 @@ export function heuristicNormalizeEvent(input: {
   pageTitle?: string;
   pageText: string;
 }): FullNormalizedEvent {
-  const text = `${input.pageTitle || ""} ${input.pageText}`.toLocaleLowerCase("tr");
+  const combined = `${input.pageTitle || ""} ${input.pageText}`;
+  const text = combined.toLocaleLowerCase("tr");
 
   // Determine city from 81 cities safely with word boundaries
-  const detectedCity = detectTurkishCityInText(text);
+  const detectedCity = normalizeCitySlug(detectTurkishCityInText(text));
 
   // Determine event type
-  let eventType: NormalizedEventDraft["event_type"] = "duyuru";
-  if (/\b(tiyatro|oyun|sahne|perde|prömiyer|bale|opera)\b/i.test(text)) eventType = "tiyatro";
-  else if (/\b(sergi|sergisi|galeri|müze)\b/i.test(text)) eventType = "sergi";
-  else if (/\b(konser|konseri|resital|orkestra|senfoni)\b/i.test(text)) eventType = "konser";
-  else if (/\b(festival|festivali|şenlik)\b/i.test(text)) eventType = "festival";
+  const eventType = sanitizeEventType(null, text);
 
-  const cleanTitle = (input.pageTitle || input.url).replace(/\s*[-–|].*$/, "").trim();
-  const summary = (input.pageText || cleanTitle).slice(0, 160).trim();
+  const cleanTitle = (input.pageTitle || input.url)
+    .replace(/\s*\|\s*(Biletix|Resmi Biletix.*|Ticketmaster.*|Biletinial.*|Passo.*)$/i, "")
+    .replace(/\s*biletleri\s*$/i, "")
+    .replace(/\s*[-–|]\s*[^–|-]{1,35}$/, "")
+    .trim() || "Kültür Sanat Etkinliği";
+
+  const rawBody = (input.pageText || "").trim();
+  const summary = (rawBody || cleanTitle).slice(0, 160).trim();
   const dates = extractTurkishDates(text);
+
+  const description =
+    rawBody.length >= 250
+      ? rawBody.slice(0, 2500)
+      : [
+          `${cleanTitle}, kültür ve sanat takviminde öne çıkan etkinlikler arasında yer alıyor.`,
+          rawBody ? `\n${rawBody}` : "",
+          `\n## Etkinlik ve Katılım Detayları`,
+          `Etkinlik programı, seans saatleri ve güncel katılım koşulları için resmi etkinlik kaynağını veya biletleme bağlantısını kontrol edebilirsiniz.`,
+        ]
+          .filter(Boolean)
+          .join("\n");
 
   return {
     title: cleanTitle,
     summary: summary || cleanTitle,
-    description: input.pageText ? input.pageText.slice(0, 1500) : null,
+    description,
     event_type: eventType,
     city_slug: detectedCity,
     venue_name: null,
-    starts_at: dates.starts_at,
-    ends_at: dates.ends_at,
+    starts_at: sanitizeIsoDate(dates.starts_at),
+    ends_at: sanitizeIsoDate(dates.ends_at),
     is_cultural_event: true,
     confidence: 0.8,
-    ticket_url: null,
-    meta_title: `${cleanTitle} | Kültür Sanat Etkinliği`,
-    meta_description: summary,
+    ticket_url: cleanTicketUrl(input.url, ""),
+    meta_title: `${cleanTitle} | Kültür Sanat Etkinliği`.slice(0, 60),
+    meta_description: (summary || cleanTitle).slice(0, 155),
   };
 }
 
@@ -214,10 +284,19 @@ export async function normalizeFeedItem(
       temperature: 0.3,
     });
 
+    const fallbackDates = extractTurkishDates(`${item.title} ${item.description}`);
+
     return {
       ...parsed,
-      title: parsed.title || item.title,
+      title: (parsed.title || item.title).trim(),
       summary: (parsed.summary || item.title).slice(0, 160),
+      event_type: sanitizeEventType(parsed.event_type, `${item.title} ${item.description}`),
+      city_slug:
+        normalizeCitySlug(parsed.city_slug) ||
+        normalizeCitySlug(detectTurkishCityInText(`${item.title} ${item.description}`)),
+      starts_at: sanitizeIsoDate(parsed.starts_at) || sanitizeIsoDate(fallbackDates.starts_at),
+      ends_at: sanitizeIsoDate(parsed.ends_at) || sanitizeIsoDate(fallbackDates.ends_at),
+      is_cultural_event: parsed.is_cultural_event ?? true,
     };
   } catch (error) {
     console.warn("normalizeFeedItem AI fallback triggered:", error instanceof Error ? error.message : error);
@@ -249,13 +328,31 @@ export async function normalizeUrlContent(input: {
       temperature: 0.3,
     });
 
-    const cleanedTicket = cleanTicketUrl(parsed.ticket_url, input.url);
+    const combinedText = `${input.pageTitle || ""} ${input.pageText}`;
+    const fallbackDates = extractTurkishDates(combinedText);
+    const cleanedTicket =
+      cleanTicketUrl(parsed.ticket_url, input.url) ||
+      cleanTicketUrl(input.url, "");
+
+    const cleanTitle = (parsed.title || input.pageTitle || "Kültür Etkinliği").trim();
+    const cleanSummary = (parsed.summary || input.pageTitle || cleanTitle).slice(0, 160);
 
     return {
       ...parsed,
+      title: cleanTitle,
+      summary: cleanSummary,
+      description: parsed.description || input.pageText.slice(0, 2000) || cleanSummary,
+      event_type: sanitizeEventType(parsed.event_type, combinedText),
+      city_slug:
+        normalizeCitySlug(parsed.city_slug) ||
+        normalizeCitySlug(detectTurkishCityInText(combinedText)),
+      venue_name: parsed.venue_name ? String(parsed.venue_name).trim() : null,
+      starts_at: sanitizeIsoDate(parsed.starts_at) || sanitizeIsoDate(fallbackDates.starts_at),
+      ends_at: sanitizeIsoDate(parsed.ends_at) || sanitizeIsoDate(fallbackDates.ends_at),
       ticket_url: cleanedTicket,
-      title: parsed.title || input.pageTitle || "Kültür Etkinliği",
-      summary: (parsed.summary || input.pageTitle || "").slice(0, 160),
+      meta_title: (parsed.meta_title || `${cleanTitle} | Etkinlik Takvimi`).slice(0, 60),
+      meta_description: (parsed.meta_description || cleanSummary).slice(0, 155),
+      is_cultural_event: parsed.is_cultural_event ?? true,
     };
   } catch (error) {
     console.warn("normalizeUrlContent AI fallback triggered:", error instanceof Error ? error.message : error);

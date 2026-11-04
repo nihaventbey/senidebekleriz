@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { importEventFromUrl } from "@/lib/ai/import-event-from-url";
+import { sanitizeEventType, sanitizeIsoDate } from "@/lib/ai/normalize-event";
 import { generateNewsDraft } from "@/lib/ai/generate-news";
 import { generateArticleDraft } from "@/lib/ai/generate-article";
 import { resolveFallbackCulturalImage } from "@/lib/ai/extract-page-images";
@@ -100,9 +101,6 @@ export async function rejectDiscovery(id: string) {
 export async function importDiscoveryAsEvent(id: string) {
   const item = await getDiscoveredContentById(id);
   if (!item) throw new Error("Keşif kaydı bulunamadı");
-  if (item.status !== "pending_review") {
-    throw new Error("Bu kayıt zaten işlendi");
-  }
 
   const publisherUrl = await resolveDiscoveryUrl(item);
 
@@ -141,7 +139,7 @@ export async function importDiscoveryAsEvent(id: string) {
     };
   }
 
-  const baseSlug = slugify(imported.title || item.title || "etkinlik");
+  const baseSlug = slugify(imported.title || item.title || "etkinlik") || "etkinlik";
   let slug = baseSlug.slice(0, 100);
   let counter = 1;
   while (true) {
@@ -154,6 +152,8 @@ export async function importDiscoveryAsEvent(id: string) {
     slug = `${baseSlug.slice(0, 90)}-${counter++}`;
   }
 
+  const resolvedCity = normalizeCitySlug(imported.city_slug || item.city_slug);
+
   let rawCover =
     imported.cover_image ||
     item.cover_image ||
@@ -163,34 +163,38 @@ export async function importDiscoveryAsEvent(id: string) {
   if (!rawCover) {
     rawCover = await resolveFallbackCulturalImage({
       title: imported.title || item.title,
-      cityName: getCityName(imported.city_slug || item.city_slug),
+      cityName: getCityName(resolvedCity),
       category: "kultur_sanat",
     });
   }
 
   const storedCoverImage = await ensureStoredCoverImage(rawCover, "events", slug);
+  const safeTitle = (imported.title || item.title || "Kültür Etkinliği").trim();
 
   const { data, error } = await supabaseAdmin
     .from("cultural_events")
     .insert({
-      title: imported.title || item.title,
+      title: safeTitle,
       slug,
-      summary: (imported.summary || item.snippet || item.title).slice(0, 160),
+      summary: (imported.summary || item.snippet || safeTitle).slice(0, 160),
       description: imported.description || item.snippet || null,
-      event_type: imported.event_type || "duyuru",
+      event_type: sanitizeEventType(imported.event_type, `${safeTitle} ${item.snippet || ""}`),
       status: "pending_review",
       source_name: item.source_name,
       source_url: publisherUrl,
       ticket_url: imported.ticket_url || null,
-      city_slug: imported.city_slug || item.city_slug,
+      city_slug: resolvedCity,
       venue_name: imported.venue_name || null,
-      starts_at: imported.starts_at || null,
-      ends_at: imported.ends_at || null,
+      starts_at: sanitizeIsoDate(imported.starts_at),
+      ends_at: sanitizeIsoDate(imported.ends_at),
       cover_image: storedCoverImage,
-      meta_title: imported.meta_title || null,
-      meta_description:
+      meta_title: imported.meta_title ? String(imported.meta_title).slice(0, 60) : null,
+      meta_description: (
         imported.meta_description ||
-        (imported.summary || item.snippet || item.title).slice(0, 155),
+        imported.summary ||
+        item.snippet ||
+        safeTitle
+      ).slice(0, 155),
       raw_payload: {
         discovery_id: item.id,
         image_urls: imported.image_urls,
@@ -214,9 +218,6 @@ export async function importDiscoveryAsEvent(id: string) {
 export async function importDiscoveryAsArticle(id: string) {
   const item = await getDiscoveredContentById(id);
   if (!item) throw new Error("Keşif kaydı bulunamadı");
-  if (item.status !== "pending_review") {
-    throw new Error("Bu kayıt zaten işlendi");
-  }
 
   const publisherUrl = await resolveDiscoveryUrl(item);
   const cityName = getCityName(item.city_slug) || undefined;
@@ -287,9 +288,6 @@ export async function importDiscoveryAsArticle(id: string) {
 export async function importDiscoveryAsNews(id: string) {
   const item = await getDiscoveredContentById(id);
   if (!item) throw new Error("Keşif kaydı bulunamadı");
-  if (item.status !== "pending_review") {
-    throw new Error("Bu kayıt zaten işlendi");
-  }
 
   const publisherUrl = await resolveDiscoveryUrl(item);
 
@@ -482,9 +480,6 @@ export async function deleteAllDiscoveredContentByFilter(status?: string) {
 export async function disaggregateDiscoveryBulletin(id: string) {
   const item = await getDiscoveredContentById(id);
   if (!item) throw new Error("Keşif kaydı bulunamadı");
-  if (item.status !== "pending_review") {
-    throw new Error("Bu kayıt zaten işlendi");
-  }
 
   const publisherUrl = await resolveDiscoveryUrl(item);
   const coverImageHint =

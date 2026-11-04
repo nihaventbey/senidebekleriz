@@ -37,12 +37,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/kategoriler`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
-    {
       url: `${baseUrl}/blog`,
       lastModified: new Date(),
       changeFrequency: "daily",
@@ -109,31 +103,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(place.updatedAt),
       changeFrequency: "monthly",
       priority: 0.7,
-    });
-  }
-
-  for (const category of categories) {
-    const places = await getPlacesByCategory(category.slug);
-    const indexablePlaceCount = places.filter((place) =>
-      shouldIndexPlace({
-        description: place.description,
-        source: place.source,
-        is_featured: place.is_featured,
-        cover_image: place.cover_image,
-      })
-    ).length;
-    const indexable = shouldIndexCategoryHub({
-      placeCount: places.length,
-      indexablePlaceCount,
-      descriptionLength: category.description?.length ?? 0,
-    });
-    if (!indexable) continue;
-
-    routes.push({
-      url: `${baseUrl}/kategori/${category.slug}`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.8,
     });
   }
 

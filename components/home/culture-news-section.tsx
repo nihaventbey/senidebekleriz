@@ -27,19 +27,10 @@ export function CultureNewsSection({ news }: { news: PublicNewsArticle[] }) {
 
   return (
     <section className="container mx-auto px-4 py-12">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-8">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
-            <BookOpen className="h-4 w-4" />
-            <span>Kültür ve Sanat Dünyası</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground mt-1">
-            Gündem &amp; Kültürel Miras
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Arkeolojik buluntular, restorasyon projeleri, müze ve sanat dünyasından son gelişmeler.
-          </p>
-        </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+          Kültür &amp; Sanat Haberleri
+        </h2>
 
         <Button variant="outline" size="sm" asChild className="shrink-0 font-semibold">
           <Link href="/haberler">

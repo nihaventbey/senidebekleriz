@@ -56,23 +56,14 @@ export function HomeAgendaSection({ events }: { events: PublicEvent[] }) {
   return (
     <section className="container mx-auto px-4 py-12">
       {/* Header with Title and "Tümünü Gör" Button */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-8">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
-            <Calendar className="h-4 w-4" />
-            <span>Şehir Ajandası</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground mt-1">
-            Bu Hafta Ne Var?
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Tiyatro sahnelerinden müze galerilerine, konserlerden açık hava festivallerine.
-          </p>
-        </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+          Yaklaşan Etkinlikler
+        </h2>
 
         <Button variant="outline" size="sm" asChild className="shrink-0 font-semibold">
           <Link href="/etkinlikler">
-            <span>Tüm Etkinlik Takvimi</span>
+            <span>Tüm Etkinlikler</span>
             <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
           </Link>
         </Button>

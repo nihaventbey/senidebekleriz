@@ -217,22 +217,6 @@ export default async function CityPage({
           <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-line md:text-base">
             {city.description}
           </p>
-          <div className="mt-6 flex flex-wrap items-center gap-4 border-t border-border/60 pt-4 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 text-primary" />
-              <span>
-                Koordinatlar: {city.lat.toFixed(4)}, {city.lng.toFixed(4)}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span>
-                Bölge:{" "}
-                <strong className="font-medium text-foreground">
-                  {city.region}
-                </strong>
-              </span>
-            </div>
-          </div>
         </section>
 
         {/* 1. ŞEHİR VEYA BÖLGESEL ETKİNLİK AJANDASI */}

@@ -2,14 +2,11 @@ import { getFeaturedNews, getPublishedNews } from "@/lib/data/news";
 import { getPublishedEvents } from "@/lib/data/events";
 import { getPublishedArticles } from "@/lib/data/articles";
 import { getPopularCities } from "@/lib/data/cities";
-import { TrendingTicker } from "@/components/home/trending-ticker";
 import { EditorialHero } from "@/components/home/editorial-hero";
-import { TrendingDossiers } from "@/components/home/trending-dossiers";
 import { HomeAgendaSection } from "@/components/home/home-agenda-section";
 import { CultureGuidesSection } from "@/components/home/culture-guides-section";
 import { CultureNewsSection } from "@/components/home/culture-news-section";
 import { PopularCitiesSection } from "@/components/home/popular-cities-section";
-import { CultureNewsletterCta } from "@/components/home/culture-newsletter-cta";
 import { AdBanner } from "@/components/ads/ad-banner";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getSiteUrl } from "@/lib/agents/site";
@@ -58,19 +55,10 @@ export default async function HomePage() {
     <div className="flex flex-col min-h-screen">
       <JsonLd data={websiteJsonLd} />
 
-      {/* 1. Canlı Sıcak Gündem Bandı (Trending Topics Ticker) */}
-      <TrendingTicker />
-
-      {/* 2. Günün Manşetleri & Kültür Vitrini */}
+      {/* 1. Günün Manşetleri */}
       <EditorialHero
         featuredNews={featuredNews.length > 0 ? featuredNews : latestNews}
         latestEvents={upcomingEvents}
-      />
-
-      {/* 3. Günün Trendleri / En Çok İlgi Çeken Kültür Dosyaları (01 - 05) */}
-      <TrendingDossiers
-        articles={publishedArticles}
-        news={latestNews}
       />
 
       {/* Reklam - Manşet Altı Banner */}
@@ -82,20 +70,17 @@ export default async function HomePage() {
         />
       </section>
 
-      {/* 4. İnteraktif "Bu Hafta Ne Var?" Şehir & Tür Filtreli Ajanda */}
+      {/* 2. "Bu Hafta Ne Var?" Şehir & Tür Filtreli Ajanda */}
       <HomeAgendaSection events={upcomingEvents} />
 
-      {/* 5. Derinlemesine Kültür, Tarih & Şehir Rehberleri */}
-      <CultureGuidesSection articles={publishedArticles} />
-
-      {/* 6. Kültür, Arkeoloji & Sanat Haberleri Akışı */}
+      {/* 3. Kültür & Sanat Haberleri */}
       <CultureNewsSection news={latestNews} />
 
-      {/* 7. 81 İl Kültür Rotası & Keşif Vitrini */}
-      <PopularCitiesSection cities={popularCities} />
+      {/* 4. Kültür & Şehir Rehberleri */}
+      <CultureGuidesSection articles={publishedArticles} />
 
-      {/* 8. Kültür Ajandası Topluluk & Keşif Çağrısı */}
-      <CultureNewsletterCta />
+      {/* 5. 81 İl Kültür Rotası */}
+      <PopularCitiesSection cities={popularCities} />
 
       {/* Reklam - Footer Öncesi Banner */}
       <section className="container mx-auto px-4 py-6 pb-12">

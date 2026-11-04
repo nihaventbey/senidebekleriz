@@ -2,7 +2,6 @@ import { Metadata } from "next";
 import { getPublishedEvents } from "@/lib/data/events";
 import { getAllCities } from "@/lib/data/cities";
 import { EventsExplorer } from "@/components/events/events-explorer";
-import { TurkeyCulturalHeatmap } from "@/components/maps/turkey-cultural-heatmap";
 import { BreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import { EventsJsonLd } from "@/components/seo/events-jsonld";
 
@@ -22,15 +21,14 @@ export const metadata: Metadata = {
   },
 };
 
-// 1 hour ISR caching with on-demand revalidation on publish
 export const revalidate = 3600;
 
 type Props = {
-  searchParams: Promise<{ sehir?: string; tip?: string }>;
+  searchParams: Promise<{ sehir?: string; tip?: string; tur?: string; zaman?: string }>;
 };
 
 export default async function EventsPage({ searchParams }: Props) {
-  const { sehir, tip } = await searchParams;
+  const { sehir, tip, tur, zaman } = await searchParams;
   const [events, cities] = await Promise.all([
     getPublishedEvents({
       limit: 120,
@@ -38,9 +36,12 @@ export default async function EventsPage({ searchParams }: Props) {
     getAllCities(),
   ]);
 
+  const resolvedType = tip || tur || "all";
+  const resolvedDateFilter =
+    zaman === "haftasonu" ? "haftasonu" : "all";
+
   return (
-    <div className="space-y-8 pb-16">
-      {/* Schema.org SEO Breadcrumbs & Event ItemList */}
+    <div className="pb-16">
       <BreadcrumbsJsonLd
         items={[
           { name: "Ana Sayfa", path: "/" },
@@ -49,18 +50,14 @@ export default async function EventsPage({ searchParams }: Props) {
       />
       <EventsJsonLd events={events} />
 
-      {/* 1. Interactive Turkey Cultural Heatmap */}
-      <TurkeyCulturalHeatmap events={events} />
-
-      {/* 2. Interactive Explorer UI */}
-      <div className="container mx-auto px-4">
-        <EventsExplorer
-          initialEvents={events}
-          cities={cities}
-          initialCity={sehir || "all"}
-          initialType={tip || "all"}
-        />
-      </div>
+      <EventsExplorer
+        initialEvents={events}
+        cities={cities}
+        initialCity={sehir || "all"}
+        initialType={resolvedType}
+        initialDateFilter={resolvedDateFilter}
+        showHeatmap={true}
+      />
     </div>
   );
 }

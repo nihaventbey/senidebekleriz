@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { BROWSER_USER_AGENT } from "@/lib/ai/extract-page-images";
 
@@ -8,53 +9,96 @@ const ALLOWED_MIME_TYPES = new Set([
   "image/jpg",
   "image/png",
   "image/webp",
+  "image/avif",
   "image/gif",
 ]);
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-
-function extensionForMime(mime: string): string {
-  switch (mime) {
-    case "image/png":
-      return "png";
-    case "image/webp":
-      return "webp";
-    case "image/gif":
-      return "gif";
-    default:
-      return "jpg";
-  }
-}
-
-function extensionFromUrl(url: string): string | null {
-  const match = url.match(/\.(jpe?g|png|webp|gif)(?:\?|$)/i);
-  if (!match) return null;
-  return match[1].toLowerCase().replace("jpeg", "jpg");
-}
+const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
+const MAX_IMAGE_DIMENSION = 1600;
+const WEBP_QUALITY = 82;
 
 export function getMediaPublicUrl(path: string): string {
   const { data } = supabaseAdmin.storage.from(MEDIA_BUCKET).getPublicUrl(path);
   return data.publicUrl;
 }
 
+function safePathSegment(value: string): string {
+  return value
+    .replace(/[^a-z0-9-]/gi, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 80)
+    .replace(/^-+|-+$/g, "");
+}
+
+function normalizeWebpStoragePath(
+  storagePathOrOptions:
+    | string
+    | {
+        folder: "news" | "events" | "articles" | "places" | "uploads";
+        slugHint?: string;
+      }
+): string {
+  if (typeof storagePathOrOptions === "string") {
+    const withoutExt = storagePathOrOptions.replace(/\.(jpe?g|png|webp|avif|gif)$/i, "");
+    return `${withoutExt}.webp`;
+  }
+  const safeSlug = safePathSegment(storagePathOrOptions.slugHint || "cover") || "cover";
+  return `${storagePathOrOptions.folder}/${safeSlug}/${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 6)}.webp`;
+}
+
+/**
+ * Strips all EXIF/ICC/XMP metadata (after auto-orienting via EXIF orientation tag),
+ * resizes oversized dimensions down to MAX_IMAGE_DIMENSION, and encodes as WebP.
+ */
+export async function convertBufferToCleanWebp(inputBuffer: Buffer): Promise<Buffer> {
+  return sharp(inputBuffer, { failOn: "none" })
+    .rotate() // Auto-orient based on EXIF before stripping metadata
+    .resize({
+      width: MAX_IMAGE_DIMENSION,
+      height: MAX_IMAGE_DIMENSION,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .webp({ quality: WEBP_QUALITY, effort: 4 })
+    .toBuffer();
+}
+
 export async function uploadImageBuffer(
   bytes: Buffer,
   contentType: string,
-  storagePath: string
+  storagePathOrOptions:
+    | string
+    | {
+        folder: "news" | "events" | "articles" | "places" | "uploads";
+        slugHint?: string;
+      }
 ): Promise<string | null> {
-  const mime = contentType.split(";")[0].trim().toLowerCase();
-  if (!ALLOWED_MIME_TYPES.has(mime)) return null;
-  if (bytes.length === 0 || bytes.length > MAX_IMAGE_BYTES) return null;
+  const mime = (contentType || "image/jpeg").split(";")[0].trim().toLowerCase();
+  if (
+    !ALLOWED_MIME_TYPES.has(mime) &&
+    !mime.startsWith("image/") &&
+    !mime.includes("octet-stream")
+  ) {
+    return null;
+  }
+  if (!bytes || bytes.length === 0 || bytes.length > MAX_IMAGE_BYTES) return null;
 
-  const ext = extensionForMime(mime);
-  const pathWithExt = storagePath.includes(".")
-    ? storagePath
-    : `${storagePath}.${ext}`;
+  let webpBytes: Buffer;
+  try {
+    webpBytes = await convertBufferToCleanWebp(bytes);
+  } catch (err) {
+    console.error("[Storage] convertBufferToCleanWebp error:", err);
+    return null;
+  }
+
+  const pathWithWebp = normalizeWebpStoragePath(storagePathOrOptions);
 
   const { error } = await supabaseAdmin.storage
     .from(MEDIA_BUCKET)
-    .upload(pathWithExt, bytes, {
-      contentType: mime,
+    .upload(pathWithWebp, webpBytes, {
+      contentType: "image/webp",
       cacheControl: "31536000",
       upsert: true,
     });
@@ -64,56 +108,56 @@ export async function uploadImageBuffer(
     return null;
   }
 
-  return getMediaPublicUrl(pathWithExt);
+  return getMediaPublicUrl(pathWithWebp);
 }
 
 export async function uploadImageFromUrl(
   imageUrl: string,
-  storagePath: string
+  storagePathOrOptions:
+    | string
+    | {
+        folder: "news" | "events" | "articles" | "places" | "uploads";
+        slugHint?: string;
+        forceReprocess?: boolean;
+      }
 ): Promise<string | null> {
   try {
-    const origin = new URL(imageUrl).origin;
-    const response = await fetch(imageUrl, {
+    if (!imageUrl || typeof imageUrl !== "string") return null;
+    const trimmed = imageUrl.trim();
+    if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+      return null;
+    }
+
+    const origin = new URL(trimmed).origin;
+    const response = await fetch(trimmed, {
       headers: {
         "User-Agent": BROWSER_USER_AGENT,
         Referer: origin,
         Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
       },
-      signal: AbortSignal.timeout(12000),
+      signal: AbortSignal.timeout(15000),
       redirect: "follow",
     });
 
     if (!response.ok) return null;
 
-    const contentType = (response.headers.get("content-type") || "")
+    const contentType = (response.headers.get("content-type") || "image/jpeg")
       .split(";")[0]
       .trim()
       .toLowerCase();
 
-    if (!ALLOWED_MIME_TYPES.has(contentType)) return null;
-
-    const bytes = Buffer.from(await response.arrayBuffer());
-    if (bytes.length === 0 || bytes.length > MAX_IMAGE_BYTES) return null;
-
-    const ext = extensionFromUrl(imageUrl) || extensionForMime(contentType);
-    const pathWithExt = storagePath.includes(".")
-      ? storagePath
-      : `${storagePath}.${ext}`;
-
-    const { error } = await supabaseAdmin.storage
-      .from(MEDIA_BUCKET)
-      .upload(pathWithExt, bytes, {
-        contentType,
-        cacheControl: "31536000",
-        upsert: true,
-      });
-
-    if (error) {
-      console.error("uploadImageFromUrl error:", error.message);
+    if (
+      !ALLOWED_MIME_TYPES.has(contentType) &&
+      !contentType.startsWith("image/") &&
+      !contentType.includes("octet-stream")
+    ) {
       return null;
     }
 
-    return getMediaPublicUrl(pathWithExt);
+    const bytes = Buffer.from(await response.arrayBuffer());
+    if (bytes.length < 600 || bytes.length > MAX_IMAGE_BYTES) return null;
+
+    return await uploadImageBuffer(bytes, contentType, storagePathOrOptions);
   } catch (error) {
     console.error(
       "uploadImageFromUrl fetch error:",
@@ -133,14 +177,10 @@ export type UploadedMedia = {
   uploadedImages: string[];
 };
 
-function safePathSegment(value: string): string {
-  return value.replace(/[^a-z0-9-]/gi, "-").replace(/-+/g, "-").slice(0, 80);
-}
-
 export async function uploadImagesFromUrls(
   imageUrls: string[],
   options: {
-    folder: "articles" | "events";
+    folder: "articles" | "events" | "news";
     slugHint: string;
     maxImages?: number;
   }
@@ -199,22 +239,27 @@ export function isSupabaseStorageUrl(url?: string | null): boolean {
   );
 }
 
+export function isStoredCleanWebpUrl(url?: string | null): boolean {
+  if (!url) return false;
+  return isSupabaseStorageUrl(url) && /\.webp(\?|$)/i.test(url);
+}
+
 export async function ensureStoredCoverImage(
   url: string | null | undefined,
-  folder: "news" | "events" | "articles" | "places",
-  slugHint: string
+  folder: "news" | "events" | "articles" | "places" | "uploads",
+  slugHint?: string
 ): Promise<string | null> {
   if (!url || !url.trim()) return null;
   const trimmed = url.trim();
 
-  // If already stored in our Supabase storage, return as-is
-  if (isSupabaseStorageUrl(trimmed)) {
+  // Only skip if already stored in our Supabase storage AS a .webp file
+  if (isStoredCleanWebpUrl(trimmed)) {
     return trimmed;
   }
 
-  // If it's an external HTTP/HTTPS URL, download and save to storage upon confirmation
+  // Download external (or non-webp) URL, strip EXIF, convert to WebP, and save to storage
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-    const safeSlug = safePathSegment(slugHint || "cover");
+    const safeSlug = safePathSegment(slugHint || "cover") || "cover";
     const storagePath = `${folder}/${safeSlug}/${Date.now()}/cover`;
     const storedUrl = await uploadImageFromUrl(trimmed, storagePath);
     return storedUrl || trimmed;

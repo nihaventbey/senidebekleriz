@@ -5,10 +5,12 @@ import { isGoogleNewsArticleUrl, resolvePublisherUrl } from "@/lib/discovery/res
 import { generateNewsDraft } from "@/lib/ai/generate-news";
 import { generateArticleDraft } from "@/lib/ai/generate-article";
 import { importEventFromUrl } from "@/lib/ai/import-event-from-url";
+import { resolveFallbackCulturalImage } from "@/lib/ai/extract-page-images";
+import { sanitizeEventType, sanitizeIsoDate } from "@/lib/ai/normalize-event";
 import { fetchUrlContent } from "@/lib/ai/fetch-url-content";
 import { uniqueEventSlug } from "@/lib/events/slug";
 import { slugify } from "@/lib/slugify";
-import { normalizeCitySlug } from "@/lib/cities/lookup";
+import { getCityName, normalizeCitySlug } from "@/lib/cities/lookup";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -77,7 +79,7 @@ export async function POST(request: NextRequest) {
         fallbackText: snippet,
       });
 
-      const baseSlug = slugify(imported.title || title || "etkinlik");
+      const baseSlug = slugify(imported.title || title || "etkinlik") || "etkinlik";
       let slug = baseSlug.slice(0, 100);
       let counter = 1;
       while (true) {
@@ -90,27 +92,41 @@ export async function POST(request: NextRequest) {
         slug = `${baseSlug.slice(0, 90)}-${counter++}`;
       }
 
-      const storedCoverImage = await ensureStoredCoverImage(imported.cover_image, "events", slug);
+      const resolvedCity = normalizeCitySlug(imported.city_slug || detectedCitySlug);
+      const safeTitle = (imported.title || title).trim();
+
+      let rawCover = imported.cover_image || null;
+      if (!rawCover) {
+        rawCover = await resolveFallbackCulturalImage({
+          title: safeTitle,
+          cityName: getCityName(resolvedCity),
+          category: "kultur_sanat",
+        });
+      }
+
+      const storedCoverImage = await ensureStoredCoverImage(rawCover, "events", slug);
 
       const { data, error } = await supabaseAdmin
         .from("cultural_events")
         .insert({
-          title: imported.title || title,
+          title: safeTitle,
           slug,
-          summary: (imported.summary || snippet || title).slice(0, 160),
+          summary: (imported.summary || snippet || safeTitle).slice(0, 160),
           description: imported.description || snippet || null,
-          event_type: imported.event_type || "duyuru",
+          event_type: sanitizeEventType(imported.event_type, `${safeTitle} ${snippet}`),
           status: "pending_review",
           source_name: sourceName,
           source_url: sourceUrl,
           ticket_url: imported.ticket_url || null,
-          city_slug: imported.city_slug || detectedCitySlug,
+          city_slug: resolvedCity,
           venue_name: imported.venue_name || null,
-          starts_at: imported.starts_at || null,
-          ends_at: imported.ends_at || null,
+          starts_at: sanitizeIsoDate(imported.starts_at),
+          ends_at: sanitizeIsoDate(imported.ends_at),
           cover_image: storedCoverImage,
-          meta_title: imported.meta_title || null,
-          meta_description: imported.meta_description || null,
+          meta_title: imported.meta_title ? String(imported.meta_title).slice(0, 60) : null,
+          meta_description: imported.meta_description
+            ? String(imported.meta_description).slice(0, 155)
+            : null,
           raw_payload: {
             image_urls: imported.image_urls,
             source_url: sourceUrl,

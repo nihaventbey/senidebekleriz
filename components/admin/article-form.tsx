@@ -20,6 +20,7 @@ import { toast } from "@/lib/toast";
 import { slugify } from "@/lib/slugify";
 import { EditorialChecklist } from "@/components/admin/editorial-checklist";
 import { ArticleImageGallery } from "@/components/admin/article-image-gallery";
+import { CoverImageInput } from "@/components/admin/cover-image-input";
 import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { evaluateArticleContent } from "@/lib/content/editorial-checklist";
 import { collectArticleImageUrls } from "@/lib/markdown/extract-images";
@@ -380,49 +381,14 @@ export function ArticleForm({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="cover_image">Kapak Görseli</Label>
-            <div className="flex flex-col gap-2">
-              <Input
-                id="cover_image"
-                name="cover_image"
-                value={coverImage}
-                onChange={(e) => setCoverImage(e.target.value)}
-                placeholder="Görsel URL veya bilgisayardan seçin..."
-              />
-              <div className="flex items-center gap-2">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const formData = new FormData();
-                    formData.append("file", file);
-                    try {
-                      const res = await fetch("/api/admin/upload", {
-                        method: "POST",
-                        body: formData,
-                      });
-                      const data = await res.json();
-                      if (!res.ok) throw new Error(data.error || "Yükleme hatası");
-                      setCoverImage(data.url);
-                      toast.success("Görsel başarıyla yüklendi!");
-                    } catch (err) {
-                      toast.error("Görsel yüklenemedi", err instanceof Error ? err.message : undefined);
-                    }
-                  }}
-                  className="cursor-pointer text-xs"
-                />
-              </div>
-            </div>
-            {coverImage && (
-              <img
-                src={coverImage}
-                alt="Kapak önizleme"
-                className="mt-2 h-40 w-full max-w-md rounded-lg border object-cover"
-                referrerPolicy="no-referrer"
-              />
-            )}
+            <CoverImageInput
+              value={coverImage}
+              onChange={setCoverImage}
+              folder="articles"
+              slugHint={slug || title || "yazi"}
+              label="Kapak Görseli"
+              name="cover_image"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="city_slug">İlişkili Şehir</Label>

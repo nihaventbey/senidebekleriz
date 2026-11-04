@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { TurkeyCulturalHeatmap } from "@/components/maps/turkey-cultural-heatmap";
 import {
   Calendar,
   MapPin,
@@ -39,7 +40,7 @@ const TYPE_FILTERS = [
 
 const DATE_FILTERS = [
   { key: "all", label: "Tüm Tarihler" },
-  { key: "upcoming", label: "En Yakın / Yaklaşanlar" },
+  { key: "haftasonu", label: "Bu Hafta Sonu" },
   { key: "this_week", label: "Bu Hafta" },
   { key: "this_month", label: "Bu Ay" },
 ] as const;
@@ -127,6 +128,8 @@ type Props = {
   cities: City[];
   initialCity?: string;
   initialType?: string;
+  initialDateFilter?: string;
+  showHeatmap?: boolean;
 };
 
 export function EventsExplorer({
@@ -134,12 +137,26 @@ export function EventsExplorer({
   cities,
   initialCity = "all",
   initialType = "all",
+  initialDateFilter = "all",
+  showHeatmap = false,
 }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>(initialType);
   const [selectedCity, setSelectedCity] = useState<string>(initialCity);
-  const [selectedDateFilter, setSelectedDateFilter] = useState<string>("all");
+  const [selectedDateFilter, setSelectedDateFilter] = useState<string>(initialDateFilter);
   const [onlyFree, setOnlyFree] = useState<boolean>(false);
+
+  useEffect(() => {
+    setSelectedCity(initialCity || "all");
+  }, [initialCity]);
+
+  useEffect(() => {
+    setSelectedType(initialType || "all");
+  }, [initialType]);
+
+  useEffect(() => {
+    setSelectedDateFilter(initialDateFilter || "all");
+  }, [initialDateFilter]);
 
   // Filtering & Sorting
   const filteredEvents = useMemo(() => {
@@ -174,7 +191,15 @@ export function EventsExplorer({
     }
 
     // 5. Date Filter
-    if (selectedDateFilter === "this_week") {
+    if (selectedDateFilter === "haftasonu") {
+      list = list.filter((e) => {
+        if (!e.startsAt) return false;
+        const d = new Date(e.startsAt);
+        const dayOfWeek = d.getDay();
+        const diffDays = (d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+        return diffDays >= -1 && diffDays <= 14 && (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
+      });
+    } else if (selectedDateFilter === "this_week") {
       const weekAhead = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
       list = list.filter((e) => {
         if (!e.startsAt) return false;
@@ -217,27 +242,21 @@ export function EventsExplorer({
 
   return (
     <div className="space-y-8">
-      {/* Hero Banner */}
-      <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-primary/10 via-background to-purple-500/10 p-6 sm:p-10 md:p-12 shadow-xs">
-        <div className="relative z-10 max-w-3xl space-y-4">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
-            <Sparkles className="h-3.5 w-3.5" />
-            Türkiye Kültür & Sanat Takvimi
-          </div>
-          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl lg:leading-[1.15]">
-            Kültür, Sanat ve Festival Etkinlikleri
-          </h1>
-          <p className="text-sm leading-relaxed text-muted-foreground sm:text-base md:text-lg">
-            Devlet Tiyatroları, Kültür Yolu Festivalleri, konserler, sergiler ve açık hava etkinliklerini tek çatı altında keşfedin. Tarihe, şehre ve kategoriye göre anında filtreleyin.
-          </p>
-        </div>
+      {showHeatmap && (
+        <TurkeyCulturalHeatmap
+          events={initialEvents}
+          selectedType={selectedType}
+          selectedCity={selectedCity}
+          onSelectFilter={(citySlug, eventType) => {
+            setSelectedCity(citySlug);
+            setSelectedType(eventType);
+          }}
+        />
+      )}
 
-        {/* Decorative background circle */}
-        <div className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
-      </section>
-
-      {/* Interactive Filter Toolbar */}
-      <div className="space-y-4 rounded-2xl border border-border/60 bg-card p-5 shadow-xs">
+      <div id="etkinlik-listesi" className="container mx-auto px-4 space-y-6 scroll-mt-20">
+        {/* Interactive Filter Toolbar */}
+        <div className="space-y-4 rounded-2xl border border-border/60 bg-card p-5 shadow-xs">
         {/* Row 1: Search, Date Filter & City Filter */}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-12">
           {/* Search Input */}
@@ -546,6 +565,7 @@ export function EventsExplorer({
           })}
         </div>
       )}
+      </div>
     </div>
   );
 }

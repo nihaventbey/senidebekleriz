@@ -5,19 +5,30 @@ type GeminiJsonRequest = {
   maxOutputTokens?: number;
 };
 
+// Track models that recently hit 429 (quota) or 503/timeout so subsequent calls skip them immediately
+const modelCooldownUntil = new Map<string, number>();
+
+function markModelCooldown(model: string, durationMs: number) {
+  modelCooldownUntil.set(model, Date.now() + durationMs);
+}
+
 function getCandidateModels(): string[] {
   const envModel = process.env.GEMINI_MODEL?.trim();
   const isDeprecatedEnvModel =
     !envModel || /^gemini-(1\.|2\.)/i.test(envModel);
 
-  const models = [
+  const rawModels = [
+    "gemini-3-flash-preview",
     isDeprecatedEnvModel ? "gemini-3.5-flash" : envModel,
     "gemini-3.5-flash-lite",
-    "gemini-3.6-flash",
     "gemini-flash-lite-latest",
   ];
 
-  return models.filter((m, i, arr) => Boolean(m) && arr.indexOf(m) === i);
+  const unique = rawModels.filter((m, i, arr) => Boolean(m) && arr.indexOf(m) === i);
+  const now = Date.now();
+  const active = unique.filter((m) => (modelCooldownUntil.get(m) || 0) <= now);
+  const cooled = unique.filter((m) => (modelCooldownUntil.get(m) || 0) > now);
+  return [...active, ...cooled];
 }
 
 function buildGenerationConfig(
@@ -27,7 +38,9 @@ function buildGenerationConfig(
   jsonMode: boolean
 ) {
   const supportsZeroThinking =
-    (model.includes("3.5-flash") || model.includes("3.6-flash")) &&
+    (model.includes("3-flash") ||
+      model.includes("3.5-flash") ||
+      model.includes("3.6-flash")) &&
     !model.includes("lite");
 
   return {
@@ -105,7 +118,7 @@ export async function callGeminiJson<T>({
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey,
         },
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(14000),
         body: JSON.stringify({
           systemInstruction: {
             parts: [{ text: systemPrompt }],
@@ -134,6 +147,11 @@ export async function callGeminiJson<T>({
           body.includes("API_KEY_INVALID")
         ) {
           throw lastError;
+        }
+        if (response.status === 429 || response.status === 404) {
+          markModelCooldown(model, 5 * 60 * 1000);
+        } else if (response.status >= 500) {
+          markModelCooldown(model, 60 * 1000);
         }
         console.warn(
           `Gemini ${model} returned ${response.status}. Trying next fallback model...`
@@ -197,6 +215,9 @@ export async function callGeminiJson<T>({
       if (lastError.message.includes("API_KEY_INVALID")) {
         throw lastError;
       }
+      if (lastError.message.includes("timeout") || lastError.message.includes("aborted")) {
+        markModelCooldown(model, 2 * 60 * 1000);
+      }
       console.warn(
         `Gemini ${model} call failed (${lastError.message}). Trying next fallback model...`
       );
@@ -237,7 +258,7 @@ export async function callGeminiText({
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey,
         },
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(14000),
         body: JSON.stringify({
           systemInstruction: {
             parts: [{ text: systemPrompt }],
@@ -265,6 +286,11 @@ export async function callGeminiText({
           body.includes("API_KEY_INVALID")
         ) {
           throw lastError;
+        }
+        if (response.status === 429 || response.status === 404) {
+          markModelCooldown(model, 5 * 60 * 1000);
+        } else if (response.status >= 500) {
+          markModelCooldown(model, 60 * 1000);
         }
         continue;
       }

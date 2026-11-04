@@ -32,9 +32,13 @@ export function EventUrlImport() {
           throw new Error(data.error || "Import başarısız");
         }
 
-        toast.success("URL kuyruğa eklendi", "Onay bekleyenler listesinde.");
+        toast.success("Etkinlik taslağı oluşturuldu! 🎭", "Düzenleme sayfasına yönlendiriliyor...");
         setUrl("");
-        router.refresh();
+        if (data.slug) {
+          router.push(`/yonetim/etkinlikler/${data.slug}/duzenle`);
+        } else {
+          router.refresh();
+        }
       } catch (error) {
         toast.error(
           "Import başarısız",

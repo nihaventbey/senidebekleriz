@@ -32,31 +32,8 @@ export function EditorialHero({ featuredNews, latestEvents }: Props) {
   const secondaryNews = featuredNews.slice(1, 4);
 
   return (
-    <section className="relative overflow-hidden border-b border-border/40 bg-gradient-to-b from-background via-muted/15 to-background py-8 sm:py-12">
+    <section className="relative overflow-hidden border-b border-border/40 bg-gradient-to-b from-background via-muted/15 to-background py-6 sm:py-10">
       <div className="container mx-auto px-4">
-        {/* Editorial Subheader / Brand Pill */}
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-border/50 pb-4">
-          <div className="flex items-center gap-2">
-            <span className="flex h-6 items-center gap-1.5 rounded-full bg-primary/10 px-2.5 text-[11px] font-bold tracking-wider text-primary uppercase">
-              <Sparkles className="h-3 w-3" />
-              Günün Manşetleri &amp; Ajanda
-            </span>
-            <span className="hidden text-xs text-muted-foreground sm:inline">
-              · Türkiye'nin Kültür, Sanat ve Şehir Ajandası
-            </span>
-          </div>
-
-          <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground">
-            <Link
-              href="/etkinlikler?zaman=haftasonu"
-              className="text-primary hover:underline font-semibold flex items-center gap-1"
-            >
-              <span>Bu Hafta Sonu Ne Var?</span>
-              <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-        </div>
-
         {/* Lead Stories Mosaic */}
         {featuredNews.length > 0 ? (
           <div className="grid gap-6 lg:grid-cols-12">
@@ -89,10 +66,6 @@ export function EditorialHero({ featuredNews, latestEvents }: Props) {
                 {/* Header & Content overlaid on bottom */}
                 <div className="relative z-20 p-6 sm:p-8 space-y-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="flex items-center gap-1 rounded-full bg-rose-600 px-3 py-1 text-xs font-black uppercase tracking-wider text-white shadow-md">
-                      <Sparkles className="h-3 w-3" />
-                      Günün Manşeti
-                    </span>
                     <Badge className="bg-primary/90 text-primary-foreground font-bold text-xs border-0 shadow-sm backdrop-blur-sm">
                       {CATEGORY_LABELS[leadNews.category] || "Kültür Haberi"}
                     </Badge>

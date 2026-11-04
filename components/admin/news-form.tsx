@@ -30,6 +30,7 @@ import { toast } from "@/lib/toast";
 import { slugify } from "@/lib/slugify";
 import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { AiImageModal } from "@/components/admin/ai-image-modal";
+import { CoverImageInput } from "@/components/admin/cover-image-input";
 import type { NewsActionResult } from "@/lib/actions/news";
 
 type CityOption = { slug: string; name: string };
@@ -398,37 +399,15 @@ export function NewsForm({
         </div>
 
         {/* Cover Image */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="cover_image" className="text-xs font-semibold">
-              Kapak Görseli URL
-            </Label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setIsAiImageModalOpen(true)}
-              className="h-7 text-xs font-semibold gap-1 text-primary border-primary/30 hover:bg-primary/10 shadow-xs"
-            >
-              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-              ✨ AI ile Görsel Üret
-            </Button>
-          </div>
-          <Input
-            id="cover_image"
-            name="cover_image"
-            type="url"
-            value={coverImage}
-            onChange={(e) => setCoverImage(e.target.value)}
-            placeholder="https://..."
-            className="h-9 text-xs"
-          />
-          {coverImage && (
-            <div className="relative aspect-video max-w-sm overflow-hidden rounded-xl border mt-2">
-              <img src={coverImage} alt="Önizleme" className="h-full w-full object-cover" />
-            </div>
-          )}
-        </div>
+        <CoverImageInput
+          value={coverImage}
+          onChange={setCoverImage}
+          folder="news"
+          slugHint={slug || title || "haber"}
+          label="Kapak Görseli URL"
+          name="cover_image"
+          onOpenAiModal={() => setIsAiImageModalOpen(true)}
+        />
 
         <AiImageModal
           isOpen={isAiImageModalOpen}

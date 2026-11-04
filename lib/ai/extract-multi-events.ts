@@ -5,6 +5,8 @@ import {
   filterImageCandidatesBySize,
   resolveFallbackCulturalImage,
 } from "@/lib/ai/extract-page-images";
+import { sanitizeEventType, sanitizeIsoDate } from "@/lib/ai/normalize-event";
+import { normalizeCitySlug } from "@/lib/cities/lookup";
 import { detectTurkishCityInText } from "@/lib/discovery/classify-content";
 import { uniqueEventSlug } from "@/lib/events/slug";
 import { cleanTicketUrl } from "@/lib/events/ticket-url";
@@ -237,11 +239,13 @@ export async function extractEventsFromBulletin(input: {
 
     const cleanedTicket = cleanTicketUrl(item.ticket_url, input.url);
     const resolvedCity =
-      item.city_slug ||
-      detectTurkishCityInText(
-        `${item.title} ${item.venue_name || ""} ${item.summary || ""}`
+      normalizeCitySlug(item.city_slug) ||
+      normalizeCitySlug(
+        detectTurkishCityInText(
+          `${item.title} ${item.venue_name || ""} ${item.summary || ""}`
+        )
       ) ||
-      defaultCitySlug;
+      normalizeCitySlug(defaultCitySlug);
 
     const subSourceUrl = `${input.url}#sub-${baseSlug}`;
 
@@ -262,17 +266,10 @@ export async function extractEventsFromBulletin(input: {
       continue;
     }
 
-    const validTypes: EventType[] = [
-      "tiyatro",
-      "konser",
-      "sergi",
-      "festival",
-      "duyuru",
-      "diger",
-    ];
-    const safeEventType: EventType = validTypes.includes(item.event_type as EventType)
-      ? (item.event_type as EventType)
-      : "duyuru";
+    const safeEventType: EventType = sanitizeEventType(
+      item.event_type,
+      `${item.title} ${item.summary || ""}`
+    );
 
     const { data, error } = await supabaseAdmin
       .from("cultural_events")
@@ -288,8 +285,8 @@ export async function extractEventsFromBulletin(input: {
         ticket_url: cleanedTicket,
         city_slug: resolvedCity,
         venue_name: item.venue_name || null,
-        starts_at: item.starts_at || null,
-        ends_at: item.ends_at || null,
+        starts_at: sanitizeIsoDate(item.starts_at),
+        ends_at: sanitizeIsoDate(item.ends_at),
         cover_image: storedCover,
         meta_title: (
           item.meta_title || `${item.title} | Etkinlik Takvimi`
