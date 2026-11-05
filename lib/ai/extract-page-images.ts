@@ -59,7 +59,7 @@ export function isLikelyContentImage(url: string): boolean {
   const lower = url.toLowerCase();
   if (lower.startsWith("data:")) return false;
   if (/\.(svg|ico)(\?|#|$)/.test(lower)) return false;
-  if (/\.(html?|php|asp|aspx|xml|json)(\?|#|$)/.test(lower)) return false;
+  if (/\.(html?|php|asp|aspx|xml|json|m?js|css|scss|less|map|woff2?|ttf|eot|otf|mp4|webm|mp3|wav|pdf|zip)(\?|#|$)/.test(lower)) return false;
   if (SKIP_IMAGE_PATTERN.test(lower)) return false;
   if (DENY_URL_PATTERN.test(lower)) return false;
 
@@ -117,7 +117,7 @@ export function isLikelyMetaImage(url: string): boolean {
   const lower = url.toLowerCase();
   if (lower.startsWith("data:")) return false;
   if (/\.(svg|ico)(\?|#|$)/.test(lower)) return false;
-  if (/\.(html?|php|asp|aspx|xml|json)(\?|#|$)/.test(lower)) return false;
+  if (/\.(html?|php|asp|aspx|xml|json|m?js|css|scss|less|map|woff2?|ttf|eot|otf|mp4|webm|mp3|wav|pdf|zip)(\?|#|$)/.test(lower)) return false;
   if (SKIP_IMAGE_PATTERN.test(lower)) return false;
   if (DENY_URL_PATTERN.test(lower)) return false;
 

@@ -12,13 +12,36 @@ export function NewsArticleJsonLd({
     "@type": "NewsArticle",
     headline: news.title,
     description: news.summary || news.title,
-    image: news.coverImage ? [news.coverImage] : undefined,
+    image: news.coverImage
+      ? [
+          {
+            "@type": "ImageObject",
+            url: news.coverImage,
+            caption: news.title,
+            representativeOfPage: true,
+          },
+        ]
+      : undefined,
     datePublished: news.publishedAt,
     dateModified: news.updatedAt || news.publishedAt,
+    isAccessibleForFree: true,
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id": `${baseUrl}/haber/${news.slug}`,
     },
+    ...(news.cityName
+      ? {
+          contentLocation: {
+            "@type": "Place",
+            name: news.cityName,
+            address: {
+              "@type": "PostalAddress",
+              addressLocality: news.cityName,
+              addressCountry: "TR",
+            },
+          },
+        }
+      : {}),
     author: {
       "@type": "Organization",
       name: "Seni de Bekleriz",

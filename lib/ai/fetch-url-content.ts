@@ -8,6 +8,7 @@ export type FetchedUrlContent = {
   pageTitle?: string;
   pageText: string;
   imageUrls: string[];
+  siteName?: string;
 };
 
 const SOCIAL_BOT_USER_AGENT =
@@ -200,42 +201,56 @@ function extractJsonLdText(html: string): string {
   return parts.join("\n\n");
 }
 
+function deduplicateBlocks(blocks: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const raw of blocks) {
+    const trimmed = raw.replace(/\s+/g, " ").trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLocaleLowerCase("tr-TR").replace(/[^a-z0-9çğıöşü]/g, "");
+    if (key.length < 8) continue;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(trimmed);
+  }
+
+  return result;
+}
+
 export function extractPageTextFromHtml(
   html: string,
   maxLength = 16000
 ): string {
-  const articleParagraphs = extractArticleParagraphs(html);
+  const articleParagraphs = deduplicateBlocks(extractArticleParagraphs(html));
   const jsonLd = extractJsonLdText(html);
   const ogDescription = extractMetaContent(html, "property", "og:description");
   const metaDescription = extractMetaContent(html, "name", "description");
 
-  // If we have clean article paragraphs (>100 chars), prioritize them
+  // If we have clean article paragraphs (>100 chars), prioritize them and deduplicate against meta/jsonLd
   if (
     articleParagraphs.length > 0 &&
     articleParagraphs.join(" ").length >= 100
   ) {
-    const paragraphsText = articleParagraphs.join("\n\n");
-    const chunks = [
-      paragraphsText,
-      ogDescription,
-      metaDescription,
-      jsonLd,
-    ].filter((p): p is string => Boolean(p && p.trim()));
+    const combinedBlocks = deduplicateBlocks([
+      ogDescription || "",
+      metaDescription || "",
+      ...articleParagraphs,
+      ...jsonLd.split(/\n{2,}/),
+    ]);
 
-    const unique = [...new Set(chunks)];
-    return unique.join("\n\n").trim().slice(0, maxLength);
+    return combinedBlocks.join("\n\n").trim().slice(0, maxLength);
   }
 
   // Fallback: general stripped HTML with headers/nav removed
-  const chunks = [
-    ogDescription,
-    metaDescription,
-    jsonLd,
+  const chunks = deduplicateBlocks([
+    ogDescription || "",
+    metaDescription || "",
+    ...jsonLd.split(/\n{2,}/),
     stripHtml(html),
-  ].filter((part): part is string => Boolean(part && part.trim()));
+  ]);
 
-  const unique = [...new Set(chunks)];
-  return unique
+  return chunks
     .join("\n\n")
     .replace(/[ \t]+/g, " ")
     .replace(/\n{3,}/g, "\n\n")
@@ -244,15 +259,64 @@ export function extractPageTextFromHtml(
 }
 
 function extractTitle(html: string): string | undefined {
-  const ogMatch = html.match(
-    /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i
-  );
-  if (ogMatch?.[1]) return decodeHtmlEntities(ogMatch[1].trim());
+  const ogTitle =
+    extractMetaContent(html, "property", "og:title") ||
+    extractMetaContent(html, "name", "twitter:title");
+  if (ogTitle && ogTitle.length >= 6) return ogTitle;
+
+  const h1Match = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i);
+  if (h1Match?.[1]) {
+    const cleanedH1 = decodeHtmlEntities(
+      h1Match[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
+    );
+    if (cleanedH1.length >= 6) return cleanedH1;
+  }
 
   const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
   return titleMatch?.[1]
-    ? decodeHtmlEntities(titleMatch[1].trim())
+    ? decodeHtmlEntities(titleMatch[1].replace(/\s+/g, " ").trim())
     : undefined;
+}
+
+function extractSiteName(html: string, pageUrl: string): string | undefined {
+  const ogSite =
+    extractMetaContent(html, "property", "og:site_name") ||
+    extractMetaContent(html, "name", "application-name");
+  if (ogSite && ogSite.trim().length >= 2) {
+    return ogSite.trim();
+  }
+  try {
+    const host = new URL(pageUrl).hostname.replace(/^www\./i, "");
+    const knownHosts: Record<string, string> = {
+      "cumhuriyet.com.tr": "Cumhuriyet",
+      "aa.com.tr": "Anadolu Ajansı",
+      "dha.com.tr": "Demirören Haber Ajansı",
+      "trthaber.com": "TRT Haber",
+      "ntv.com.tr": "NTV",
+      "haberturk.com": "Habertürk",
+      "hurriyet.com.tr": "Hürriyet",
+      "milliyet.com.tr": "Milliyet",
+      "sozcu.com.tr": "Sözcü",
+      "birgun.net": "BirGün",
+      "diken.com.tr": "Diken",
+      "gazeteduvar.com.tr": "Gazete Duvar",
+      "t24.com.tr": "T24",
+      "bianet.org": "Bianet",
+      "tr.euronews.com": "Euronews Türkçe",
+      "kulturportali.gov.tr": "Türkiye Kültür Portalı",
+      "ktb.gov.tr": "Kültür ve Turizm Bakanlığı",
+      "muze.gov.tr": "T.C. Kültür ve Turizm Bakanlığı Müzeler",
+      "kulturyolufestivali.com": "Türkiye Kültür Yolu Festivali",
+      "artfulliving.com.tr": "Artful Living",
+      "argonotlar.com": "Argonotlar",
+      "sanatatak.com": "Sanat Atak",
+      "arkitera.com": "Arkitera",
+      "arkeofili.com": "Arkeofili",
+    };
+    return knownHosts[host] || host;
+  } catch {
+    return undefined;
+  }
 }
 
 function mergeTextParts(...parts: Array<string | undefined>): string {
@@ -334,6 +398,7 @@ export async function fetchUrlContent(
   const html = await response.text();
   const resolvedUrl = response.url || url;
   const pageTitle = extractTitle(html);
+  const siteName = extractSiteName(html, resolvedUrl);
   const imageUrls = extractPageImageUrls(html, resolvedUrl);
   const maxLength = options?.maxTextLength ?? 12000;
   const pageText = mergeTextParts(
@@ -346,7 +411,7 @@ export async function fetchUrlContent(
     throw new Error("Sayfadan yeterli metin çıkarılamadı");
   }
 
-  return { url: resolvedUrl, pageTitle, pageText, imageUrls };
+  return { url: resolvedUrl, pageTitle, pageText, imageUrls, siteName };
 }
 
 export function buildTextFromFallback(input: {

@@ -13,7 +13,8 @@ describe("slugify", () => {
     expect(slugify("Üçüncü")).toBe("ucuncu");
     expect(slugify("Çocuk")).toBe("cocuk");
     expect(slugify("Öğrenci")).toBe("ogrenci");
-    expect(slugify("Iğdır'da Gezi")).toBe("igdir-da-gezi");
+    expect(slugify("Iğdır'da Gezi")).toBe("igdirda-gezi");
+    expect(slugify("Troya Antik Kenti'nde Keşif")).toBe("troya-antik-kentinde-kesif");
   });
 
   it("trims and collapses separators", () => {

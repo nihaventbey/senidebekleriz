@@ -17,10 +17,10 @@ export function slugify(text: string): string {
   return transliterateTurkish(text.toLocaleLowerCase("tr-TR"))
     .normalize("NFD")
     .replace(/\p{M}/gu, "")
-    .replace(/[''`]/g, " ")
+    .replace(/[''‘’`´]/g, "")
     .trim()
     .replace(/[\s_]+/g, "-")
-    .replace(/[^a-z0-9-]/g, "")
+    .replace(/[^a-z0-9-]/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
 }

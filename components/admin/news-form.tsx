@@ -92,11 +92,11 @@ export function NewsForm({
   const [savePending, startSaveTransition] = useTransition();
   const [aiSourceUrl, setAiSourceUrl] = useState(initialSourceUrl || defaultValues.source_url || "");
   const [aiTopic, setAiTopic] = useState("");
-  const [aiDepth, setAiDepth] = useState<"standard" | "deep" | "comprehensive">("deep");
+  const [aiDepth, setAiDepth] = useState<"standard" | "deep" | "comprehensive">("standard");
 
   function handleTitleChange(value: string) {
     setTitle(value);
-    if (!defaultValues.slug && !slug) {
+    if (!defaultValues.slug) {
       setSlug(slugify(value));
     }
   }
@@ -126,19 +126,23 @@ export function NewsForm({
 
         if (data.title) {
           setTitle(data.title);
-          if (!slug || !defaultValues.slug) setSlug(slugify(data.title));
+          if (!defaultValues.slug) {
+            setSlug(data.slug || slugify(data.title));
+          }
         }
         if (data.summary) setSummary(data.summary);
         if (data.content) setContent(data.content);
         if (data.category) setCategory(data.category);
         if (data.cover_image) setCoverImage(data.cover_image);
+        if (data.city_slug && citySlug === "none") setCitySlug(data.city_slug);
+        if (data.source_name) setSourceName(data.source_name);
         if (targetUrl) {
           setSourceUrl(targetUrl);
           setAiSourceUrl(targetUrl);
         }
 
         const countMsg = data.word_count ? ` (${data.word_count} kelime)` : "";
-        toast.success(`AI haber taslağı başarıyla oluşturuldu! ✨${countMsg}`);
+        toast.success(`AI haber taslağı ve WebP kapak görseli oluşturuldu! ✨${countMsg}`);
       } catch (err: any) {
         toast.error(err.message || "Taslak üretilemedi");
       }

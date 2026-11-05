@@ -20,8 +20,9 @@ function getCandidateModels(): string[] {
   const rawModels = [
     "gemini-3-flash-preview",
     isDeprecatedEnvModel ? "gemini-3.5-flash" : envModel,
+    "gemini-3.1-flash-lite-preview",
+    "gemini-3.1-flash-lite",
     "gemini-3.5-flash-lite",
-    "gemini-flash-lite-latest",
   ];
 
   const unique = rawModels.filter((m, i, arr) => Boolean(m) && arr.indexOf(m) === i);
@@ -118,7 +119,7 @@ export async function callGeminiJson<T>({
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey,
         },
-        signal: AbortSignal.timeout(14000),
+        signal: AbortSignal.timeout(28000),
         body: JSON.stringify({
           systemInstruction: {
             parts: [{ text: systemPrompt }],
@@ -258,7 +259,7 @@ export async function callGeminiText({
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey,
         },
-        signal: AbortSignal.timeout(14000),
+        signal: AbortSignal.timeout(28000),
         body: JSON.stringify({
           systemInstruction: {
             parts: [{ text: systemPrompt }],

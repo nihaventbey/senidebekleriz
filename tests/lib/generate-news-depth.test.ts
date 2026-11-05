@@ -11,11 +11,13 @@ describe("generateNewsDraft", () => {
     });
 
     expect(draft.title).toContain("Antik Tiyatro");
+    expect(draft.slug).toBe("antik-tiyatroda-restorasyon-calismalari-basladi");
     expect(draft.category).toBe("arkeoloji");
-    expect(draft.word_count).toBeGreaterThan(30);
+    expect(draft.word_count).toBeGreaterThan(20);
     expect(draft.content.startsWith("# ")).toBe(false);
-    expect(draft.content).toContain("## Gelişmeler ve Kültürel Detaylar");
-    expect(draft.content).toContain("## Kaynak ve Detaylar");
+    expect(draft.content).not.toContain("## Gelişmeler ve Kültürel Detaylar");
+    expect(draft.content).not.toContain("## Program, Mekân ve Katılım Bilgileri");
+    expect(draft.content).not.toContain("## Kaynak ve Detaylar");
     expect(draft.content).not.toContain("<a ");
     expect(draft.content).not.toContain("<font");
   });

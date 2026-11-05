@@ -64,7 +64,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       publishedTime: news.publishedAt,
       modifiedTime: news.updatedAt,
       url: `https://www.senidebekleriz.com/haber/${news.slug}`,
-      images: news.coverImage ? [{ url: news.coverImage }] : undefined,
+      images: news.coverImage
+        ? [{ url: news.coverImage, alt: news.title }]
+        : undefined,
     },
     twitter: {
       card: "summary_large_image",
@@ -168,6 +170,8 @@ export default async function NewsDetailPage({ params }: Props) {
             <img
               src={news.coverImage}
               alt={news.title}
+              fetchPriority="high"
+              decoding="async"
               className="h-full w-full object-cover"
             />
           </div>

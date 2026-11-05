@@ -37,11 +37,15 @@ export function CoverImageInput({
 }: CoverImageInputProps) {
   const [transferring, setTransferring] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [previewVersion, setPreviewVersion] = useState<number>(0);
 
   const trimmed = (value || "").trim();
   const isExternalOrNonWebp =
     trimmed.startsWith("http") && !checkIsStoredWebp(trimmed);
   const isStoredWebp = checkIsStoredWebp(trimmed);
+  const storedFileName = isStoredWebp
+    ? trimmed.split("?")[0].split("/").pop() || "webp"
+    : null;
 
   async function handleTransferUrl() {
     if (!trimmed) {
@@ -66,7 +70,8 @@ export function CoverImageInput({
       }
 
       onChange(data.url);
-      toast.success("Görsel EXIF verileri silinerek WebP formatında sunucuya aktarıldı!");
+      setPreviewVersion(Date.now());
+      toast.success("Görsel başlık slug'ına göre WebP formatında (EXIF temiz) sunucuya aktarıldı!");
     } catch (err) {
       toast.error(
         "Sunucuya aktarılamadı",
@@ -98,7 +103,8 @@ export function CoverImageInput({
       }
 
       onChange(data.url);
-      toast.success("Dosya EXIF verileri silinerek WebP formatında yüklendi!");
+      setPreviewVersion(Date.now());
+      toast.success("Dosya başlık slug'ına göre WebP formatında (EXIF temiz) yüklendi!");
     } catch (err) {
       toast.error(
         "Görsel yüklenemedi",
@@ -120,10 +126,11 @@ export function CoverImageInput({
           {isStoredWebp && (
             <Badge
               variant="secondary"
-              className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-0 text-[10px] font-semibold gap-1 px-2 py-0.5"
+              className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-0 text-[10px] font-semibold gap-1 px-2 py-0.5 max-w-[260px] truncate"
+              title={storedFileName || undefined}
             >
-              <CheckCircle2 className="h-3 w-3" />
-              Supabase WebP (EXIF Temiz)
+              <CheckCircle2 className="h-3 w-3 shrink-0" />
+              <span className="truncate">WebP ({storedFileName})</span>
             </Badge>
           )}
         </div>
@@ -196,7 +203,11 @@ export function CoverImageInput({
       {trimmed && (
         <div className="relative aspect-video max-w-sm overflow-hidden rounded-xl border bg-muted/30">
           <img
-            src={trimmed}
+            src={
+              previewVersion
+                ? `${trimmed}${trimmed.includes("?") ? "&" : "?"}v=${previewVersion}`
+                : trimmed
+            }
             alt="Kapak görseli önizleme"
             className="h-full w-full object-cover"
             loading="lazy"

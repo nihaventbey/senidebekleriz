@@ -1,5 +1,5 @@
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { BROWSER_USER_AGENT } from "@/lib/ai/extract-page-images";
+import { slugify } from "@/lib/slugify";
 
 export const MEDIA_BUCKET = "media";
 
@@ -16,17 +16,19 @@ const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 const MAX_IMAGE_DIMENSION = 1600;
 const WEBP_QUALITY = 82;
 
-export function getMediaPublicUrl(path: string): string {
-  const { data } = supabaseAdmin.storage.from(MEDIA_BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+export async function getSupabaseAdminClient() {
+  const mod = await import("@/lib/supabase/admin");
+  return mod.supabaseAdmin;
 }
 
-function safePathSegment(value: string): string {
-  return value
-    .replace(/[^a-z0-9-]/gi, "-")
-    .replace(/-+/g, "-")
-    .slice(0, 80)
-    .replace(/^-+|-+$/g, "");
+export function getMediaPublicUrl(path: string): string {
+  const baseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\/+$/, "");
+  return `${baseUrl}/storage/v1/object/public/${MEDIA_BUCKET}/${path}`;
+}
+
+export function safePathSegment(value: string): string {
+  const slug = slugify(value || "");
+  return slug.slice(0, 90).replace(/^-+|-+$/g, "");
 }
 
 function normalizeWebpStoragePath(
@@ -35,16 +37,15 @@ function normalizeWebpStoragePath(
     | {
         folder: "news" | "events" | "articles" | "places" | "uploads";
         slugHint?: string;
+        forceReprocess?: boolean;
       }
 ): string {
   if (typeof storagePathOrOptions === "string") {
     const withoutExt = storagePathOrOptions.replace(/\.(jpe?g|png|webp|avif|gif)$/i, "");
     return `${withoutExt}.webp`;
   }
-  const safeSlug = safePathSegment(storagePathOrOptions.slugHint || "cover") || "cover";
-  return `${storagePathOrOptions.folder}/${safeSlug}/${Date.now()}-${Math.random()
-    .toString(36)
-    .slice(2, 6)}.webp`;
+  const safeSlug = safePathSegment(storagePathOrOptions.slugHint || "gorsel") || "gorsel";
+  return `${storagePathOrOptions.folder}/${safeSlug}.webp`;
 }
 
 /**
@@ -103,6 +104,14 @@ export async function uploadImageBuffer(
     }
   }
 
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.SUPABASE_SERVICE_ROLE_KEY
+  ) {
+    return null;
+  }
+
+  const supabaseAdmin = await getSupabaseAdminClient();
   const { error } = await supabaseAdmin.storage
     .from(MEDIA_BUCKET)
     .upload(finalPath, finalBytes, {
@@ -193,16 +202,15 @@ export async function uploadImagesFromUrls(
     maxImages?: number;
   }
 ): Promise<UploadedMedia> {
-  const safeSlug = safePathSegment(options.slugHint);
-  const basePath = `${options.folder}/${safeSlug || "draft"}/${Date.now()}`;
+  const safeSlug = safePathSegment(options.slugHint) || "icerik";
   const maxImages = options.maxImages ?? 4;
   const uploadedImages: string[] = [];
 
   for (let i = 0; i < imageUrls.length && i < maxImages; i++) {
-    const label = i === 0 ? "cover" : `inline-${i}`;
+    const fileSlug = i === 0 ? safeSlug : `${safeSlug}-${i + 1}`;
     const publicUrl = await uploadImageFromUrl(
       imageUrls[i],
-      `${basePath}/${label}`
+      `${options.folder}/${fileSlug}`
     );
 
     if (publicUrl) {
@@ -259,16 +267,18 @@ export async function ensureStoredCoverImage(
 ): Promise<string | null> {
   if (!url || !url.trim()) return null;
   const trimmed = url.trim();
+  const safeSlug = safePathSegment(slugHint || "kapak") || "kapak";
+  const expectedSuffix = `/${folder}/${safeSlug}.webp`;
 
-  // Only skip if already stored in our Supabase storage AS a .webp file
-  if (isStoredCleanWebpUrl(trimmed)) {
-    return trimmed;
+  // Skip only if already stored in our Supabase storage as a clean .webp named after this slug
+  const urlWithoutQuery = trimmed.split("?")[0];
+  if (isStoredCleanWebpUrl(trimmed) && urlWithoutQuery.endsWith(expectedSuffix)) {
+    return urlWithoutQuery;
   }
 
-  // Download external (or non-webp) URL, strip EXIF, convert to WebP, and save to storage
+  // Download external (or differently-named) URL, strip EXIF, convert to WebP, and save as <folder>/<slug>.webp
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-    const safeSlug = safePathSegment(slugHint || "cover") || "cover";
-    const storagePath = `${folder}/${safeSlug}/${Date.now()}/cover`;
+    const storagePath = `${folder}/${safeSlug}`;
     const storedUrl = await uploadImageFromUrl(trimmed, storagePath);
     return storedUrl || trimmed;
   }
