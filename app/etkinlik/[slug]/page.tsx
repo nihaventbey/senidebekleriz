@@ -94,7 +94,9 @@ export default async function EventDetailPage({
       image: event.coverImage || undefined,
       startDate: event.startsAt || undefined,
       endDate: event.endsAt || undefined,
-      eventStatus: "https://schema.org/EventScheduled",
+      eventStatus: isEventExpired(event)
+        ? "https://schema.org/EventCompleted"
+        : "https://schema.org/EventScheduled",
       location: event.venueName
         ? {
             "@type": "Place",
@@ -131,6 +133,9 @@ export default async function EventDetailPage({
             alt={event.title}
             className="h-auto max-h-[440px] w-full object-cover"
             referrerPolicy="no-referrer"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
           />
         ) : (
           <CulturalCoverPlaceholder

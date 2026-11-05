@@ -1,21 +1,9 @@
 import { MetadataRoute } from "next";
 import { getAllCities } from "@/lib/data/cities";
-import { getAllCategories } from "@/lib/data/categories";
-import {
-  getIndexablePlaceCountsByCity,
-  getIndexablePlacesForSitemap,
-  getPlacesByCategory,
-} from "@/lib/data/places";
-import { getAllPageSlugs, getCityGuidePageSlugs } from "@/lib/data/pages";
-import {
-  getPublishedArticles,
-  getPublishedCityGuideSlugs,
-} from "@/lib/data/articles";
+import { getAllPageSlugs } from "@/lib/data/pages";
+import { getPublishedArticles } from "@/lib/data/articles";
 import { getPublishedEventSlugs } from "@/lib/data/events";
 import { getNewsSlugs } from "@/lib/data/news";
-import { shouldIndexCategoryHub, shouldIndexCityHub } from "@/lib/content/hub-quality";
-import { shouldIndexPlace } from "@/lib/content/place-quality";
-
 import { getSiteUrl } from "@/lib/agents/site";
 
 export const revalidate = 86400;
@@ -56,53 +44,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  const [
-    cities,
-    categories,
-    pageSlugs,
-    indexablePlaces,
-    articles,
-    eventSlugs,
-    newsSlugs,
-    guideArticleSlugs,
-    guidePageSlugs,
-    indexableByCity,
-  ] = await Promise.all([
-    getAllCities(),
-    getAllCategories(),
-    getAllPageSlugs(),
-    getIndexablePlacesForSitemap(),
-    getPublishedArticles(500),
-    getPublishedEventSlugs(),
-    getNewsSlugs(),
-    getPublishedCityGuideSlugs(),
-    getCityGuidePageSlugs(),
-    getIndexablePlaceCountsByCity(),
-  ]);
-
-  const citiesWithGuide = new Set([...guideArticleSlugs, ...guidePageSlugs]);
+  const [cities, pageSlugs, articles, eventSlugs, newsSlugs] =
+    await Promise.all([
+      getAllCities(),
+      getAllPageSlugs(),
+      getPublishedArticles(500),
+      getPublishedEventSlugs({ includePast: false }),
+      getNewsSlugs(),
+    ]);
 
   for (const city of cities) {
-    const indexable = shouldIndexCityHub({
-      hasGuide: citiesWithGuide.has(city.slug),
-      indexablePlaceCount: indexableByCity.get(city.slug) || 0,
-    });
-    if (!indexable) continue;
-
     routes.push({
       url: `${baseUrl}/sehir/${city.slug}`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.8,
-    });
-  }
-
-  for (const place of indexablePlaces) {
-    routes.push({
-      url: `${baseUrl}/mekan/${place.slug}`,
-      lastModified: new Date(place.updatedAt),
-      changeFrequency: "monthly",
-      priority: 0.7,
     });
   }
 

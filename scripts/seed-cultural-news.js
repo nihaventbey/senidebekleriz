@@ -34,6 +34,7 @@ const sampleNews = [
     source_url: "https://www.kulturportali.gov.tr",
     is_published: true,
     is_featured: true,
+    published_at: new Date().toISOString(),
     content: `## Neolitik Çağın Gizemleri Taş Tepeler ile Aydınlanıyor
 
 Şanlıurfa sınırları içinde yer alan ve insanlık tarihinin bilinen en eski yerleşim katmanlarını barındıran **Taş Tepeler Projesi** bünyesinde Karahantepe ve Göbeklitepe kazılarında çığır açan yeni buluntulara ulaşıldı. Kültür ve Turizm Bakanlığı koordinasyonunda sürdürülen kazılarda, kireç taşı blok üzerine ince ustalıkla oyulmuş insan ve leopar figürleri tespit edildi.
@@ -63,6 +64,7 @@ Ortaya çıkarılan heykeller titiz bir konservasyon sürecinin ardından Türki
     source_url: "https://www.kulturportali.gov.tr",
     is_published: true,
     is_featured: true,
+    published_at: new Date().toISOString(),
     content: `## 1500 Yıllık Yeraltı Sarayı Yeniden Işıldıyor
 
 Bizans İmparatoru I. Justinianus döneminde (527-565) inşa edilen ve yüzyıllar boyunca kentin su ihtiyacını karşılayan **Yerebatan Sarnıcı (Basilica Cistern)**, gerçekleştirilen titiz restorasyon projesinin ardından uluslararası arenada büyük bir başarıya imza attı.
@@ -90,6 +92,7 @@ Yerebatan Sarnıcı sadece bir anıt yapı değil, aynı zamanda uluslararası s
     source_url: "https://kulturyolufestivali.com",
     is_published: true,
     is_featured: true,
+    published_at: new Date().toISOString(),
     content: `## Şehirlerin Kültür Damarları Sanatla Buluşuyor
 
 Türkiye'nin en kapsamlı kültür-sanat maratonu olan **Türkiye Kültür Yolu Festivali**, 2026 takvimiyle birlikte 16 farklı şehirde kesintisiz sanat şöleni sunuyor. Festival rotasında tarihi kaleler, amfi tiyatrolar, kervansaraylar ve modern kültür merkezleri birer sahneye dönüşüyor.
@@ -120,6 +123,7 @@ Festival programında yer alan yüzlerce sokak performansı, çocuk atölyeleri,
     source_url: "https://www.kulturportali.gov.tr",
     is_published: true,
     is_featured: false,
+    published_at: new Date().toISOString(),
     content: `## Türk Plastik Sanatlarının Hafızası Dünyaya Açılıyor
 
 Mimar Arif Hikmet Koyunoğlu'nun 1927 yılında projelendirdiği tarihi Türk Ocağı binasında hizmet veren **Ankara Devlet Resim ve Heykel Müzesi**, sahip olduğu paha biçilmez koleksiyonu sanatseverlerin ve araştırmacıların erişimine açan kapsamlı bir dijital arşiv projesini tamamladı.
@@ -147,6 +151,7 @@ Fiziki müzeyi ziyaret edenler ise restorasyon laboratuvarını cam bölmeler ar
     source_url: "https://www.kulturportali.gov.tr",
     is_published: true,
     is_featured: false,
+    published_at: new Date().toISOString(),
     content: `## Antik Çağın İncisi Efes Yıldızlar Altında Büyülüyor
 
 UNESCO Dünya Mirası Listesi'nde yer alan İzmir Selçuk'taki **Efes Antik Kenti**, hayata geçirilen Gece Müzeciliği konsepti ile kültür turizminde yeni bir çağ başlattı. Gündüz sıcaklığından etkilenmeden tarihi atmosferi yaşamak isteyen ziyaretçiler gece aydınlatması eşliğinde antik kentin sokaklarını keşfediyor.

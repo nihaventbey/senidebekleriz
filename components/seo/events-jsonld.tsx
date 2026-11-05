@@ -1,25 +1,31 @@
 import type { PublicEvent } from "@/lib/data/events";
+import { isEventExpired } from "@/lib/data/events";
+import { getSiteUrl } from "@/lib/agents/site";
 
 export function EventsJsonLd({
   events,
-  baseUrl = "https://www.senidebekleriz.com",
+  baseUrl,
 }: {
   events: PublicEvent[];
   baseUrl?: string;
 }) {
   if (!events || events.length === 0) return null;
+  const effectiveBaseUrl = baseUrl || getSiteUrl();
 
   const schema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
     itemListElement: events.slice(0, 30).map((event, index) => {
+      const expired = isEventExpired(event);
       const eventSchema: Record<string, any> = {
         "@type": "Event",
         position: index + 1,
         name: event.title,
         description: event.summary || event.title,
-        url: `${baseUrl}/etkinlik/${event.slug}`,
-        eventStatus: "https://schema.org/EventScheduled",
+        url: `${effectiveBaseUrl}/etkinlik/${event.slug}`,
+        eventStatus: expired
+          ? "https://schema.org/EventCompleted"
+          : "https://schema.org/EventScheduled",
         eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
       };
 

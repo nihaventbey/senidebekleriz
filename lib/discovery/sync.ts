@@ -40,7 +40,7 @@ async function getActiveDiscoverySources(): Promise<DiscoverySourceRow[]> {
     .from("discovery_sources")
     .select("*")
     .eq("is_active", true)
-    .order("source_type", { ascending: true }); // Prioritize direct 'rss' feeds first
+    .order("last_synced_at", { ascending: true, nullsFirst: true }); // Round-robin: least recently synced first
 
   if (error) {
     console.error("getActiveDiscoverySources error:", error.message);

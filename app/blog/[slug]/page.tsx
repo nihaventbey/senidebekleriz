@@ -72,6 +72,11 @@ export default async function BlogArticlePage({
       datePublished: article.publishedAt,
       dateModified: article.updatedAt,
       image: coverUrl || undefined,
+      author: {
+        "@type": "Organization",
+        name: "Seni de Bekleriz Kültür & Sanat Masası",
+        url: siteUrl,
+      },
       publisher: {
         "@type": "Organization",
         name: "Seni de Bekleriz",

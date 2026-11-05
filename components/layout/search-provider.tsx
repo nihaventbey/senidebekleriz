@@ -100,7 +100,11 @@ function SearchOverlay({
     if (result.type === "city") {
       router.push(`/sehir/${result.slug}`);
     } else if (result.type === "place") {
-      router.push(`/mekan/${result.slug}`);
+      if (result.citySlug) {
+        router.push(`/sehir/${result.citySlug}#kultur-miras`);
+      } else {
+        router.push(`/sehirler`);
+      }
     } else if (result.type === "article") {
       router.push(`/blog/${result.slug}`);
     } else if (result.type === "event") {

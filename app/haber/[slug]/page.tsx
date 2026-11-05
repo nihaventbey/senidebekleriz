@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { BreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import { NewsArticleJsonLd } from "@/components/seo/news-jsonld";
+import { getSiteUrl } from "@/lib/agents/site";
 import { hasPastDateInText } from "@/lib/discovery/quarter";
 import {
   NewsCard,
@@ -64,7 +65,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: "article",
       publishedTime: news.publishedAt,
       modifiedTime: news.updatedAt,
-      url: `https://www.senidebekleriz.com/haber/${news.slug}`,
+      url: `${getSiteUrl()}/haber/${news.slug}`,
       images: news.coverImage
         ? [{ url: news.coverImage, alt: news.title }]
         : undefined,

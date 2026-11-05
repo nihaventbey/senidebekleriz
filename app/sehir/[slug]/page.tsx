@@ -147,6 +147,9 @@ export default async function CityPage({
               src={city.coverImage}
               alt={city.name}
               className="absolute inset-0 h-full w-full object-cover"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
             />
             <div className="absolute inset-0 bg-black/65 backdrop-blur-[1px]" />
           </>

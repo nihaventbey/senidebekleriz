@@ -185,13 +185,13 @@ export async function getPublishedEvents(options?: {
   return options?.limit ? sorted.slice(0, options.limit) : sorted;
 }
 
-export async function getPublishedEventSlugs(): Promise<
+export async function getPublishedEventSlugs(options?: { includePast?: boolean }): Promise<
   Array<{ slug: string; updatedAt: string }>
 > {
   const now = new Date().toISOString();
   const { data, error } = await supabaseAdmin
     .from("cultural_events")
-    .select("slug, updated_at")
+    .select("slug, updated_at, starts_at, ends_at")
     .eq("status", "published")
     .or(`expires_at.is.null,expires_at.gt.${now}`);
 
@@ -200,7 +200,12 @@ export async function getPublishedEventSlugs(): Promise<
     return [];
   }
 
-  return (data || []).map((row) => ({
+  const rows = (data || []) as CulturalEventRow[];
+  const valid = options?.includePast
+    ? rows
+    : rows.filter((r) => !isEventExpired({ startsAt: r.starts_at, endsAt: r.ends_at }));
+
+  return valid.map((row) => ({
     slug: row.slug,
     updatedAt: row.updated_at,
   }));

@@ -52,6 +52,9 @@ export function ArticleHero({
             alt=""
             className="absolute inset-0 h-full w-full object-cover"
             referrerPolicy="no-referrer"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
             onError={() => setImageFailed(true)}
           />
           <div

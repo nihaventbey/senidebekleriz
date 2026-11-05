@@ -1,12 +1,14 @@
 import type { PublicNewsArticle } from "@/lib/data/news";
+import { getSiteUrl } from "@/lib/agents/site";
 
 export function NewsArticleJsonLd({
   news,
-  baseUrl = "https://www.senidebekleriz.com",
+  baseUrl,
 }: {
   news: PublicNewsArticle;
   baseUrl?: string;
 }) {
+  const effectiveBaseUrl = baseUrl || getSiteUrl();
   const schema = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -27,7 +29,7 @@ export function NewsArticleJsonLd({
     isAccessibleForFree: true,
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `${baseUrl}/haber/${news.slug}`,
+      "@id": `${effectiveBaseUrl}/haber/${news.slug}`,
     },
     ...(news.cityName
       ? {
@@ -45,14 +47,14 @@ export function NewsArticleJsonLd({
     author: {
       "@type": "Organization",
       name: "Seni de Bekleriz",
-      url: baseUrl,
+      url: effectiveBaseUrl,
     },
     publisher: {
       "@type": "Organization",
       name: "Seni de Bekleriz",
       logo: {
         "@type": "ImageObject",
-        url: `${baseUrl}/icon.png`,
+        url: `${effectiveBaseUrl}/icon.png`,
       },
     },
     articleSection: news.category,
@@ -69,12 +71,13 @@ export function NewsArticleJsonLd({
 
 export function NewsListJsonLd({
   articles,
-  baseUrl = "https://www.senidebekleriz.com",
+  baseUrl,
 }: {
   articles: PublicNewsArticle[];
   baseUrl?: string;
 }) {
   if (!articles || articles.length === 0) return null;
+  const effectiveBaseUrl = baseUrl || getSiteUrl();
 
   const schema = {
     "@context": "https://schema.org",
@@ -82,7 +85,7 @@ export function NewsListJsonLd({
     itemListElement: articles.slice(0, 20).map((article, index) => ({
       "@type": "ListItem",
       position: index + 1,
-      url: `${baseUrl}/haber/${article.slug}`,
+      url: `${effectiveBaseUrl}/haber/${article.slug}`,
       name: article.title,
     })),
   };
