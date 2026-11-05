@@ -79,7 +79,7 @@ function eventFromForm(formData: FormData) {
   return {
     title,
     slug: slugify(rawSlug) || "etkinlik",
-    summary: (((formData.get("summary") as string) || title).trim()).slice(0, 160),
+    summary: ((formData.get("summary") as string) || title).trim(),
     description: (formData.get("description") as string) || null,
     event_type: sanitizeEventType(
       (formData.get("event_type") as EventType) || "duyuru",
@@ -326,7 +326,7 @@ export async function importEventFromUrlAction(rawUrl: string) {
       .insert({
         title,
         slug,
-        summary: (imported.summary || title).slice(0, 160),
+        summary: (imported.summary || title).trim(),
         description: imported.description || imported.summary || null,
         event_type: sanitizeEventType(imported.event_type, title),
         status: "pending_review",

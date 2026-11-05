@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { getAdminEvents, countPendingEvents } from "@/lib/data/admin-events";
 import { EventsList } from "@/components/admin/events-list";
 import { EventUrlImport } from "@/components/admin/event-url-import";
-import { EventSyncButton } from "@/components/admin/event-sync-button";
 import { Plus } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -55,7 +54,6 @@ export default async function AdminEventsPage({ searchParams }: Props) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <EventSyncButton />
           <Button asChild>
             <Link href="/yonetim/etkinlikler/yeni">
               <Plus className="mr-2 h-4 w-4" />

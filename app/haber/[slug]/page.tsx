@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { BreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import { NewsArticleJsonLd } from "@/components/seo/news-jsonld";
+import { hasPastDateInText } from "@/lib/discovery/quarter";
 import {
   NewsCard,
   NEWS_CATEGORY_LABELS,
@@ -103,9 +104,18 @@ export default async function NewsDetailPage({ params }: Props) {
   const categoryColor = NEWS_CATEGORY_COLORS[news.category] || "bg-primary text-white";
   const dateStr = formatNewsDate(news.publishedAt);
   const readingTime = estimateReadingTime(news.content);
+
+  // Check if content mentions an event/festival/exhibition date that is already in the past
+  const hasEventPassed =
+    (news.category === "festival_haberleri" ||
+      news.category === "muze_sergi" ||
+      news.category === "kultur_sanat") &&
+    hasPastDateInText(`${news.title} ${news.summary} ${news.content}`);
+
   const isOldNews =
-    news.publishedAt &&
-    Date.now() - new Date(news.publishedAt).getTime() > 180 * 24 * 60 * 60 * 1000;
+    hasEventPassed ||
+    (news.publishedAt &&
+      Date.now() - new Date(news.publishedAt).getTime() > 60 * 24 * 60 * 60 * 1000);
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
@@ -179,9 +189,13 @@ export default async function NewsDetailPage({ params }: Props) {
 
         {/* Old / Archive News Notice */}
         {isOldNews && (
-          <div className="rounded-2xl bg-amber-500/10 border border-amber-500/25 p-4 text-xs font-medium text-amber-800 dark:text-amber-300 flex items-center gap-2.5">
+          <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4 text-xs font-medium text-amber-800 dark:text-amber-300 flex items-center gap-3">
             <Clock className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-            <span>Arşiv İçeriği: Bu kültür haberi {dateStr} tarihinde yayınlanmıştır. Sergi takvimi, biletler veya etkinlik tarihleri güncelliğini yitirmiş olabilir.</span>
+            <span>
+              {hasEventPassed
+                ? "Bilgilendirme: Bu haberde yer alan etkinlik veya sergi tarihi tamamlanmıştır. Arşiv ve kültürel hafıza kaydı amacıyla yayında tutulmaktadır."
+                : `Arşiv İçeriği: Bu kültür haberi ${dateStr} tarihinde yayınlanmıştır. Sergi takvimi, biletler veya program detayları güncelliğini yitirmiş olabilir.`}
+            </span>
           </div>
         )}
 

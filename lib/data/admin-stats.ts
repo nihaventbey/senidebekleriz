@@ -25,6 +25,9 @@ export type AdminDashboardStats = {
   eventsPublished: number;
   eventsPending: number;
   pendingDiscoveries: number;
+  citiesWithActivity: number;
+  citiesWithoutActivity: number;
+  missingActivityCityNames: string[];
   recentNews: Array<{
     id: string;
     title: string;
@@ -198,6 +201,8 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     recentPlacesRes,
     recentNewsRes,
     recentEventsRes,
+    eventsCitySlugsRes,
+    newsCitySlugsRes,
   ] = await Promise.all([
     supabaseAdmin.from("cities").select("*", { count: "exact", head: true }),
     supabaseAdmin.from("places").select("*", { count: "exact", head: true }),
@@ -242,6 +247,16 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
       .select("id, title, slug, event_type, city_slug, starts_at, status, updated_at")
       .order("updated_at", { ascending: false })
       .limit(4),
+    supabaseAdmin
+      .from("cultural_events")
+      .select("city_slug")
+      .eq("status", "published")
+      .not("city_slug", "is", null),
+    supabaseAdmin
+      .from("cultural_news")
+      .select("city_slug")
+      .eq("is_published", true)
+      .not("city_slug", "is", null),
   ]);
 
   const recentPlaces = (recentPlacesRes.data || []).map((place) => {
@@ -282,6 +297,18 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     updatedAt: e.updated_at,
   }));
 
+  const activeCitySlugs = new Set<string>();
+  eventsCitySlugsRes.data?.forEach((e) => {
+    if (e.city_slug) activeCitySlugs.add(e.city_slug);
+  });
+  newsCitySlugsRes.data?.forEach((n) => {
+    if (n.city_slug) activeCitySlugs.add(n.city_slug);
+  });
+
+  const missingActivityCityNames = turkeyCities
+    .filter((c) => !activeCitySlugs.has(c.slug))
+    .map((c) => c.name);
+
   return {
     cities: citiesRes.count ?? 0,
     places: placesRes.count ?? 0,
@@ -300,6 +327,9 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     eventsPublished: eventsPublishedRes.count ?? 0,
     eventsPending: eventsPendingRes.count ?? 0,
     pendingDiscoveries: pendingDiscoveriesRes.count ?? 0,
+    citiesWithActivity: activeCitySlugs.size,
+    citiesWithoutActivity: Math.max(0, turkeyCities.length - activeCitySlugs.size),
+    missingActivityCityNames,
     recentNews,
     recentEvents,
     recentPlaces,

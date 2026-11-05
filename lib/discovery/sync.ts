@@ -13,6 +13,7 @@ import {
 import {
   discoverySourceUrlExists,
   rejectedDiscoveryUrlExists,
+  isTitleAlreadyDiscovered,
 } from "@/lib/discovery/dedupe";
 import {
   cleanGoogleNewsTitle,
@@ -273,6 +274,12 @@ export async function discoverContent(): Promise<DiscoverContentResult> {
         const displayTitle = isGNews
           ? cleanGoogleNewsTitle(item.title, publisherName)
           : item.title.trim();
+
+        // Syndicate / wire news duplicate check (AA, DHA, İHA cloned across local sites)
+        if (await isTitleAlreadyDiscovered(displayTitle)) {
+          result.itemsSkipped += 1;
+          continue;
+        }
 
         if (
           isRejectedNonTurkishOrCommercialContent({

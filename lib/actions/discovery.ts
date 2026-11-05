@@ -127,7 +127,8 @@ export async function importDiscoveryAsEvent(id: string) {
     console.warn("importEventFromUrl fallback in action:", err);
     imported = {
       title: item.title,
-      summary: (item.snippet || item.title).slice(0, 160),
+      summary: (item.snippet || item.title).trim(),
+      description: item.snippet || null,
       event_type: "duyuru",
       city_slug: item.city_slug,
       venue_name: null,
@@ -176,7 +177,7 @@ export async function importDiscoveryAsEvent(id: string) {
     .insert({
       title: safeTitle,
       slug,
-      summary: (imported.summary || item.snippet || safeTitle).slice(0, 160),
+      summary: (imported.summary || item.snippet || safeTitle).trim(),
       description: imported.description || item.snippet || null,
       event_type: sanitizeEventType(imported.event_type, `${safeTitle} ${item.snippet || ""}`),
       status: "pending_review",

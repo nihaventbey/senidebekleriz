@@ -335,13 +335,13 @@ export async function normalizeUrlContent(input: {
       cleanTicketUrl(input.url, "");
 
     const cleanTitle = (parsed.title || input.pageTitle || "Kültür Etkinliği").trim();
-    const cleanSummary = (parsed.summary || input.pageTitle || cleanTitle).slice(0, 160);
+    const cleanSummary = (parsed.summary || input.pageTitle || cleanTitle).trim();
 
     return {
       ...parsed,
       title: cleanTitle,
       summary: cleanSummary,
-      description: parsed.description || input.pageText.slice(0, 2000) || cleanSummary,
+      description: parsed.description || input.pageText.slice(0, 3500) || cleanSummary,
       event_type: sanitizeEventType(parsed.event_type, combinedText),
       city_slug:
         normalizeCitySlug(parsed.city_slug) ||

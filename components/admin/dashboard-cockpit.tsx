@@ -419,7 +419,7 @@ export function DashboardCockpit({
       </section>
 
       {/* 2. Temel İçerik Özeti Kartları */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-6">
         {/* Kart 1: Kültür Haberleri */}
         <Link
           href="/yonetim/haberler"
@@ -483,7 +483,7 @@ export function DashboardCockpit({
             {stats.pendingDiscoveries.toLocaleString("tr-TR")}
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground truncate">
-            {stats.pendingDiscoveries > 0 ? `${stats.pendingDiscoveries} içerik onay bekliyor` : "Kuyruk temiz"}
+            {stats.pendingDiscoveries > 0 ? `${stats.pendingDiscoveries} onay bekliyor` : "Kuyruk temiz"}
           </p>
         </Link>
 
@@ -507,19 +507,41 @@ export function DashboardCockpit({
         {/* Kart 5: 81 İl Kültür Ajandası */}
         <Link
           href="/yonetim/sehirler"
-          className="group col-span-2 lg:col-span-1 rounded-2xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm hover:border-primary/50"
+          className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm hover:border-primary/50"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">81 İl Ajandası</span>
+            <span className="text-xs font-semibold text-muted-foreground">81 İl Portalları</span>
             <Building2 className="h-4 w-4 text-emerald-500 opacity-80 group-hover:scale-105 transition-transform" />
           </div>
           <div className="mt-2 text-2xl font-extrabold text-foreground">
             {stats.cities.toLocaleString("tr-TR")}
           </div>
           <p className="mt-1 text-[11px] text-emerald-600 font-semibold truncate">
-            Tüm iller aktif · {stats.places.toLocaleString("tr-TR")} kültür noktası
+            81 il aktif · {stats.places.toLocaleString("tr-TR")} mekan
           </p>
         </Link>
+
+        {/* Kart 6: 81 İl Kapsama KPI (Etkinliksiz İller) */}
+        <div
+          className={`group rounded-2xl border p-4 transition-all ${
+            stats.citiesWithoutActivity > 0
+              ? "border-rose-500/40 bg-rose-500/5"
+              : "border-emerald-500/40 bg-emerald-500/5"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-muted-foreground">İl Kapsama KPI</span>
+            <Globe className="h-4 w-4 text-rose-500 opacity-80" />
+          </div>
+          <div className="mt-2 text-2xl font-extrabold text-foreground">
+            {stats.citiesWithActivity} <span className="text-xs font-normal text-muted-foreground">/ 81</span>
+          </div>
+          <div className="mt-1 flex items-center justify-between text-[11px]">
+            <span className="text-rose-600 font-semibold truncate">
+              {stats.citiesWithoutActivity} ilde etkinlik yok
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* 4. Live Discovery Queue & Quick Triage Stream */}
@@ -819,23 +841,40 @@ export function DashboardCockpit({
           eventsPublished={stats.eventsPublished}
         />
 
-        {/* 81 İl İçerik & Rehber Özeti */}
+        {/* 81 İl İçerik & Kapsama KPI */}
         <Card className="rounded-3xl border-border/80 shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-3 border-b">
             <div className="flex items-center gap-2.5">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600">
                 <Globe className="h-4 w-4" />
               </div>
-              <CardTitle className="text-base font-bold">81 İl İçerik &amp; Rehber Özeti</CardTitle>
+              <div>
+                <CardTitle className="text-base font-bold">81 İl Kültür Kapsama KPI</CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Türkiye genelinde kültürel ajandası ve haberi eksik kalan illerin canlı takibi.
+                </p>
+              </div>
             </div>
-            <Button variant="ghost" size="sm" asChild className="h-8 text-xs font-semibold">
-              <Link href="/yonetim/sehirler">
-                İlleri Yönet <ArrowRight className="ml-1 h-3.5 w-3.5" />
-              </Link>
-            </Button>
+            <DiscoverySyncButton />
           </CardHeader>
           <CardContent className="pt-4 space-y-4 text-sm">
             <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border p-3.5 bg-emerald-500/5 border-emerald-500/30">
+                <p className="text-2xl font-extrabold text-foreground">
+                  {stats.citiesWithActivity}
+                </p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
+                  Aktif ajandası olan il
+                </p>
+              </div>
+              <div className="rounded-2xl border p-3.5 bg-rose-500/5 border-rose-500/30">
+                <p className="text-2xl font-extrabold text-foreground">
+                  {stats.citiesWithoutActivity}
+                </p>
+                <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold mt-0.5">
+                  İçerik bekleyen il
+                </p>
+              </div>
               <Link
                 href="/yonetim/yazilar"
                 className="rounded-2xl border p-3.5 transition-colors hover:bg-muted/50 bg-muted/10"
@@ -844,29 +883,7 @@ export function DashboardCockpit({
                   {readiness.citiesWithGuide}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Rehberi hazır olan il
-                </p>
-              </Link>
-              <Link
-                href="/yonetim/yazilar/yeni"
-                className="rounded-2xl border p-3.5 transition-colors hover:bg-muted/50 bg-muted/10"
-              >
-                <p className="text-2xl font-extrabold text-foreground">
-                  {readiness.citiesWithoutGuide}
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Rehberi bekleyen il
-                </p>
-              </Link>
-              <Link
-                href="/yonetim/sehirler"
-                className="rounded-2xl border p-3.5 transition-colors hover:bg-muted/50 bg-muted/10"
-              >
-                <p className="text-2xl font-extrabold text-foreground">
-                  {81 - gaps.citiesWithoutCover} / 81
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Kapak fotoğrafı tanımlı il
+                  Gezi rehberi hazır il
                 </p>
               </Link>
               <Link
@@ -877,20 +894,25 @@ export function DashboardCockpit({
                   {stats.places.toLocaleString("tr-TR")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Kayıtlı müze, sahne ve ören yeri
+                  Müze ve antik mekan
                 </p>
               </Link>
             </div>
 
-            {readiness.missingGuideCities.length > 0 && (
-              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3.5 space-y-1 text-xs">
-                <p className="font-bold text-foreground flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  Öncelikli Rehber Yazılabilecek İller:
-                </p>
+            {stats.missingActivityCityNames.length > 0 && (
+              <div className="rounded-2xl border border-rose-500/30 bg-rose-500/5 p-4 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-rose-700 dark:text-rose-300 flex items-center gap-1.5">
+                    <AlertCircle className="h-4 w-4 text-rose-600" />
+                    Etkinlik/Haber Bekleyen Öncelikli İller ({stats.citiesWithoutActivity}):
+                  </p>
+                </div>
                 <p className="text-muted-foreground leading-relaxed">
-                  {readiness.missingGuideCities.join(", ")}
-                  {readiness.citiesWithoutGuide > 12 ? "…" : ""}
+                  {stats.missingActivityCityNames.slice(0, 16).join(", ")}
+                  {stats.missingActivityCityNames.length > 16 ? "…" : ""}
+                </p>
+                <p className="text-[11px] text-muted-foreground/80 pt-1 border-t border-rose-200 dark:border-rose-900/50">
+                  Yukarıdaki &quot;Şimdi Tara &amp; Keşfet&quot; butonu; 81 ilin valilik, belediye ve yerel basın akışlarını AI filtresinden geçirerek eksik illeri otomatik besler.
                 </p>
               </div>
             )}
