@@ -3,7 +3,7 @@ import { generateNewsDraft } from "@/lib/ai/generate-news";
 import { getAdminUser, unauthorizedResponse } from "@/lib/auth/admin";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   const user = await getAdminUser();

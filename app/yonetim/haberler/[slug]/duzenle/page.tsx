@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   title: "Haberi Düzenle",
 };
 
+export const maxDuration = 60;
+
 type Props = {
   params: Promise<{ slug: string }>;
 };

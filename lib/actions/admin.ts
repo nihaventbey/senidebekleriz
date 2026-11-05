@@ -423,3 +423,50 @@ export async function deleteAdPlacement(id: string) {
 
   revalidateAdPaths();
 }
+
+export async function toggleAdPlacementActive(id: string, isActive: boolean) {
+  const { error } = await supabaseAdmin
+    .from("ad_placements")
+    .update({ is_active: isActive })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  revalidateAdPaths();
+}
+
+export async function bulkToggleAdPlacements(ids: string[], isActive: boolean) {
+  if (!ids || ids.length === 0) return { success: true, count: 0 };
+
+  const { error } = await supabaseAdmin
+    .from("ad_placements")
+    .update({ is_active: isActive })
+    .in("id", ids);
+  if (error) throw new Error(error.message);
+
+  revalidateAdPaths();
+  return { success: true, count: ids.length };
+}
+
+export async function toggleAllAdPlacements(isActive: boolean) {
+  const { error } = await supabaseAdmin
+    .from("ad_placements")
+    .update({ is_active: isActive })
+    .neq("id", "00000000-0000-0000-0000-000000000000");
+  if (error) throw new Error(error.message);
+
+  revalidateAdPaths();
+  return { success: true };
+}
+
+export async function bulkDeleteAdPlacements(ids: string[]) {
+  if (!ids || ids.length === 0) return { success: true, count: 0 };
+
+  const { error } = await supabaseAdmin
+    .from("ad_placements")
+    .delete()
+    .in("id", ids);
+  if (error) throw new Error(error.message);
+
+  revalidateAdPaths();
+  return { success: true, count: ids.length };
+}

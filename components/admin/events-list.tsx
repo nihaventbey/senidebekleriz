@@ -25,8 +25,17 @@ import {
   Calendar,
   MapPin,
   Sparkles,
+  CheckSquare,
+  Square,
+  Trash2,
 } from "lucide-react";
-import { approveEvent, rejectEvent, unpublishEvent } from "@/lib/actions/events";
+import {
+  approveEvent,
+  rejectEvent,
+  unpublishEvent,
+  bulkUpdateEventsStatus,
+  bulkDeleteEvents,
+} from "@/lib/actions/events";
 import { getCityName } from "@/lib/cities/lookup";
 import type { AdminEventListItem } from "@/lib/data/admin-events";
 import { toast } from "@/lib/toast";
@@ -75,6 +84,7 @@ type Props = {
 export function EventsList({ events, filter }: Props) {
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -154,6 +164,72 @@ export function EventsList({ events, filter }: Props) {
     });
   }
 
+  const isAllSelected =
+    filteredEvents.length > 0 &&
+    filteredEvents.every((e) => selectedIds.has(e.id));
+
+  function toggleSelectAll() {
+    if (isAllSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredEvents.map((e) => e.id)));
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function handleBulkStatus(status: "published" | "pending_review" | "rejected") {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    startTransition(async () => {
+      try {
+        await bulkUpdateEventsStatus(ids, status);
+        toast.success(
+          status === "published"
+            ? `${ids.length} etkinlik yayına alındı ✅`
+            : status === "pending_review"
+            ? `${ids.length} etkinlik taslağa alındı ⏸️`
+            : `${ids.length} etkinlik reddedildi`
+        );
+        setSelectedIds(new Set());
+        router.refresh();
+      } catch (error) {
+        toast.error(
+          "Toplu işlem başarısız",
+          error instanceof Error ? error.message : undefined
+        );
+      }
+    });
+  }
+
+  function handleBulkDelete() {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (!confirm(`Seçili ${ids.length} etkinliği kalıcı olarak silmek istediğinize emin misiniz?`)) {
+      return;
+    }
+    startTransition(async () => {
+      try {
+        await bulkDeleteEvents(ids);
+        toast.success(`${ids.length} etkinlik silindi 🗑️`);
+        setSelectedIds(new Set());
+        router.refresh();
+      } catch (error) {
+        toast.error(
+          "Toplu silme başarısız",
+          error instanceof Error ? error.message : undefined
+        );
+      }
+    });
+  }
+
   return (
     <div className="space-y-4">
       {/* Search & Type Filter Toolbar */}
@@ -185,6 +261,69 @@ export function EventsList({ events, filter }: Props) {
         </div>
       </div>
 
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2.5">
+          <span className="text-xs font-semibold text-primary">
+            {selectedIds.size} etkinlik seçildi
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              disabled={isPending}
+              onClick={() => handleBulkStatus("published")}
+              className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <Check className="h-3.5 w-3.5" />
+              Onayla &amp; Yayınla
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={isPending}
+              onClick={() => handleBulkStatus("pending_review")}
+              className="h-7 text-xs gap-1"
+            >
+              <EyeOff className="h-3.5 w-3.5" />
+              Taslağa Al
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={isPending}
+              onClick={() => handleBulkStatus("rejected")}
+              className="h-7 text-xs gap-1 text-destructive border-destructive/30"
+            >
+              <X className="h-3.5 w-3.5" />
+              Reddet
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              disabled={isPending}
+              onClick={handleBulkDelete}
+              className="h-7 text-xs gap-1"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Sil
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={isPending}
+              onClick={() => setSelectedIds(new Set())}
+              className="h-7 text-xs"
+            >
+              Seçimi Kaldır
+            </Button>
+          </div>
+        </div>
+      )}
+
       {filteredEvents.length === 0 ? (
         <div className="rounded-lg border py-12 text-center text-muted-foreground text-sm">
           {filter === "pending_review"
@@ -193,25 +332,53 @@ export function EventsList({ events, filter }: Props) {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border bg-card">
-          <Table className="w-full min-w-[780px] table-fixed">
+          <Table className="w-full min-w-[820px] table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[10%]">Afiş</TableHead>
-                <TableHead className="w-[35%]">Başlık & Kaynak</TableHead>
-                <TableHead className="w-[12%]">Kategori</TableHead>
-                <TableHead className="w-[13%]">Şehir</TableHead>
-                <TableHead className="w-[15%]">Tarih</TableHead>
-                <TableHead className="w-[15%] text-right">İşlemler</TableHead>
+                <TableHead className="w-[44px] text-center">
+                  <button
+                    type="button"
+                    onClick={toggleSelectAll}
+                    className="p-1 rounded text-muted-foreground hover:text-foreground"
+                    title={isAllSelected ? "Seçimi Kaldır" : "Tümünü Seç"}
+                  >
+                    {isAllSelected ? (
+                      <CheckSquare className="h-4 w-4 text-primary" />
+                    ) : (
+                      <Square className="h-4 w-4" />
+                    )}
+                  </button>
+                </TableHead>
+                <TableHead className="w-[9%]">Afiş</TableHead>
+                <TableHead className="w-[33%]">Başlık & Kaynak</TableHead>
+                <TableHead className="w-[11%]">Kategori</TableHead>
+                <TableHead className="w-[12%]">Şehir</TableHead>
+                <TableHead className="w-[14%]">Tarih</TableHead>
+                <TableHead className="w-[16%] text-right">İşlemler</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredEvents.map((event) => {
                 const busy = isPending && pendingId === event.id;
+                const isSelected = selectedIds.has(event.id);
                 const typeColor = TYPE_COLORS[event.event_type] || TYPE_COLORS.diger;
                 const cityName = getCityName(event.city_slug) || event.city_slug;
 
                 return (
-                  <TableRow key={event.id}>
+                  <TableRow key={event.id} className={isSelected ? "bg-primary/5" : undefined}>
+                    <TableCell className="text-center">
+                      <button
+                        type="button"
+                        onClick={() => toggleSelect(event.id)}
+                        className="p-1 rounded text-muted-foreground hover:text-foreground"
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="h-4 w-4 text-primary" />
+                        ) : (
+                          <Square className="h-4 w-4" />
+                        )}
+                      </button>
+                    </TableCell>
                     {/* Poster */}
                     <TableCell>
                       {event.cover_image ? (

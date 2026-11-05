@@ -360,7 +360,7 @@ export function DiscoveryList({
 
       {/* Table */}
       <div className="overflow-x-auto rounded-2xl border bg-card shadow-xs">
-        <Table className="w-full min-w-[880px] table-fixed">
+        <Table className="w-full min-w-[1020px] table-fixed">
           <TableHeader>
             <TableRow>
               <TableHead className="w-[44px] text-center">
@@ -377,11 +377,11 @@ export function DiscoveryList({
                   )}
                 </button>
               </TableHead>
-              <TableHead className="w-[39%]">Başlık &amp; Özet</TableHead>
-              <TableHead className="w-[11%]">Önerilen Tür</TableHead>
-              <TableHead className="w-[11%]">Şehir</TableHead>
-              <TableHead className="w-[12%]">Kaynak</TableHead>
-              <TableHead className="w-[23%] text-right">AI İle İçe Aktar</TableHead>
+              <TableHead className="w-[34%]">Başlık &amp; Özet</TableHead>
+              <TableHead className="w-[10%]">Önerilen Tür</TableHead>
+              <TableHead className="w-[9%]">Şehir</TableHead>
+              <TableHead className="w-[13%]">Kaynak</TableHead>
+              <TableHead className="w-[340px] text-right">AI İle İçe Aktar</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -417,7 +417,7 @@ export function DiscoveryList({
                       )}
                     </button>
                   </TableCell>
-                  <TableCell className="max-w-[380px] overflow-hidden py-3">
+                  <TableCell className="overflow-hidden py-3 pr-3">
                     <div className="space-y-1">
                       <p
                         className="font-bold text-sm leading-snug line-clamp-2 break-words text-foreground"
@@ -435,31 +435,31 @@ export function DiscoveryList({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="overflow-hidden pr-2">
                     <Badge variant="outline" className="text-[11px] font-medium whitespace-nowrap">
                       {TYPE_LABELS[item.content_type] || item.content_type}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="overflow-hidden pr-2">
                     <span className="text-xs text-muted-foreground font-medium truncate block">
                       {getCityName(item.city_slug) || "—"}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="overflow-hidden pr-3">
                     <a
                       href={item.source_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center text-xs text-primary hover:underline truncate max-w-[120px]"
+                      className="flex items-center text-xs text-primary hover:underline truncate max-w-full"
                       title={item.source_name || item.source_url}
                     >
                       <span className="truncate">{item.source_name || "Kaynak"}</span>
                       <ExternalLink className="ml-1 h-3 w-3 shrink-0" />
                     </a>
                   </TableCell>
-                  <TableCell className="text-right whitespace-nowrap">
+                  <TableCell className="text-right whitespace-nowrap overflow-hidden pl-2">
                     {item.status === "pending_review" ? (
-                      <div className="flex justify-end items-center gap-1.5">
+                      <div className="flex justify-end items-center gap-1">
                         {/* 1. News Button */}
                         <Button
                           size="sm"

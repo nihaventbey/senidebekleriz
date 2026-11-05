@@ -247,6 +247,35 @@ export async function deleteEvent(id: string) {
   redirect("/yonetim/etkinlikler");
 }
 
+export async function bulkUpdateEventsStatus(
+  ids: string[],
+  status: "published" | "pending_review" | "rejected"
+) {
+  if (!ids || ids.length === 0) return;
+  const { error } = await supabaseAdmin
+    .from("cultural_events")
+    .update({
+      status,
+      published_at: status === "published" ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+    })
+    .in("id", ids);
+
+  if (error) throw new Error(error.message);
+  revalidateEventPaths();
+}
+
+export async function bulkDeleteEvents(ids: string[]) {
+  if (!ids || ids.length === 0) return;
+  const { error } = await supabaseAdmin
+    .from("cultural_events")
+    .delete()
+    .in("id", ids);
+
+  if (error) throw new Error(error.message);
+  revalidateEventPaths();
+}
+
 export async function importEventFromUrlAction(rawUrl: string) {
   try {
     let url = rawUrl.trim();

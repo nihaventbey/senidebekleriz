@@ -50,7 +50,7 @@ const VALID_CATEGORIES = new Set([
 function cleanPublisherSuffixes(text: string): string {
   return text
     .replace(
-      /\s*[-|–—]\s*(Anadolu Ajansı|AA|TRT Haber|Hürriyet|Milliyet|Sabah|Sözcü|Cumhuriyet|NTV|Habertürk|CNN Türk|Euronews|BBC News Türkçe|Bianet|Diken|Gazete Duvar|T24|BirGün|Kültür Portalı|T\.C\. Kültür ve Turizm Bakanlığı|Arkeofili|Arkitera|Sanat Atak|Argonotlar).*$/i,
+      /\s*[-|–—]\s*(Anadolu Ajansı|AA|TRT Haber|Hürriyet|Milliyet Sanat|Milliyet|Sabah|Sözcü|Cumhuriyet|NTV|Habertürk|CNN Türk|Euronews|BBC News Türkçe|Bianet|Diken|Gazete Duvar|T24|BirGün|Kültür Portalı|T\.C\. Kültür ve Turizm Bakanlığı|Arkeofili|Arkitera|Sanat Atak|Argonotlar).*$/i,
       ""
     )
     .trim();
@@ -318,7 +318,7 @@ export async function generateNewsDraft(
       .slice(0, 200);
 
     const bodyBlocks =
-      formattedBlocks.length > 1 && formattedBlocks[0] === leadSummary
+      formattedBlocks.length > 2 && formattedBlocks[0] === leadSummary
         ? formattedBlocks.slice(1)
         : formattedBlocks;
 

@@ -205,3 +205,43 @@ export async function toggleFeaturedNews(id: string, isFeatured: boolean): Promi
   if (error) throw new Error(error.message);
   revalidateNewsPaths();
 }
+
+export async function bulkPublishNews(ids: string[], isPublished: boolean): Promise<void> {
+  if (!ids || ids.length === 0) return;
+  const { error } = await supabaseAdmin
+    .from("cultural_news")
+    .update({
+      is_published: isPublished,
+      published_at: isPublished ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+    })
+    .in("id", ids);
+
+  if (error) throw new Error(error.message);
+  revalidateNewsPaths();
+}
+
+export async function bulkFeaturedNews(ids: string[], isFeatured: boolean): Promise<void> {
+  if (!ids || ids.length === 0) return;
+  const { error } = await supabaseAdmin
+    .from("cultural_news")
+    .update({
+      is_featured: isFeatured,
+      updated_at: new Date().toISOString(),
+    })
+    .in("id", ids);
+
+  if (error) throw new Error(error.message);
+  revalidateNewsPaths();
+}
+
+export async function bulkDeleteNews(ids: string[]): Promise<void> {
+  if (!ids || ids.length === 0) return;
+  const { error } = await supabaseAdmin
+    .from("cultural_news")
+    .delete()
+    .in("id", ids);
+
+  if (error) throw new Error(error.message);
+  revalidateNewsPaths();
+}

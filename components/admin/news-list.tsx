@@ -27,11 +27,16 @@ import {
   Loader2,
   Sparkles,
   Zap,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import {
   deleteNews,
   togglePublishNews,
   toggleFeaturedNews,
+  bulkPublishNews,
+  bulkFeaturedNews,
+  bulkDeleteNews,
 } from "@/lib/actions/news";
 import { getCityName } from "@/lib/cities/lookup";
 import type { AdminNewsListItem } from "@/lib/data/admin-news";
@@ -49,6 +54,7 @@ export function AdminNewsList({ newsList }: Props) {
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft" | "featured">("all");
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
 
   const filtered = useMemo(() => {
@@ -122,6 +128,82 @@ export function AdminNewsList({ newsList }: Props) {
     });
   }
 
+  const isAllSelected =
+    filtered.length > 0 && filtered.every((item) => selectedIds.has(item.id));
+
+  function toggleSelectAll() {
+    if (isAllSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((item) => item.id)));
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function handleBulkPublish(publish: boolean) {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    startTransition(async () => {
+      try {
+        await bulkPublishNews(ids, publish);
+        toast.success(
+          publish
+            ? `${ids.length} haber yayına alındı ✅`
+            : `${ids.length} haber taslağa çekildi ⏸️`
+        );
+        setSelectedIds(new Set());
+        router.refresh();
+      } catch (err: any) {
+        toast.error("Toplu işlem başarısız", err.message);
+      }
+    });
+  }
+
+  function handleBulkFeatured(featured: boolean) {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    startTransition(async () => {
+      try {
+        await bulkFeaturedNews(ids, featured);
+        toast.success(
+          featured
+            ? `${ids.length} haber manşete taşındı 🔥`
+            : `${ids.length} haber manşetten çıkarıldı`
+        );
+        setSelectedIds(new Set());
+        router.refresh();
+      } catch (err: any) {
+        toast.error("Toplu işlem başarısız", err.message);
+      }
+    });
+  }
+
+  function handleBulkDelete() {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (!confirm(`Seçili ${ids.length} haberi kalıcı olarak silmek istediğinize emin misiniz?`)) {
+      return;
+    }
+    startTransition(async () => {
+      try {
+        await bulkDeleteNews(ids);
+        toast.success(`${ids.length} haber silindi 🗑️`);
+        setSelectedIds(new Set());
+        router.refresh();
+      } catch (err: any) {
+        toast.error("Toplu silme başarısız", err.message);
+      }
+    });
+  }
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -187,6 +269,70 @@ export function AdminNewsList({ newsList }: Props) {
         </div>
       </div>
 
+      {/* Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-2.5">
+          <span className="text-xs font-semibold text-primary">
+            {selectedIds.size} haber seçildi
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              disabled={isPending}
+              onClick={() => handleBulkPublish(true)}
+              className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <Eye className="h-3.5 w-3.5" />
+              Yayına Al
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={isPending}
+              onClick={() => handleBulkPublish(false)}
+              className="h-7 text-xs gap-1"
+            >
+              <EyeOff className="h-3.5 w-3.5" />
+              Taslağa Çek
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={isPending}
+              onClick={() => handleBulkFeatured(true)}
+              className="h-7 text-xs gap-1 text-amber-600 border-amber-300"
+            >
+              <Star className="h-3.5 w-3.5 fill-current" />
+              Manşete Taşı
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              disabled={isPending}
+              onClick={handleBulkDelete}
+              className="h-7 text-xs gap-1"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Sil
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={isPending}
+              onClick={() => setSelectedIds(new Set())}
+              className="h-7 text-xs"
+            >
+              Seçimi Kaldır
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       {filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed py-16 text-center text-muted-foreground">
@@ -195,26 +341,54 @@ export function AdminNewsList({ newsList }: Props) {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl border bg-card shadow-xs">
-          <Table className="w-full min-w-[800px]">
+          <Table className="w-full min-w-[840px]">
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[44px] text-center">
+                  <button
+                    type="button"
+                    onClick={toggleSelectAll}
+                    className="p-1 rounded text-muted-foreground hover:text-foreground"
+                    title={isAllSelected ? "Seçimi Kaldır" : "Tümünü Seç"}
+                  >
+                    {isAllSelected ? (
+                      <CheckSquare className="h-4 w-4 text-primary" />
+                    ) : (
+                      <Square className="h-4 w-4" />
+                    )}
+                  </button>
+                </TableHead>
                 <TableHead className="w-[8%]">Görsel</TableHead>
-                <TableHead className="w-[35%]">Başlık & Kaynak</TableHead>
-                <TableHead className="w-[15%]">Kategori</TableHead>
-                <TableHead className="w-[12%]">Şehir</TableHead>
-                <TableHead className="w-[10%]">Durum</TableHead>
-                <TableHead className="w-[20%] text-right">İşlemler</TableHead>
+                <TableHead className="w-[33%]">Başlık & Kaynak</TableHead>
+                <TableHead className="w-[14%]">Kategori</TableHead>
+                <TableHead className="w-[11%]">Şehir</TableHead>
+                <TableHead className="w-[12%]">Durum</TableHead>
+                <TableHead className="w-[18%] text-right">İşlemler</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map((item) => {
                 const busy = isPending && pendingId === item.id;
+                const isSelected = selectedIds.has(item.id);
                 const categoryLabel = NEWS_CATEGORY_LABELS[item.category as keyof typeof NEWS_CATEGORY_LABELS] || item.category;
                 const categoryColor = NEWS_CATEGORY_COLORS[item.category as keyof typeof NEWS_CATEGORY_COLORS] || "bg-primary text-white";
                 const cityName = getCityName(item.city_slug) || item.city_slug;
 
                 return (
-                  <TableRow key={item.id} className="hover:bg-muted/40">
+                  <TableRow key={item.id} className={`hover:bg-muted/40 ${isSelected ? "bg-primary/5" : ""}`}>
+                    <TableCell className="text-center">
+                      <button
+                        type="button"
+                        onClick={() => toggleSelect(item.id)}
+                        className="p-1 rounded text-muted-foreground hover:text-foreground"
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="h-4 w-4 text-primary" />
+                        ) : (
+                          <Square className="h-4 w-4" />
+                        )}
+                      </button>
+                    </TableCell>
                     {/* Cover */}
                     <TableCell>
                       {item.cover_image ? (

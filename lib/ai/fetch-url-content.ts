@@ -80,11 +80,41 @@ function stripNonContentElements(html: string): string {
     .replace(/<template[\s\S]*?<\/template>/gi, " ");
 }
 
+function isBoilerplateParagraph(text: string): boolean {
+  const t = text.trim();
+  if (!t) return true;
+  // Email-only or phone/fax/copyright lines
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)) return true;
+  if (/»/.test(t) && t.length < 180) return true;
+  if (
+    /^(paylaş|fotoğraf:|yazar:|yorumlar|copyright|tüm hakları|çerez politikası|bizi takip edin|ilgili haberler|etiketler\s*:|künye|yeni sayımız bayilerde|yazarlar\s+haberler)/i.test(
+      t
+    )
+  ) {
+    return true;
+  }
+  if (
+    /(künye\s*©|tüm hakları saklıdır|demirören medya|turkuvaz medya|izinsiz kullanılamaz|tel:\s*\+?\d|faks:\s*\+?\d|yazarlar\s+haberler\s+milliyet)/i.test(
+      t
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
 function stripHtml(html: string): string {
-  const cleaned = stripNonContentElements(html);
-  return decodeHtmlEntities(
-    cleaned.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
-  );
+  const cleaned = stripNonContentElements(html)
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|h[1-6]|li|blockquote|section|article|tr)>/gi, "\n\n");
+
+  const decoded = decodeHtmlEntities(cleaned.replace(/<[^>]+>/g, " "));
+  const lines = decoded
+    .split(/\n+/)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter((line) => line.length >= 35 && !isBoilerplateParagraph(line));
+
+  return lines.join("\n\n");
 }
 
 function extractArticleParagraphs(html: string): string[] {
@@ -92,17 +122,20 @@ function extractArticleParagraphs(html: string): string[] {
 
   // Try to find targeted article content container first
   const containerPatterns = [
+    /<div[^>]+class=["'][^"']*hDetay[^"']*["'][^>]*>([\s\S]*?)(?:<div[^>]+class=["'][^"']*(?:etiketler|fbYorum)|<\/body>)/i,
     /<article[^>]*>([\s\S]*?)<\/article>/i,
     /<main[^>]*>([\s\S]*?)<\/main>/i,
     /<div[^>]+itemprop=["']articleBody["'][^>]*>([\s\S]*?)<\/div>/i,
-    /<div[^>]+class=["'][^"']*(?:article-body|news-content|entry-content|detail-content|haber-metni|icerik-detay|post-content|news-detail|content-text|story-body|article__content|article-text|haber-detay)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+    /<div[^>]+class=["'][^"']*(?:article-body|news-content|entry-content|detail-content|haber-metni|icerik-detay|post-content|news-detail|content-text|story-body|article__content|article-text|haber-detay|detay-icerik|yazi-detay)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
   ];
 
   let targetHtml = cleaned;
+  let matchedTargetedContainer = false;
   for (const pattern of containerPatterns) {
     const match = cleaned.match(pattern);
     if (match?.[1] && match[1].length > 300) {
       targetHtml = match[1];
+      matchedTargetedContainer = true;
       break;
     }
   }
@@ -119,14 +152,23 @@ function extractArticleParagraphs(html: string): string[] {
       match[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
     );
     const minLen = tag.startsWith("h") ? 12 : 30;
-    // Ignore cookie banners, share prompts, short boilerplate
-    if (
-      text.length >= minLen &&
-      !/^(paylaş|fotoğraf:|yazar:|yorumlar|copyright|tüm hakları|çerez politikası|bizi takip edin|ilgili haberler)/i.test(
-        text
-      )
-    ) {
+    if (text.length >= minLen && !isBoilerplateParagraph(text)) {
       paragraphs.push(text);
+    }
+  }
+
+  // Some publishers (e.g. milliyetsanat.com) use <div> or <br> inside the article container instead of <p>
+  if (paragraphs.join(" ").length < 200 && matchedTargetedContainer) {
+    const blockSeparated = targetHtml
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/(div|p|strong|h[1-6]|li|blockquote)>/gi, "\n\n")
+      .replace(/<[^>]+>/g, " ");
+    const divLines = decodeHtmlEntities(blockSeparated)
+      .split(/\n+/)
+      .map((line) => line.replace(/\s+/g, " ").trim())
+      .filter((line) => line.length >= 35 && !isBoilerplateParagraph(line));
+    if (divLines.length > 0) {
+      return divLines;
     }
   }
 
@@ -296,6 +338,7 @@ function extractSiteName(html: string, pageUrl: string): string | undefined {
       "haberturk.com": "Habertürk",
       "hurriyet.com.tr": "Hürriyet",
       "milliyet.com.tr": "Milliyet",
+      "milliyetsanat.com": "Milliyet Sanat",
       "sozcu.com.tr": "Sözcü",
       "birgun.net": "BirGün",
       "diken.com.tr": "Diken",

@@ -14,8 +14,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Check, ExternalLink, EyeOff, Loader2, Pencil, Search, MapPinned, BookOpen, Zap } from "lucide-react";
-import { publishArticle, unpublishArticle } from "@/lib/actions/articles";
+import {
+  Check,
+  ExternalLink,
+  EyeOff,
+  Loader2,
+  Pencil,
+  Search,
+  MapPinned,
+  BookOpen,
+  Zap,
+  CheckSquare,
+  Square,
+  Trash2,
+} from "lucide-react";
+import {
+  publishArticle,
+  unpublishArticle,
+  bulkPublishArticles,
+  bulkDeleteArticles,
+} from "@/lib/actions/articles";
 import { getCityName } from "@/lib/cities/lookup";
 import type { AdminArticleListItem } from "@/lib/data/admin-articles";
 import { toast } from "@/lib/toast";
@@ -28,6 +46,7 @@ type Props = {
 export function ArticlesList({ articles }: Props) {
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -86,6 +105,70 @@ export function ArticlesList({ articles }: Props) {
         );
       } finally {
         setPendingId(null);
+      }
+    });
+  }
+
+  const isAllSelected =
+    filteredArticles.length > 0 &&
+    filteredArticles.every((a) => selectedIds.has(a.id));
+
+  function toggleSelectAll() {
+    if (isAllSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredArticles.map((a) => a.id)));
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function handleBulkPublish(isPublished: boolean) {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    startTransition(async () => {
+      try {
+        await bulkPublishArticles(ids, isPublished);
+        toast.success(
+          isPublished
+            ? `${ids.length} yazı yayınlandı ✅`
+            : `${ids.length} yazı taslağa alındı ⏸️`
+        );
+        setSelectedIds(new Set());
+        router.refresh();
+      } catch (error) {
+        toast.error(
+          "Toplu işlem başarısız",
+          error instanceof Error ? error.message : undefined
+        );
+      }
+    });
+  }
+
+  function handleBulkDelete() {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (!confirm(`Seçili ${ids.length} yazıyı kalıcı olarak silmek istediğinize emin misiniz?`)) {
+      return;
+    }
+    startTransition(async () => {
+      try {
+        await bulkDeleteArticles(ids);
+        toast.success(`${ids.length} yazı silindi 🗑️`);
+        setSelectedIds(new Set());
+        router.refresh();
+      } catch (error) {
+        toast.error(
+          "Toplu silme başarısız",
+          error instanceof Error ? error.message : undefined
+        );
       }
     });
   }
@@ -153,18 +236,84 @@ export function ArticlesList({ articles }: Props) {
         </div>
       </div>
 
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2.5">
+          <span className="text-xs font-semibold text-primary">
+            {selectedIds.size} yazı seçildi
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              disabled={isPending}
+              onClick={() => handleBulkPublish(true)}
+              className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <Check className="h-3.5 w-3.5" />
+              Yayınla
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={isPending}
+              onClick={() => handleBulkPublish(false)}
+              className="h-7 text-xs gap-1"
+            >
+              <EyeOff className="h-3.5 w-3.5" />
+              Taslağa Al
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              disabled={isPending}
+              onClick={handleBulkDelete}
+              className="h-7 text-xs gap-1"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Sil
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={isPending}
+              onClick={() => setSelectedIds(new Set())}
+              className="h-7 text-xs"
+            >
+              Seçimi Kaldır
+            </Button>
+          </div>
+        </div>
+      )}
+
       {filteredArticles.length === 0 ? (
         <div className="rounded-lg border py-12 text-center text-muted-foreground text-sm">
           Arama kriterine uygun yazı bulunamadı.
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border bg-card">
-          <Table className="w-full min-w-[750px] table-fixed">
+          <Table className="w-full min-w-[780px] table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[38%]">Başlık</TableHead>
+                <TableHead className="w-[44px] text-center">
+                  <button
+                    type="button"
+                    onClick={toggleSelectAll}
+                    className="p-1 rounded text-muted-foreground hover:text-foreground"
+                    title={isAllSelected ? "Seçimi Kaldır" : "Tümünü Seç"}
+                  >
+                    {isAllSelected ? (
+                      <CheckSquare className="h-4 w-4 text-primary" />
+                    ) : (
+                      <Square className="h-4 w-4" />
+                    )}
+                  </button>
+                </TableHead>
+                <TableHead className="w-[35%]">Başlık</TableHead>
                 <TableHead className="w-[20%]">Tür & Şehir</TableHead>
-                <TableHead className="w-[22%]">Slug / Adres</TableHead>
+                <TableHead className="w-[21%]">Slug / Adres</TableHead>
                 <TableHead className="w-[8%]">Durum</TableHead>
                 <TableHead className="w-[12%] text-right">İşlemler</TableHead>
               </TableRow>
@@ -172,11 +321,25 @@ export function ArticlesList({ articles }: Props) {
             <TableBody>
               {filteredArticles.map((article) => {
                 const busy = isPending && pendingId === article.id;
+                const isSelected = selectedIds.has(article.id);
                 const isGuide = Boolean(article.city_slug);
                 const cityName = getCityName(article.city_slug);
 
                 return (
-                  <TableRow key={article.id}>
+                  <TableRow key={article.id} className={isSelected ? "bg-primary/5" : undefined}>
+                    <TableCell className="text-center">
+                      <button
+                        type="button"
+                        onClick={() => toggleSelect(article.id)}
+                        className="p-1 rounded text-muted-foreground hover:text-foreground"
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="h-4 w-4 text-primary" />
+                        ) : (
+                          <Square className="h-4 w-4" />
+                        )}
+                      </button>
+                    </TableCell>
                     <TableCell className="font-medium">
                       <div className="truncate max-w-[340px]" title={`${article.title} (Sitede Görüntüle)`}>
                         <Link

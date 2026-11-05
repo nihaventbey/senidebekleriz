@@ -25,6 +25,27 @@ const QUARTER_NAMES: Record<1 | 2 | 3 | 4, string> = {
   4: "Ekim - Aralık",
 };
 
+const TURKISH_MONTHS: Record<string, number> = {
+  ocak: 0,
+  şubat: 1,
+  subat: 1,
+  mart: 2,
+  nisan: 3,
+  mayıs: 4,
+  mayis: 4,
+  haziran: 5,
+  temmuz: 6,
+  ağustos: 7,
+  agustos: 7,
+  eylül: 8,
+  eylul: 8,
+  ekim: 9,
+  kasım: 10,
+  kasim: 10,
+  aralık: 11,
+  aralik: 11,
+};
+
 export function getCurrentQuarterInfo(refDate = new Date()): QuarterInfo {
   const year = refDate.getFullYear();
   const month = refDate.getMonth(); // 0-11
@@ -58,6 +79,70 @@ export function getCurrentQuarterInfo(refDate = new Date()): QuarterInfo {
 }
 
 /**
+ * Checks if a title or snippet explicitly references a day and month that has already passed
+ * relative to refDate (e.g. "17 Ekim'de başlıyor" when today is 5 Kasım).
+ */
+export function hasPastDateInText(text: string, refDate = new Date()): boolean {
+  if (!text) return false;
+  const currentYear = refDate.getFullYear();
+  const todayStart = new Date(refDate);
+  todayStart.setHours(0, 0, 0, 0);
+
+  // Match Turkish patterns like: "17 Ekim", "17 Ekim'de", "17 Ekim 2026", "28 Kasım'a dek"
+  const regex =
+    /\b(\d{1,2})\s+(ocak|şubat|subat|mart|nisan|mayıs|mayis|haziran|temmuz|ağustos|agustos|eylül|eylul|ekim|kasım|kasim|aralık|aralik)(?:'?(?:de|da|te|ta|ye|ya|e|a|den|dan|ten|tan|\s*(?:dek|kadar)))?(?:\s+(\d{4}))?\b/gi;
+
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    const day = parseInt(match[1], 10);
+    const monthKey = match[2].toLowerCase();
+    const explicitYear = match[3] ? parseInt(match[3], 10) : currentYear;
+    const monthIndex = TURKISH_MONTHS[monthKey];
+
+    if (monthIndex === undefined || day < 1 || day > 31) continue;
+
+    // Check if whole text is "X'e dek / kadar" (an ongoing exhibition ending on date X)
+    const isUntil = /(?:'?(?:e|a)\s*dek|kadar)\b/i.test(match[0]);
+    const eventDate = new Date(explicitYear, monthIndex, day);
+    eventDate.setHours(23, 59, 59, 999);
+
+    // If it is in the past
+    if (eventDate.getTime() < todayStart.getTime()) {
+      // If it says "28 Kasım'a dek", that's future. But if it says "17 Ekim'de açılıyor" or "17 Ekim'e dek" and Oct 17 is past, it's past!
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Checks if a publication date is fresh (within maxDays from refDate, default 7 days).
+ */
+export function isDiscoveryDateFresh(
+  dateStr?: string | null,
+  refDate = new Date(),
+  maxDays = 7
+): boolean {
+  if (!dateStr) return true;
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return true;
+
+  const diffMs = refDate.getTime() - d.getTime();
+  const maxMs = maxDays * 24 * 60 * 60 * 1000;
+  // If pubDate is more than maxDays in the past
+  if (diffMs > maxMs) {
+    return false;
+  }
+  // Reject future hallucinated dates (> 2 days ahead)
+  if (diffMs < -2 * 24 * 60 * 60 * 1000) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Checks if a publication date falls within the active year and current quarter.
  * Rejects dates from previous years or earlier quarters.
  */
@@ -78,7 +163,8 @@ export function isDateInActiveQuarter(dateStr?: string | null, refDate = new Dat
     return false;
   }
 
-  return true;
+  // Also enforce strict freshness (e.g. within 10 days for active discovery)
+  return isDiscoveryDateFresh(dateStr, refDate, 10);
 }
 
 /**

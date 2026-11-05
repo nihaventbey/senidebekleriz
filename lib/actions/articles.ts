@@ -152,3 +152,29 @@ export async function unpublishArticle(id: string) {
   if (error) throw new Error(error.message);
   revalidateArticlePaths();
 }
+
+export async function bulkPublishArticles(ids: string[], isPublished: boolean) {
+  if (!ids || ids.length === 0) return;
+  const { error } = await supabaseAdmin
+    .from("articles")
+    .update({
+      is_published: isPublished,
+      published_at: isPublished ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+    })
+    .in("id", ids);
+
+  if (error) throw new Error(error.message);
+  revalidateArticlePaths();
+}
+
+export async function bulkDeleteArticles(ids: string[]) {
+  if (!ids || ids.length === 0) return;
+  const { error } = await supabaseAdmin
+    .from("articles")
+    .delete()
+    .in("id", ids);
+
+  if (error) throw new Error(error.message);
+  revalidateArticlePaths();
+}

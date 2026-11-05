@@ -2,6 +2,7 @@ import {
   getCurrentQuarterInfo,
   isDateInActiveQuarter,
   hasPastYearInTitle,
+  hasPastDateInText,
   type QuarterInfo,
 } from "@/lib/discovery/quarter";
 import {
@@ -136,6 +137,7 @@ async function cleanupOutdatedPendingDiscoveries(quarterInfo: QuarterInfo) {
         .filter(
           (it) =>
             hasPastYearInTitle(it.title, quarterInfo.year) ||
+            hasPastDateInText(`${it.title} ${it.snippet || ""}`) ||
             isRejectedNonTurkishOrCommercialContent({
               title: it.title,
               snippet: it.snippet || undefined,
@@ -221,6 +223,10 @@ export async function discoverContent(): Promise<DiscoverContentResult> {
 
         // Active Quarter check: Skip past years or dates before current quarter
         if (hasPastYearInTitle(item.title, quarterInfo.year)) {
+          result.itemsSkipped += 1;
+          continue;
+        }
+        if (hasPastDateInText(`${item.title} ${item.description || ""}`)) {
           result.itemsSkipped += 1;
           continue;
         }

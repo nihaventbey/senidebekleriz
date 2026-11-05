@@ -64,20 +64,31 @@ function mapNews(row: CulturalNewsRow): PublicNewsArticle {
 }
 
 export async function getFeaturedNews(limit = 5): Promise<PublicNewsArticle[]> {
+  // Freshness threshold: news published within last 21 days for featured hero
+  const freshnessThreshold = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString();
+
   const { data, error } = await supabaseAdmin
     .from("cultural_news")
     .select("*")
     .eq("is_published", true)
+    .gte("published_at", freshnessThreshold)
     .order("is_featured", { ascending: false })
     .order("published_at", { ascending: false })
     .limit(limit);
 
-  if (error) {
-    console.error("getFeaturedNews error:", error.message);
-    return [];
+  if (error || !data || data.length === 0) {
+    // Fallback to latest published news regardless of freshness window if empty
+    const { data: fallbackData } = await supabaseAdmin
+      .from("cultural_news")
+      .select("*")
+      .eq("is_published", true)
+      .order("published_at", { ascending: false })
+      .limit(limit);
+
+    return (fallbackData || []).map((r) => mapNews(r as CulturalNewsRow));
   }
 
-  return (data || []).map((r) => mapNews(r as CulturalNewsRow));
+  return data.map((r) => mapNews(r as CulturalNewsRow));
 }
 
 export async function getPublishedNews(options?: {

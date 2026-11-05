@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   title: "Yeni Kültür Haberi Ekle",
 };
 
+export const maxDuration = 60;
+
 type Props = {
   searchParams: Promise<{ sourceUrl?: string }>;
 };
