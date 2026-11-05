@@ -12,6 +12,7 @@ import { uniqueEventSlug } from "@/lib/events/slug";
 import { slugify } from "@/lib/slugify";
 import { getCityName, normalizeCitySlug } from "@/lib/cities/lookup";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
+import { formatSeoSummary } from "@/lib/utils";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
         .insert({
           title: safeTitle,
           slug,
-          summary: (imported.summary || snippet || safeTitle).slice(0, 160),
+          summary: formatSeoSummary(imported.summary || snippet || safeTitle),
           description: imported.description || snippet || null,
           event_type: sanitizeEventType(imported.event_type, `${safeTitle} ${snippet}`),
           status: "pending_review",
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
           cover_image: storedCoverImage,
           meta_title: imported.meta_title ? String(imported.meta_title).slice(0, 60) : null,
           meta_description: imported.meta_description
-            ? String(imported.meta_description).slice(0, 155)
+            ? formatSeoSummary(String(imported.meta_description), 160)
             : null,
           raw_payload: {
             image_urls: imported.image_urls,

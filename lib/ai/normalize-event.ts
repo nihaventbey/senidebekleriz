@@ -1,6 +1,7 @@
 import { turkeyCities } from "@/data/turkey-cities";
 import { callGeminiJson } from "@/lib/ai/gemini-client";
 import { normalizeCitySlug } from "@/lib/cities/lookup";
+import { formatSeoSummary } from "@/lib/utils";
 import { detectTurkishCityInText } from "@/lib/discovery/classify-content";
 import type { EventType, NormalizedEventDraft, RawFeedItem } from "@/lib/events/types";
 import { cleanTicketUrl } from "@/lib/events/ticket-url";
@@ -232,7 +233,7 @@ export function heuristicNormalizeEvent(input: {
     .trim() || "Kültür Sanat Etkinliği";
 
   const rawBody = (input.pageText || "").trim();
-  const summary = (rawBody || cleanTitle).slice(0, 160).trim();
+  const summary = formatSeoSummary(rawBody || cleanTitle);
   const dates = extractTurkishDates(text);
 
   const description =
@@ -260,7 +261,7 @@ export function heuristicNormalizeEvent(input: {
     confidence: 0.8,
     ticket_url: cleanTicketUrl(input.url, ""),
     meta_title: `${cleanTitle} | Kültür Sanat Etkinliği`.slice(0, 60),
-    meta_description: (summary || cleanTitle).slice(0, 155),
+    meta_description: formatSeoSummary(summary || cleanTitle, 160),
   };
 }
 
@@ -289,7 +290,7 @@ export async function normalizeFeedItem(
     return {
       ...parsed,
       title: (parsed.title || item.title).trim(),
-      summary: (parsed.summary || item.title).slice(0, 160),
+      summary: formatSeoSummary(parsed.summary || item.title, 160),
       event_type: sanitizeEventType(parsed.event_type, `${item.title} ${item.description}`),
       city_slug:
         normalizeCitySlug(parsed.city_slug) ||

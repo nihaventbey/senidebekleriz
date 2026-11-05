@@ -8,6 +8,7 @@ import {
 import { normalizeCitySlug } from "@/lib/cities/lookup";
 import { slugify } from "@/lib/slugify";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
+import { formatSeoSummary } from "@/lib/utils";
 
 export type NewsDepth = "standard" | "deep" | "comprehensive";
 
@@ -135,14 +136,14 @@ KURUMSAL YAYINCILIK, EDİTÖRYAL DÜZEN VE AIO KURALLARI:
    - Kaynak sayfa içinde yerel sitelerden veya arayüzden sızmış olabilecek alakasız yan haberleri (örneğin başka şehirlerin haberleri, gezi notları, hava durumu, fuar duyuruları veya yazar köşe yazısı anonsları) KESİNLİKLE metne dahil etme! Sadece ve sadece ana haber konusunu işle.
 
 4. 5N1K ÖZET (summary) VE GİRİŞ:
-   - "summary" alanı 130-160 karakter arası, 1-2 cümlelik net bir 5N1K spotu olmalıdır (Ne, Nerede, Kim, Ne Zaman). Google News ve yapay zeka arama motorları için referans niteliğinde olmalıdır.
+   - "summary" alanı 130-160 karakter arası, 5N1K kuralına uygun, MUTLAKA tam ve eksiksiz bir cümle (asla yarıda kesilmemiş, sonu nokta ile biten) SEO uyumlu haber spotu olmalıdır (Ne, Nerede, Kim, Ne Zaman). Google News ve yapay zeka arama motorları için referans niteliğinde olmalıdır.
    - Haber metninin ("content") ilk paragrafı güçlü bir editoryal giriş olmalı, "summary" alanını kelimesi kelimesine kopyalamamalıdır.
 
 5. ÇIKTI FORMATI:
    - Yanıt YALNIZCA geçerli bir JSON objesi olmalıdır:
 {
   "title": "60-90 karakter arası, kurumsal, çarpıcı ve SEO uyumlu Türkçe haber başlığı",
-  "summary": "130-160 karakter arası, 5N1K kuralına uygun 1-2 cümlelik net haber özeti (spot)",
+  "summary": "130-160 karakter arası, 5N1K kuralına uygun, tam bir cümle olarak biten (asla yarım bırakılmamış) SEO uyumlu haber spotu",
   "content": "Haberin bağlamına uygun 2-4 derli toplu ## alt başlık ve kurumsal paragraflarla yazılmış Markdown haber metni",
   "category": "arkeoloji | restorasyon | muze_sergi | kultur_sanat | festival_haberleri | genel",
   "city_slug": "Haberin geçtiği ilin küçük harfli Türkçe karakter içermeyen slug'ı (örn: trabzon, canakkale, istanbul) veya genel ise null",
@@ -246,7 +247,7 @@ export async function generateNewsDraft(
     );
 
     const cleanContent = stripRawHtmlFromMarkdown(parsed.content || "");
-    const cleanSummary = cleanPublisherSuffixes(parsed.summary || cleanTitle).slice(0, 220);
+    const cleanSummary = formatSeoSummary(cleanPublisherSuffixes(parsed.summary || cleanTitle), 220);
     const wordCount = cleanContent.split(/\s+/).filter(Boolean).length;
 
     return {
@@ -313,14 +314,12 @@ export async function generateNewsDraft(
       fallbackSlug
     );
 
-    const fallbackSummary = (
+    const fallbackSummary = formatSeoSummary(
       leadSummary ||
-      input.fallbackText ||
-      `${cleanFallbackTitle} hakkında kültür ve sanat gelişmeleri.`
-    )
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 200);
+        input.fallbackText ||
+        `${cleanFallbackTitle} hakkında kültür ve sanat gelişmeleri.`,
+      200
+    );
 
     const bodyBlocks =
       formattedBlocks.length > 2 && formattedBlocks[0] === leadSummary

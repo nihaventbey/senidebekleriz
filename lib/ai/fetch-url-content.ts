@@ -90,14 +90,14 @@ function isBoilerplateParagraph(text: string): boolean {
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)) return true;
   if (/»/.test(t) && t.length < 180) return true;
   if (
-    /^(paylaş|fotoğraf:|yazar:|yorumlar|copyright|tüm hakları|çerez politikası|bizi takip edin|ilgili haberler|etiketler\s*:|künye|yeni sayımız bayilerde|yazarlar\s+haberler|gözden kaçırmayın|benzer haberler|diğer haberler|sıradaki haber|öne çıkan haberler|taka okurlarına özel)/i.test(
+    /^(paylaş|fotoğraf:|yazar:|yorumlar|copyright|tüm hakları|çerez politikası|bizi takip edin|ilgili haberler|etiketler\s*:|künye|yeni sayımız bayilerde|yazarlar\s+haberler|gözden kaçırmayın|benzer haberler|diğer haberler|sıradaki haber|öne çıkan haberler|taka okurlarına özel|uyarı\s*:|sosyal medyada takip|yorum kuralları|görüşlerinizi paylaşın)/i.test(
       t
     )
   ) {
     return true;
   }
   if (
-    /(künye\s*©|tüm hakları saklıdır|demirören medya|turkuvaz medya|izinsiz kullanılamaz|tel:\s*\+?\d|faks:\s*\+?\d|yazarlar\s+haberler\s+milliyet)/i.test(
+    /(künye\s*©|tüm hakları saklıdır|demirören medya|turkuvaz medya|izinsiz kullanılamaz|tel:\s*\+?\d|faks:\s*\+?\d|yazarlar\s+haberler\s+milliyet|hakaret içeren cümleler|yorumları onaylanmamaktadır)/i.test(
       t
     )
   ) {
@@ -126,7 +126,7 @@ function extractArticleParagraphs(html: string): string[] {
   // Try to find targeted article content container first - specific containers MUST precede generic <main>/<article>
   const containerPatterns = [
     /<div[^>]+itemprop=["']articleBody["'][^>]*>([\s\S]*?)<\/div>/i,
-    /<div[^>]+class=["'][^"']*(?:article-text|article-body|news-content|entry-content|detail-content|haber-metni|icerik-detay|post-content|news-detail|content-text|story-body|article__content|haber-detay|detay-icerik|yazi-detay)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+    /<div[^>]+class=["'][^"']*(?:dh-detay-metin|detay-metin|haber-metin|icerik-metin|detay-govde|article-text|article-body|news-content|entry-content|detail-content|haber-metni|icerik-detay|post-content|news-detail|content-text|story-body|article__content|haber-detay|detay-icerik|yazi-detay)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
     /<div[^>]+class=["'][^"']*hDetay[^"']*["'][^>]*>([\s\S]*?)(?:<div[^>]+class=["'][^"']*(?:etiketler|fbYorum)|<\/body>)/i,
     /<article[^>]*>([\s\S]*?)<\/article>/i,
     /<main[^>]*>([\s\S]*?)<\/main>/i,
@@ -151,6 +151,14 @@ function extractArticleParagraphs(html: string): string[] {
 
   for (const match of blockMatches) {
     const tag = match[1].toLowerCase();
+    // Skip <li> list items that are just links/cards (related news, menus, etc.)
+    if (
+      tag === "li" &&
+      (/<a\b[^>]+href=/i.test(match[2]) ||
+        /dh-kart|dh-haber|related|news-card/i.test(match[2]))
+    ) {
+      continue;
+    }
     const text = decodeHtmlEntities(
       match[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
     );
@@ -239,7 +247,16 @@ function extractJsonLdText(html: string): string {
         }
       }
     } catch {
-      // JSON-LD parse hatası — sessizce atla
+      // Regex fallback for malformed JSON-LD (e.g. Turkish news sites with unescaped newlines in articleBody)
+      const rawJson = jsonMatch[1];
+      const bodyMatch = rawJson.match(/"articleBody"\s*:\s*"([\s\S]*?)"\s*,\s*"/);
+      if (bodyMatch?.[1]) {
+        parts.push(decodeHtmlEntities(bodyMatch[1].replace(/\s+/g, " ").trim()));
+      }
+      const descMatch = rawJson.match(/"description"\s*:\s*"([^"]*)"/);
+      if (descMatch?.[1]) {
+        parts.push(decodeHtmlEntities(descMatch[1].replace(/\s+/g, " ").trim()));
+      }
     }
   }
 
@@ -268,30 +285,27 @@ export function extractPageTextFromHtml(
   maxLength = 16000
 ): string {
   const articleParagraphs = deduplicateBlocks(extractArticleParagraphs(html));
+  const jsonLd = extractJsonLdText(html);
   const ogDescription = extractMetaContent(html, "property", "og:description");
   const metaDescription = extractMetaContent(html, "name", "description");
 
-  // If we have clean article paragraphs (>100 chars), use them directly without duplicating JSON-LD
-  if (
-    articleParagraphs.length > 0 &&
-    articleParagraphs.join(" ").length >= 100
-  ) {
+  const articleText = articleParagraphs.join("\n\n");
+
+  // If jsonLd has significantly more content (e.g. sites with DOM broken up by in-article ads), prefer jsonLd
+  const bestBody =
+    jsonLd.length > articleText.length + 300
+      ? jsonLd.split(/\n{2,}/)
+      : articleParagraphs.length > 0 && articleText.length >= 100
+      ? articleParagraphs
+      : jsonLd.length >= 100
+      ? jsonLd.split(/\n{2,}/)
+      : [];
+
+  if (bestBody.length > 0) {
     const combinedBlocks = deduplicateBlocks([
       ogDescription || "",
       metaDescription || "",
-      ...articleParagraphs,
-    ]);
-
-    return combinedBlocks.join("\n\n").trim().slice(0, maxLength);
-  }
-
-  // Fallback 1: Try JSON-LD articleBody if paragraphs couldn't be extracted from HTML
-  const jsonLd = extractJsonLdText(html);
-  if (jsonLd && jsonLd.length >= 100) {
-    const combinedBlocks = deduplicateBlocks([
-      ogDescription || "",
-      metaDescription || "",
-      ...jsonLd.split(/\n{2,}/),
+      ...bestBody,
     ]);
     return combinedBlocks.join("\n\n").trim().slice(0, maxLength);
   }
