@@ -78,7 +78,7 @@ export function AdSenseReadiness({
       label: "Google Arama Konsolu doğrulaması",
       passed: stats.hasSiteVerification,
       detail: stats.hasSiteVerification
-        ? "Doğrulama kodu tanımlı"
+        ? "Search Console doğrulaması aktif"
         : "Site doğrulama kodu bekleniyor",
     },
   ];

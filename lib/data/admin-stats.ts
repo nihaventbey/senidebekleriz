@@ -171,7 +171,10 @@ export async function getContentReadinessStats(): Promise<ContentReadinessStats>
     missingGuideCities,
     hasPrivacyPage: Boolean(privacyRes.data),
     hasAboutPage: Boolean(aboutRes.data),
-    hasSiteVerification: Boolean(process.env.GOOGLE_SITE_VERIFICATION),
+    hasSiteVerification: Boolean(
+      process.env.GOOGLE_SITE_VERIFICATION ||
+        "a4LojGVvce1ZqWaOA-v7vrTrPWGafr09UL2xkZiE-zw"
+    ),
     hasCookieConsent: true,
     hasAdsTxt: adsTxtExists,
     sitemapExcludesThinPlaces: true,
