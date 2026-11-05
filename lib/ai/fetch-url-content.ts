@@ -77,7 +77,10 @@ function stripNonContentElements(html: string): string {
     .replace(/<aside[\s\S]*?<\/aside>/gi, " ")
     .replace(/<form[\s\S]*?<\/form>/gi, " ")
     .replace(/<iframe[\s\S]*?<\/iframe>/gi, " ")
-    .replace(/<template[\s\S]*?<\/template>/gi, " ");
+    .replace(/<template[\s\S]*?<\/template>/gi, " ")
+    // Strip related news boxes, social shares, author boxes, tags, widget containers
+    .replace(/<(?:div|section|aside)[^>]+class=["'][^"']*(?:related|other-news|diger-haber|benzer-haber|onerilen|cok-okunan|tags|etiketler|share-area|social-button|author|mobile-apps|mobile-extra|comments|yorumlar|modal|widget|reklam|ads)[^"']*["'][\s\S]*?<\/(?:div|section|aside)>/gi, " ")
+    .replace(/<(?:div|section|aside)[^>]+id=["'][^"']*(?:related|other-news|diger-haber|benzer-haber|tags|comments)[^"']*["'][\s\S]*?<\/(?:div|section|aside)>/gi, " ");
 }
 
 function isBoilerplateParagraph(text: string): boolean {
@@ -87,7 +90,7 @@ function isBoilerplateParagraph(text: string): boolean {
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)) return true;
   if (/»/.test(t) && t.length < 180) return true;
   if (
-    /^(paylaş|fotoğraf:|yazar:|yorumlar|copyright|tüm hakları|çerez politikası|bizi takip edin|ilgili haberler|etiketler\s*:|künye|yeni sayımız bayilerde|yazarlar\s+haberler)/i.test(
+    /^(paylaş|fotoğraf:|yazar:|yorumlar|copyright|tüm hakları|çerez politikası|bizi takip edin|ilgili haberler|etiketler\s*:|künye|yeni sayımız bayilerde|yazarlar\s+haberler|gözden kaçırmayın|benzer haberler|diğer haberler|sıradaki haber|öne çıkan haberler|taka okurlarına özel)/i.test(
       t
     )
   ) {
@@ -120,13 +123,13 @@ function stripHtml(html: string): string {
 function extractArticleParagraphs(html: string): string[] {
   const cleaned = stripNonContentElements(html);
 
-  // Try to find targeted article content container first
+  // Try to find targeted article content container first - specific containers MUST precede generic <main>/<article>
   const containerPatterns = [
+    /<div[^>]+itemprop=["']articleBody["'][^>]*>([\s\S]*?)<\/div>/i,
+    /<div[^>]+class=["'][^"']*(?:article-text|article-body|news-content|entry-content|detail-content|haber-metni|icerik-detay|post-content|news-detail|content-text|story-body|article__content|haber-detay|detay-icerik|yazi-detay)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
     /<div[^>]+class=["'][^"']*hDetay[^"']*["'][^>]*>([\s\S]*?)(?:<div[^>]+class=["'][^"']*(?:etiketler|fbYorum)|<\/body>)/i,
     /<article[^>]*>([\s\S]*?)<\/article>/i,
     /<main[^>]*>([\s\S]*?)<\/main>/i,
-    /<div[^>]+itemprop=["']articleBody["'][^>]*>([\s\S]*?)<\/div>/i,
-    /<div[^>]+class=["'][^"']*(?:article-body|news-content|entry-content|detail-content|haber-metni|icerik-detay|post-content|news-detail|content-text|story-body|article__content|article-text|haber-detay|detay-icerik|yazi-detay)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
   ];
 
   let targetHtml = cleaned;
@@ -265,11 +268,10 @@ export function extractPageTextFromHtml(
   maxLength = 16000
 ): string {
   const articleParagraphs = deduplicateBlocks(extractArticleParagraphs(html));
-  const jsonLd = extractJsonLdText(html);
   const ogDescription = extractMetaContent(html, "property", "og:description");
   const metaDescription = extractMetaContent(html, "name", "description");
 
-  // If we have clean article paragraphs (>100 chars), prioritize them and deduplicate against meta/jsonLd
+  // If we have clean article paragraphs (>100 chars), use them directly without duplicating JSON-LD
   if (
     articleParagraphs.length > 0 &&
     articleParagraphs.join(" ").length >= 100
@@ -278,17 +280,26 @@ export function extractPageTextFromHtml(
       ogDescription || "",
       metaDescription || "",
       ...articleParagraphs,
-      ...jsonLd.split(/\n{2,}/),
     ]);
 
     return combinedBlocks.join("\n\n").trim().slice(0, maxLength);
   }
 
-  // Fallback: general stripped HTML with headers/nav removed
+  // Fallback 1: Try JSON-LD articleBody if paragraphs couldn't be extracted from HTML
+  const jsonLd = extractJsonLdText(html);
+  if (jsonLd && jsonLd.length >= 100) {
+    const combinedBlocks = deduplicateBlocks([
+      ogDescription || "",
+      metaDescription || "",
+      ...jsonLd.split(/\n{2,}/),
+    ]);
+    return combinedBlocks.join("\n\n").trim().slice(0, maxLength);
+  }
+
+  // Fallback 2: general stripped HTML with headers/nav removed
   const chunks = deduplicateBlocks([
     ogDescription || "",
     metaDescription || "",
-    ...jsonLd.split(/\n{2,}/),
     stripHtml(html),
   ]);
 
