@@ -35,11 +35,25 @@ export async function createNews(formData: FormData): Promise<NewsActionResult> 
   const isPublished = formData.get("is_published") === "on" || formData.get("is_published") === "true";
   const isFeatured = formData.get("is_featured") === "on" || formData.get("is_featured") === "true";
 
-  if (!title || !content) {
-    return { success: false, error: "Başlık ve haber metni zorunludur" };
+  if (!title) {
+    return { success: false, error: "Haber başlığı zorunludur." };
+  }
+  if (!content) {
+    return { success: false, error: "Haber metni zorunludur." };
   }
 
-  const slug = slugify(rawSlug || title);
+  const baseSlug = slugify(rawSlug || title) || "kultur-haberi";
+  let slug = baseSlug.slice(0, 100);
+  let counter = 2;
+  while (true) {
+    const { data: existing } = await supabaseAdmin
+      .from("cultural_news")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (!existing) break;
+    slug = `${baseSlug.slice(0, 90)}-${counter++}`;
+  }
   const citySlug = normalizeCitySlug(citySlugRaw === "none" ? null : citySlugRaw);
 
   // Transfer cover image to Supabase Storage now that user confirmed/submitted
@@ -98,11 +112,28 @@ export async function updateNews(
   const isPublished = formData.get("is_published") === "on" || formData.get("is_published") === "true";
   const isFeatured = formData.get("is_featured") === "on" || formData.get("is_featured") === "true";
 
-  if (!title || !content) {
-    return { success: false, error: "Başlık ve haber metni zorunludur" };
+  if (!title) {
+    return { success: false, error: "Haber başlığı zorunludur." };
+  }
+  if (!content) {
+    return { success: false, error: "Haber metni zorunludur." };
   }
 
-  const slug = slugify(rawSlug || title);
+  const baseSlug = slugify(rawSlug || title) || originalSlug || "kultur-haberi";
+  let slug = baseSlug.slice(0, 100);
+  if (slug !== originalSlug) {
+    let counter = 2;
+    while (true) {
+      const { data: existing } = await supabaseAdmin
+        .from("cultural_news")
+        .select("slug")
+        .eq("slug", slug)
+        .neq("slug", originalSlug)
+        .maybeSingle();
+      if (!existing) break;
+      slug = `${baseSlug.slice(0, 90)}-${counter++}`;
+    }
+  }
   const citySlug = normalizeCitySlug(citySlugRaw === "none" ? null : citySlugRaw);
 
   // Transfer cover image to Supabase Storage upon update

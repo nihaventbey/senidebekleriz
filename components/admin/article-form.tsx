@@ -137,6 +137,14 @@ export function ArticleForm({
   function handleSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    formData.set("title", title.trim());
+    formData.set("slug", slugify(slug.trim() || title.trim()));
+    formData.set("excerpt", excerpt.trim());
+    formData.set("content", content.trim());
+    formData.set("cover_image", coverImage.trim());
+    formData.set("city_slug", citySlug || "none");
+    formData.set("meta_title", metaTitle.trim());
+    formData.set("meta_description", metaDescription.trim());
 
     startSaveTransition(async () => {
       try {
@@ -290,7 +298,7 @@ export function ArticleForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="slug">Slug</Label>
+            <Label htmlFor="slug">Kalıcı Bağlantı (Kısa Adres)</Label>
             <Input
               id="slug"
               name="slug"
@@ -309,13 +317,13 @@ export function ArticleForm({
             rows={2}
             value={excerpt}
             onChange={(e) => setExcerpt(e.target.value)}
-            placeholder="Liste ve SEO için kısa özet"
+            placeholder="Liste ve arama motorları için kısa özet"
           />
         </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="content">İçerik (Markdown)</Label>
+            <Label htmlFor="content">Rehber Metni</Label>
             <div className="flex items-center gap-2">
               <label className="cursor-pointer text-xs font-medium text-primary hover:underline">
                 📷 İçeriğe Görsel Yükle

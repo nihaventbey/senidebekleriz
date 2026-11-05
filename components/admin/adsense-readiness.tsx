@@ -6,6 +6,8 @@ import type { ContentReadinessStats } from "@/lib/data/admin-stats";
 
 type Props = {
   stats: ContentReadinessStats;
+  newsPublished?: number;
+  eventsPublished?: number;
 };
 
 type CheckItem = {
@@ -15,42 +17,38 @@ type CheckItem = {
   href?: string;
 };
 
-export function AdSenseReadiness({ stats }: Props) {
-  const coverPassed =
-    stats.indexablePlaces >= 200 && stats.indexablePlacesWithoutCover === 0;
-
+export function AdSenseReadiness({
+  stats,
+  newsPublished = 0,
+  eventsPublished = 0,
+}: Props) {
   const checks: CheckItem[] = [
     {
-      label: "En az 30 yayında gezi & kültür yazısı",
+      label: "En az 30 yayında kültür & gezi rehberi",
       passed: stats.publishedArticles >= 30,
-      detail: `${stats.publishedArticles} / 30`,
+      detail: `${stats.publishedArticles} / 30 yazı yayında`,
       href: "/yonetim/yazilar",
     },
     {
-      label: "En az 200 indekslenebilir mekan",
-      passed: stats.indexablePlaces >= 200,
-      detail: `${stats.indexablePlaces} / 200`,
-      href: "/yonetim/mekanlar",
+      label: "Güncel kültür & sanat haber akışı",
+      passed: newsPublished >= 10,
+      detail: `${newsPublished} haber yayında`,
+      href: "/yonetim/haberler",
     },
     {
-      label: "Editöryal mekan kapak görselleri",
-      passed: coverPassed,
-      detail:
-        stats.indexablePlacesWithoutCover > 0
-          ? `${stats.indexablePlacesWithoutCover} mekan kapaksız`
-          : stats.indexablePlaces === 0
-            ? "Mekan ekleyin"
-            : "Tamamlandı",
-      href: "/yonetim/mekanlar?gap=no-cover",
+      label: "Canlı şehir etkinlik ajandası",
+      passed: eventsPublished >= 20,
+      detail: `${eventsPublished} aktif etkinlik`,
+      href: "/yonetim/etkinlikler",
     },
     {
       label: "81 İl Şehir Rehberi kapsamı",
-      passed: stats.citiesWithGuide >= 81,
-      detail: `${stats.citiesWithGuide} / 81 il`,
+      passed: stats.citiesWithGuide >= 30,
+      detail: `${stats.citiesWithGuide} / 81 il rehberi hazır`,
       href: "/yonetim/yazilar/yeni",
     },
     {
-      label: "Çerez onay mekanizması",
+      label: "Çerez aydınlatma ve onay bildirimi",
       passed: stats.hasCookieConsent,
       detail: stats.hasCookieConsent ? "Aktif" : "Eksik",
     },
@@ -61,27 +59,27 @@ export function AdSenseReadiness({ stats }: Props) {
       href: "/yonetim/sayfalar",
     },
     {
-      label: "Hakkımızda sayfası",
+      label: "Hakkımızda ve künye sayfası",
       passed: stats.hasAboutPage,
       detail: stats.hasAboutPage ? "Yayında" : "Eksik",
       href: "/yonetim/sayfalar",
     },
     {
-      label: "ads.txt dosyası",
+      label: "Reklam doğrulama dosyası (ads.txt)",
       passed: stats.hasAdsTxt,
-      detail: stats.hasAdsTxt ? "public/ads.txt mevcut" : "Eksik",
+      detail: stats.hasAdsTxt ? "Tanımlı" : "Eksik",
     },
     {
-      label: "Sitemap indeksleme optimizasyonu",
+      label: "Temiz site haritası ve yapısal veri",
       passed: stats.sitemapExcludesThinPlaces,
-      detail: `${stats.indexablePlaces} premium mekan`,
+      detail: "Haber, etkinlik ve rehber şemaları aktif",
     },
     {
-      label: "Search Console site doğrulaması",
+      label: "Google Arama Konsolu doğrulaması",
       passed: stats.hasSiteVerification,
       detail: stats.hasSiteVerification
-        ? "Env tanımlı"
-        : "GOOGLE_SITE_VERIFICATION ekleyin",
+        ? "Doğrulama kodu tanımlı"
+        : "Site doğrulama kodu bekleniyor",
     },
   ];
 
@@ -98,10 +96,10 @@ export function AdSenseReadiness({ stats }: Props) {
           </div>
           <div>
             <CardTitle className="text-base font-bold flex items-center gap-2">
-              SEO &amp; AdSense Hazırlık Durumu
+              Yayın &amp; Reklam Uygunluk Durumu
             </CardTitle>
             <p className="text-xs text-muted-foreground">
-              Google onay ve organik trafik kriterleri ({passedCount} / {checks.length} tamamlandı)
+              Arama motoru ve reklam onay kriterleri ({passedCount} / {checks.length} tamamlandı)
             </p>
           </div>
         </div>

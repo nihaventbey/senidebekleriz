@@ -7,13 +7,13 @@ import { LogoutButton } from "@/components/admin/logout-button";
 import { adminNavItems } from "@/components/admin/sidebar";
 
 function getPageTitle(pathname: string): string {
-  if (pathname === "/yonetim") return "Dashboard";
+  if (pathname === "/yonetim") return "Yönetim Paneli";
   const match = adminNavItems.find(
     (item) =>
       item.href !== "/yonetim" &&
       (pathname === item.href || pathname.startsWith(`${item.href}/`))
   );
-  return match?.label ?? "Yönetim";
+  return match?.label ?? "Yönetim Paneli";
 }
 
 export default function AdminLayout({

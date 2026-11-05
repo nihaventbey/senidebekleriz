@@ -226,7 +226,7 @@ export function EventForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="slug">Slug</Label>
+            <Label htmlFor="slug">Kalıcı Bağlantı (Kısa Adres)</Label>
             <Input
               id="slug"
               name="slug"
@@ -257,7 +257,7 @@ export function EventForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="summary">Özet (slider, max 160)</Label>
+          <Label htmlFor="summary">Kısa Özet (En fazla 160 karakter)</Label>
           <Textarea
             id="summary"
             name="summary"
@@ -410,7 +410,7 @@ export function EventForm({
               name="is_featured"
               defaultChecked={defaultValues.is_featured ?? false}
             />
-            <Label htmlFor="is_featured">Slider&apos;da öne çıkar</Label>
+            <Label htmlFor="is_featured">Manşette öne çıkar</Label>
           </div>
           {!defaultValues.status ? (
             <div className="flex items-center gap-2">

@@ -34,9 +34,9 @@ type NavSection = {
 
 export const adminNavSections: NavSection[] = [
   {
-    title: "Ana Kontrol",
+    title: "Genel Bakış",
     items: [
-      { href: "/yonetim", label: "Yönetim Kokpiti", icon: LayoutDashboard },
+      { href: "/yonetim", label: "Yönetim Paneli", icon: LayoutDashboard },
     ],
   },
   {
@@ -48,23 +48,23 @@ export const adminNavSections: NavSection[] = [
     ],
   },
   {
-    title: "Akıllı Keşif & Medya",
+    title: "Keşif & Medya",
     items: [
-      { href: "/yonetim/kesif", label: "İçerik Keşfi (AI)", icon: Radar },
+      { href: "/yonetim/kesif", label: "İçerik Keşfi", icon: Radar },
       { href: "/yonetim/gorseller", label: "Görsel Havuzu", icon: Images },
     ],
   },
   {
-    title: "Şehirler & Keşif",
+    title: "Şehirler",
     items: [
-      { href: "/yonetim/sehirler", label: "81 İl Portalları", icon: Building2 },
+      { href: "/yonetim/sehirler", label: "81 İl Ajandası", icon: Building2 },
     ],
   },
   {
-    title: "Sistem, Gelir & Sayfalar",
+    title: "Sistem & Ayarlar",
     items: [
       { href: "/yonetim/reklamlar", label: "Reklam & Gelir", icon: Megaphone },
-      { href: "/yonetim/sayfalar", label: "Statik Sayfalar", icon: FileText },
+      { href: "/yonetim/sayfalar", label: "Sabit Sayfalar", icon: FileText },
       { href: "/yonetim/gorunum", label: "Site Görünümü", icon: Paintbrush },
       { href: "/yonetim/hesap", label: "Hesap Ayarları", icon: UserCog },
     ],
