@@ -63,6 +63,7 @@ export function AiImageModal({
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
   const [refinedPrompt, setRefinedPrompt] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isSaving, setIsSaving] = useState(false);
 
   if (!isOpen) return null;
 
@@ -99,10 +100,38 @@ export function AiImageModal({
     });
   }
 
-  function handleConfirm() {
+  async function handleConfirm() {
     if (!generatedUrl) return;
+
+    // If it's a generated Pollinations URL, automatically upload to Supabase storage as WebP
+    if (generatedUrl.includes("pollinations.ai")) {
+      setIsSaving(true);
+      try {
+        const res = await fetch("/api/admin/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageUrl: generatedUrl,
+            folder: "uploads",
+            slugHint: title || "ai-kapak",
+          }),
+        });
+        const data = await res.json();
+        if (res.ok && data.url) {
+          onSelectImage(data.url);
+          toast.success("AI görseli sunucuya WebP formatında aktarıldı ve forma eklendi! ✨");
+          onClose();
+          return;
+        }
+      } catch (err: any) {
+        console.warn("Otomatik depolama aktarım hatası:", err);
+      } finally {
+        setIsSaving(false);
+      }
+    }
+
     onSelectImage(generatedUrl);
-    toast.success("Görsel forma eklendi! Kaydedildiğinde otomatik olarak depolanacaktır. 🖼️");
+    toast.success("Görsel forma eklendi! 🖼️");
     onClose();
   }
 
@@ -273,11 +302,20 @@ export function AiImageModal({
             <Button
               type="button"
               size="sm"
-              disabled={!generatedUrl || isPending}
+              disabled={!generatedUrl || isPending || isSaving}
               onClick={handleConfirm}
               className="text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
-              <Check className="h-3.5 w-3.5" /> Bu Görseli Kullan
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Sunucuya Kaydediliyor...
+                </>
+              ) : (
+                <>
+                  <Check className="h-3.5 w-3.5" /> Bu Görseli Kullan
+                </>
+              )}
             </Button>
           </div>
         </div>

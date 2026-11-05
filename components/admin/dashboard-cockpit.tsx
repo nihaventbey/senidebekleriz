@@ -293,6 +293,7 @@ export function DashboardCockpit({
 
           {/* Hızlı İşlem Butonları */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* Yeni İçerik Ekleme */}
             <div className="flex items-center gap-1.5 rounded-xl bg-muted/40 p-1 border border-border/50">
               <Button
                 asChild
@@ -301,7 +302,7 @@ export function DashboardCockpit({
               >
                 <Link href="/yonetim/haberler/yeni">
                   <Plus className="h-3.5 w-3.5" />
-                  <span>Yeni Haber</span>
+                  <span>Haber</span>
                 </Link>
               </Button>
 
@@ -312,7 +313,7 @@ export function DashboardCockpit({
               >
                 <Link href="/yonetim/etkinlikler/yeni">
                   <Plus className="h-3.5 w-3.5" />
-                  <span>Yeni Etkinlik</span>
+                  <span>Etkinlik</span>
                 </Link>
               </Button>
 
@@ -323,55 +324,32 @@ export function DashboardCockpit({
               >
                 <Link href="/yonetim/yazilar/yeni">
                   <Plus className="h-3.5 w-3.5" />
-                  <span>Yeni Rehber</span>
+                  <span>Rehber</span>
                 </Link>
               </Button>
             </div>
 
+            {/* Otomasyon & Tarama */}
             <div className="flex items-center gap-1.5 rounded-xl bg-muted/40 p-1 border border-border/50">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsAiImageModalOpen(true)}
-                className="h-8 px-2.5 text-xs font-medium gap-1 text-foreground hover:bg-background shadow-xs"
-                title="Yapay zeka ile kültür & mekan görseli üret"
-              >
-                <Wand2 className="h-3.5 w-3.5 text-amber-500" />
-                <span>Görsel Üret</span>
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsSocialModalOpen(true)}
-                className="h-8 px-2.5 text-xs font-medium gap-1 text-foreground hover:bg-background shadow-xs"
-                title="Sosyal medya paylaşım görselleri hazırla"
-              >
-                <Camera className="h-3.5 w-3.5 text-purple-500" />
-                <span>Sosyal Görsel</span>
-              </Button>
-
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 disabled={isAutopilotRunning}
                 onClick={handleRunAutopilot}
-                className="h-8 px-2.5 text-xs font-semibold gap-1 text-emerald-600 dark:text-emerald-400 hover:bg-background shadow-xs"
-                title="Keşif kuyruğundan otomatik içerik yayınla"
+                className="h-8 px-2.5 text-xs font-semibold gap-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-background shadow-xs"
+                title="Keşif kuyruğundaki onaylı taslakları otomatik yayınla"
               >
                 {isAutopilotRunning ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <Bot className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                 )}
-                <span>Otomatik Yayın</span>
+                <span>Oto-Pilot</span>
               </Button>
-            </div>
 
-            <DiscoverySyncButton />
+              <DiscoverySyncButton />
+            </div>
           </div>
         </div>
 
@@ -622,64 +600,84 @@ export function DashboardCockpit({
                   </div>
 
                     {/* Quick Action Buttons */}
-                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 self-end sm:self-center pt-2 sm:pt-0">
-                      <Button
-                        size="sm"
-                        disabled={busy}
-                        onClick={() =>
-                          runDiscoveryAction(item.id, "news", () =>
-                            importDiscoveryAsNews(item.id)
-                          )
-                        }
-                        className="h-8 px-2.5 sm:px-3 text-xs font-bold gap-1 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
-                        title="Kültür Haberi Yap"
-                      >
-                        {busy && pendingAction === "news" ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Newspaper className="h-3.5 w-3.5" />
-                        )}
-                        <span>Haber Yap</span>
-                      </Button>
+                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center pt-2 sm:pt-0">
+                      {item.content_type === "event" ? (
+                        <Button
+                          size="sm"
+                          disabled={busy}
+                          onClick={() =>
+                            runDiscoveryAction(item.id, "event", () =>
+                              importDiscoveryAsEvent(item.id)
+                            )
+                          }
+                          className="h-8 px-3 text-xs font-bold gap-1 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                          title="Etkinlik Olarak Aktar"
+                        >
+                          {busy && pendingAction === "event" ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <CalendarDays className="h-3.5 w-3.5" />
+                          )}
+                          <span>Etkinlik Yap</span>
+                        </Button>
+                      ) : item.content_type === "article" ? (
+                        <Button
+                          size="sm"
+                          disabled={busy}
+                          onClick={() =>
+                            runDiscoveryAction(item.id, "article", () =>
+                              importDiscoveryAsArticle(item.id)
+                            )
+                          }
+                          className="h-8 px-3 text-xs font-semibold gap-1 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                          title="Gezi Rehberi Olarak Aktar"
+                        >
+                          {busy && pendingAction === "article" ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <BookOpen className="h-3.5 w-3.5" />
+                          )}
+                          <span>Rehber Yap</span>
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          disabled={busy}
+                          onClick={() =>
+                            runDiscoveryAction(item.id, "news", () =>
+                              importDiscoveryAsNews(item.id)
+                            )
+                          }
+                          className="h-8 px-3 text-xs font-bold gap-1 bg-amber-600 hover:bg-amber-700 text-white shadow-xs"
+                          title="Kültür Haberi Yap"
+                        >
+                          {busy && pendingAction === "news" ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Newspaper className="h-3.5 w-3.5" />
+                          )}
+                          <span>Haber Yap</span>
+                        </Button>
+                      )}
 
+                      {/* Alternatif Olarak Ekle */}
                       <Button
                         size="sm"
                         variant="secondary"
                         disabled={busy}
                         onClick={() =>
-                          runDiscoveryAction(item.id, "event", () =>
-                            importDiscoveryAsEvent(item.id)
-                          )
+                          item.content_type === "event"
+                            ? runDiscoveryAction(item.id, "news", () =>
+                                importDiscoveryAsNews(item.id)
+                              )
+                            : runDiscoveryAction(item.id, "event", () =>
+                                importDiscoveryAsEvent(item.id)
+                              )
                         }
-                        className="h-8 px-2.5 sm:px-3 text-xs font-semibold gap-1"
-                        title="Tekil Etkinlik Olarak Ekle"
+                        className="h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+                        title={item.content_type === "event" ? "Haber Yap" : "Etkinlik Yap"}
                       >
-                        {busy && pendingAction === "event" ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <CalendarDays className="h-3.5 w-3.5" />
-                        )}
-                        <span>Etkinlik</span>
-                      </Button>
-
-                      <Button
-                        size="sm"
-                        variant="default"
-                        disabled={busy}
-                        onClick={() =>
-                          runDiscoveryAction(item.id, "multi", () =>
-                            disaggregateDiscoveryBulletin(item.id)
-                          )
-                        }
-                        className="h-8 px-2.5 sm:px-3 text-xs font-semibold gap-1 bg-purple-600 hover:bg-purple-700 text-white shadow-xs"
-                        title="Bülten içindeki tüm alt etkinlikleri ayrıştır"
-                      >
-                        {busy && pendingAction === "multi" ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Layers className="h-3.5 w-3.5" />
-                        )}
-                        <span>Ayrıştır</span>
+                        {item.content_type === "event" ? "Haber Yap" : "Etkinlik Yap"}
                       </Button>
 
                       <Button
@@ -692,7 +690,7 @@ export function DashboardCockpit({
                           )
                         }
                         className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
-                        title="Reddet"
+                        title="Reddet / Listeden Kaldır"
                       >
                         <X className="h-4 w-4" />
                       </Button>

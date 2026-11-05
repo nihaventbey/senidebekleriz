@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { CloudUpload, CheckCircle2, Loader2, Upload, Sparkles } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { AiImageModal } from "@/components/admin/ai-image-modal";
 
 type CoverImageInputProps = {
   value: string;
@@ -38,6 +39,7 @@ export function CoverImageInput({
   const [transferring, setTransferring] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [previewVersion, setPreviewVersion] = useState<number>(0);
+  const [isInternalAiModalOpen, setIsInternalAiModalOpen] = useState(false);
 
   const trimmed = (value || "").trim();
   const isExternalOrNonWebp =
@@ -136,18 +138,20 @@ export function CoverImageInput({
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
-          {onOpenAiModal && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onOpenAiModal}
-              className="h-7 text-xs font-semibold gap-1 text-primary border-primary/30 hover:bg-primary/10"
-            >
-              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-              AI Görsel
-            </Button>
-          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (onOpenAiModal) onOpenAiModal();
+              else setIsInternalAiModalOpen(true);
+            }}
+            className="h-7 text-xs font-semibold gap-1 text-primary border-primary/30 hover:bg-primary/10"
+            title="Yapay zeka ile bu konuya uygun görsel üret (Flux)"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+            AI Görsel
+          </Button>
 
           <label className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border border-input bg-background px-2.5 text-xs font-medium hover:bg-accent hover:text-accent-foreground">
             {uploadingFile ? (
@@ -214,6 +218,18 @@ export function CoverImageInput({
             referrerPolicy="no-referrer"
           />
         </div>
+      )}
+
+      {!onOpenAiModal && (
+        <AiImageModal
+          isOpen={isInternalAiModalOpen}
+          onClose={() => setIsInternalAiModalOpen(false)}
+          onSelectImage={(newUrl) => {
+            onChange(newUrl);
+            setPreviewVersion(Date.now());
+          }}
+          initialTitle={slugHint?.replace(/[-_]/g, " ")}
+        />
       )}
     </div>
   );

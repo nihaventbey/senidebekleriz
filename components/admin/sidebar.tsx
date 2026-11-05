@@ -48,10 +48,9 @@ export const adminNavSections: NavSection[] = [
     ],
   },
   {
-    title: "Keşif & Medya",
+    title: "Keşif & Radar",
     items: [
-      { href: "/yonetim/kesif", label: "İçerik Keşfi", icon: Radar },
-      { href: "/yonetim/gorseller", label: "Görsel Havuzu", icon: Images },
+      { href: "/yonetim/kesif", label: "İçerik Keşfi (AI)", icon: Radar },
     ],
   },
   {

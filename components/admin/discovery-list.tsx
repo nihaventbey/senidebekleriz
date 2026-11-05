@@ -25,6 +25,7 @@ import {
   CheckSquare,
   Square,
   Layers,
+  ChevronDown,
 } from "lucide-react";
 import {
   importDiscoveryAsArticle,
@@ -71,6 +72,7 @@ export function DiscoveryList({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const isAllSelected = items.length > 0 && selectedIds.size === items.length;
@@ -377,11 +379,11 @@ export function DiscoveryList({
                   )}
                 </button>
               </TableHead>
-              <TableHead className="w-[34%]">Başlık &amp; Özet</TableHead>
+              <TableHead className="w-[45%]">Başlık &amp; Özet</TableHead>
               <TableHead className="w-[10%]">Önerilen Tür</TableHead>
-              <TableHead className="w-[9%]">Şehir</TableHead>
-              <TableHead className="w-[13%]">Kaynak</TableHead>
-              <TableHead className="w-[340px] text-right">AI İle İçe Aktar</TableHead>
+              <TableHead className="w-[10%]">Şehir</TableHead>
+              <TableHead className="w-[12%]">Kaynak</TableHead>
+              <TableHead className="w-[180px] text-right">İşlem &amp; Aktar</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -457,114 +459,164 @@ export function DiscoveryList({
                       <ExternalLink className="ml-1 h-3 w-3 shrink-0" />
                     </a>
                   </TableCell>
-                  <TableCell className="text-right whitespace-nowrap overflow-hidden pl-2">
-                    {item.status === "pending_review" ? (
-                      <div className="flex justify-end items-center gap-1">
-                        {/* 1. News Button */}
-                        <Button
-                          size="sm"
-                          variant="default"
-                          disabled={busy}
-                          onClick={() =>
-                            runAction(item.id, "news", () =>
-                              importDiscoveryAsNews(item.id)
-                            )
-                          }
-                          className="h-7 px-2 text-[11px] font-semibold gap-1 bg-amber-600 hover:bg-amber-700 text-white shadow-xs"
-                          title="Kültür Haberi Olarak Taslağa Aktar"
-                        >
-                          {busy && pendingAction === "news" ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <Newspaper className="h-3 w-3" />
-                          )}
-                          <span>Haber</span>
-                        </Button>
+                  <TableCell className="text-right whitespace-nowrap pl-2">
+                    {item.status === "pending_review" ? (() => {
+                      const isEvent = item.content_type === "event";
+                      const isArticle = item.content_type === "article";
+                      const isBulletin = (item.content_type as string) === "bulletin";
 
-                        {/* 2. Event Button */}
-                        <Button
-                          size="sm"
-                          variant="default"
-                          disabled={busy}
-                          onClick={() =>
-                            runAction(item.id, "event", () =>
-                              importDiscoveryAsEvent(item.id)
-                            )
+                      const primaryConfig = isEvent
+                        ? {
+                            key: "event",
+                            label: "Etkinlik",
+                            icon: CalendarDays,
+                            className: "bg-blue-600 hover:bg-blue-700 text-white",
+                            fn: () => runAction(item.id, "event", () => importDiscoveryAsEvent(item.id)),
                           }
-                          className="h-7 px-2 text-[11px] font-semibold gap-1 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
-                          title="Etkinlik Olarak Taslağa Aktar"
-                        >
-                          {busy && pendingAction === "event" ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <CalendarDays className="h-3 w-3" />
-                          )}
-                          <span>Etkinlik</span>
-                        </Button>
+                        : isArticle
+                        ? {
+                            key: "article",
+                            label: "Rehber",
+                            icon: BookOpen,
+                            className: "bg-emerald-600 hover:bg-emerald-700 text-white",
+                            fn: () => runAction(item.id, "article", () => importDiscoveryAsArticle(item.id)),
+                          }
+                        : isBulletin
+                        ? {
+                            key: "multi",
+                            label: "Ayrıştır",
+                            icon: Layers,
+                            className: "bg-purple-600 hover:bg-purple-700 text-white",
+                            fn: () => runAction(item.id, "multi", () => disaggregateDiscoveryBulletin(item.id)),
+                          }
+                        : {
+                            key: "news",
+                            label: "Haber",
+                            icon: Newspaper,
+                            className: "bg-amber-600 hover:bg-amber-700 text-white",
+                            fn: () => runAction(item.id, "news", () => importDiscoveryAsNews(item.id)),
+                          };
 
-                        {/* 3. Guide/Article Button */}
-                        <Button
-                          size="sm"
-                          variant="default"
-                          disabled={busy}
-                          onClick={() =>
-                            runAction(item.id, "article", () =>
-                              importDiscoveryAsArticle(item.id)
-                            )
-                          }
-                          className="h-7 px-2 text-[11px] font-semibold gap-1 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
-                          title="Gezi Rehberi Olarak Taslağa Aktar"
-                        >
-                          {busy && pendingAction === "article" ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <BookOpen className="h-3 w-3" />
-                          )}
-                          <span>Rehber</span>
-                        </Button>
+                      const PrimaryIcon = primaryConfig.icon;
+                      const isMenuOpen = openMenuId === item.id;
 
-                        {/* 4. Multi-Event Disaggregation Button */}
-                        <Button
-                          size="sm"
-                          variant="default"
-                          disabled={busy}
-                          onClick={() =>
-                            runAction(item.id, "multi", () =>
-                              disaggregateDiscoveryBulletin(item.id)
-                            )
-                          }
-                          className="h-7 px-2 text-[11px] font-semibold gap-1 bg-purple-600 hover:bg-purple-700 text-white shadow-xs"
-                          title="Bülten içindeki tüm alt etkinlikleri tek tek ayrıştırıp ekle"
-                        >
-                          {busy && pendingAction === "multi" ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <Layers className="h-3 w-3" />
-                          )}
-                          <span>Ayrıştır</span>
-                        </Button>
+                      return (
+                        <div className="relative inline-flex items-center justify-end gap-1">
+                          {/* 1. Primary AI recommended action */}
+                          <Button
+                            size="sm"
+                            variant="default"
+                            disabled={busy}
+                            onClick={primaryConfig.fn}
+                            className={`h-7 px-2.5 text-[11px] font-semibold gap-1.5 shadow-xs ${primaryConfig.className}`}
+                            title={`Önerilen: ${primaryConfig.label} olarak aktar`}
+                          >
+                            {busy && pendingAction === primaryConfig.key ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <PrimaryIcon className="h-3 w-3" />
+                            )}
+                            <span>{primaryConfig.label}</span>
+                          </Button>
 
-                        {/* 5. Reject Button */}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={busy}
-                          onClick={() =>
-                            runAction(item.id, "reject", () =>
-                              rejectDiscovery(item.id)
-                            )
-                          }
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                          title="Reddet"
-                        >
-                          {busy && pendingAction === "reject" ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <X className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
-                      </div>
-                    ) : item.status === "imported" ? (
+                          {/* 2. Secondary Dropdown Trigger */}
+                          <div className="relative">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={busy}
+                              onClick={() => setOpenMenuId(isMenuOpen ? null : item.id)}
+                              className="h-7 w-6 p-0 text-muted-foreground hover:text-foreground"
+                              title="Farklı türe dönüştür"
+                            >
+                              <ChevronDown className="h-3 w-3" />
+                            </Button>
+
+                            {isMenuOpen && (
+                              <>
+                                <div
+                                  className="fixed inset-0 z-40"
+                                  onClick={() => setOpenMenuId(null)}
+                                />
+                                <div className="absolute right-0 top-full mt-1 z-50 w-44 rounded-xl border border-border/80 bg-card p-1 shadow-lg text-left animate-in fade-in zoom-in-95">
+                                  <p className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                    Farklı Türde Aktar:
+                                  </p>
+                                  {primaryConfig.key !== "news" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOpenMenuId(null);
+                                        runAction(item.id, "news", () => importDiscoveryAsNews(item.id));
+                                      }}
+                                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-foreground hover:bg-muted font-medium"
+                                    >
+                                      <Newspaper className="h-3.5 w-3.5 text-amber-600" />
+                                      <span>Haber Yap</span>
+                                    </button>
+                                  )}
+                                  {primaryConfig.key !== "event" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOpenMenuId(null);
+                                        runAction(item.id, "event", () => importDiscoveryAsEvent(item.id));
+                                      }}
+                                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-foreground hover:bg-muted font-medium"
+                                    >
+                                      <CalendarDays className="h-3.5 w-3.5 text-blue-600" />
+                                      <span>Etkinlik Yap</span>
+                                    </button>
+                                  )}
+                                  {primaryConfig.key !== "article" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOpenMenuId(null);
+                                        runAction(item.id, "article", () => importDiscoveryAsArticle(item.id));
+                                      }}
+                                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-foreground hover:bg-muted font-medium"
+                                    >
+                                      <BookOpen className="h-3.5 w-3.5 text-emerald-600" />
+                                      <span>Rehber Yap</span>
+                                    </button>
+                                  )}
+                                  {primaryConfig.key !== "multi" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOpenMenuId(null);
+                                        runAction(item.id, "multi", () => disaggregateDiscoveryBulletin(item.id));
+                                      }}
+                                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-foreground hover:bg-muted font-medium"
+                                    >
+                                      <Layers className="h-3.5 w-3.5 text-purple-600" />
+                                      <span>Bülteni Ayrıştır</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          {/* 3. Reject Button */}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={busy}
+                            onClick={() => runAction(item.id, "reject", () => rejectDiscovery(item.id))}
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                            title="Listeden Kaldır / Reddet"
+                          >
+                            {busy && pendingAction === "reject" ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <X className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        </div>
+                      );
+                    })() : item.status === "imported" ? (
                       <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
                         ✓ İçe Aktarıldı
                       </Badge>
