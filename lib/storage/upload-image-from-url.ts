@@ -267,6 +267,12 @@ export async function ensureStoredCoverImage(
 ): Promise<string | null> {
   if (!url || !url.trim()) return null;
   const trimmed = url.trim();
+
+  // Explicitly reject web fonts or non-image file formats
+  if (/\.(woff2?|ttf|eot|otf|svg|html?|php)(\?|#|$)/i.test(trimmed) || /\/fonts?\//i.test(trimmed)) {
+    return null;
+  }
+
   const safeSlug = safePathSegment(slugHint || "kapak") || "kapak";
   const expectedSuffix = `/${folder}/${safeSlug}.webp`;
 

@@ -2,7 +2,7 @@ export const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
 const SKIP_IMAGE_PATTERN =
-  /(logo|icon|favicon|sprite|pixel|1x1|blank|avatar|badge|emoji|spacer|tracking|analytics|fb-yorum|yorum|share|whatsapp|twitter-icon|rss|abone|reklam|ad-banner|placeholder|default-image)/i;
+  /(logo|icon|favicon|sprite|pixel|1x1|blank|avatar|badge|emoji|spacer|tracking|analytics|fb-yorum|yorum|share|whatsapp|twitter-icon|rss|abone|reklam|ad-banner|placeholder|default-image|fonts?|woff2?|glyph)/i;
 
 const DENY_URL_PATTERN =
   /(vali|governor|bakan|profil|personel|mudur|banner|ataturk-portre|baskan|person|portrait|staff|yazar|author|columnist)/i;
