@@ -77,10 +77,38 @@ function stripNonContentElements(html: string): string {
     .replace(/<aside[\s\S]*?<\/aside>/gi, " ")
     .replace(/<form[\s\S]*?<\/form>/gi, " ")
     .replace(/<iframe[\s\S]*?<\/iframe>/gi, " ")
-    .replace(/<template[\s\S]*?<\/template>/gi, " ")
-    // Strip related news boxes, social shares, author boxes, tags, widget containers
-    .replace(/<(?:div|section|aside)[^>]+class=["'][^"']*(?:related|other-news|diger-haber|benzer-haber|onerilen|cok-okunan|tags|etiketler|share-area|social-button|author|mobile-apps|mobile-extra|comments|yorumlar|modal|widget|reklam|ads)[^"']*["'][\s\S]*?<\/(?:div|section|aside)>/gi, " ")
-    .replace(/<(?:div|section|aside)[^>]+id=["'][^"']*(?:related|other-news|diger-haber|benzer-haber|tags|comments)[^"']*["'][\s\S]*?<\/(?:div|section|aside)>/gi, " ");
+    .replace(/<template[\s\S]*?<\/template>/gi, " ");
+}
+
+export function extractBalancedTag(
+  html: string,
+  tag: string,
+  startRegex: RegExp
+): string | null {
+  const match = html.match(startRegex);
+  if (!match || match.index === undefined) return null;
+
+  const startIndex = match.index;
+  const tagStart = html.indexOf(">", startIndex);
+  if (tagStart === -1) return null;
+
+  let depth = 1;
+  const tagRegex = new RegExp(`<(?:${tag}\\b[^>]*|\\/${tag}\\s*>)`, "gi");
+  tagRegex.lastIndex = tagStart + 1;
+
+  let m: RegExpExecArray | null;
+  while ((m = tagRegex.exec(html)) !== null) {
+    if (m[0].startsWith("</")) {
+      depth--;
+      if (depth === 0) {
+        return html.slice(tagStart + 1, m.index);
+      }
+    } else if (!m[0].endsWith("/>")) {
+      depth++;
+    }
+  }
+
+  return html.slice(tagStart + 1);
 }
 
 function isBoilerplateParagraph(text: string): boolean {
@@ -120,32 +148,9 @@ function stripHtml(html: string): string {
   return lines.join("\n\n");
 }
 
-function extractArticleParagraphs(html: string): string[] {
-  const cleaned = stripNonContentElements(html);
-
-  // Try to find targeted article content container first - specific containers MUST precede generic <main>/<article>
-  const containerPatterns = [
-    /<div[^>]+itemprop=["']articleBody["'][^>]*>([\s\S]*?)<\/div>/i,
-    /<div[^>]+class=["'][^"']*(?:dh-detay-metin|detay-metin|haber-metin|icerik-metin|detay-govde|article-text|article-body|news-content|entry-content|detail-content|haber-metni|icerik-detay|post-content|news-detail|content-text|story-body|article__content|haber-detay|detay-icerik|yazi-detay)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
-    /<div[^>]+class=["'][^"']*hDetay[^"']*["'][^>]*>([\s\S]*?)(?:<div[^>]+class=["'][^"']*(?:etiketler|fbYorum)|<\/body>)/i,
-    /<article[^>]*>([\s\S]*?)<\/article>/i,
-    /<main[^>]*>([\s\S]*?)<\/main>/i,
-  ];
-
-  let targetHtml = cleaned;
-  let matchedTargetedContainer = false;
-  for (const pattern of containerPatterns) {
-    const match = cleaned.match(pattern);
-    if (match?.[1] && match[1].length > 300) {
-      targetHtml = match[1];
-      matchedTargetedContainer = true;
-      break;
-    }
-  }
-
-  // Extract <p>, <h2>, <h3>, <h4>, <li> blocks in order
+function extractBlocksFromHtml(html: string): string[] {
   const blockMatches = [
-    ...targetHtml.matchAll(/<(p|h2|h3|h4|li)\b[^>]*>([\s\S]*?)<\/\1>/gi),
+    ...html.matchAll(/<(p|h2|h3|h4|li|blockquote)\b[^>]*>([\s\S]*?)<\/\1>/gi),
   ];
   const paragraphs: string[] = [];
 
@@ -169,8 +174,8 @@ function extractArticleParagraphs(html: string): string[] {
   }
 
   // Some publishers (e.g. milliyetsanat.com) use <div> or <br> inside the article container instead of <p>
-  if (paragraphs.join(" ").length < 200 && matchedTargetedContainer) {
-    const blockSeparated = targetHtml
+  if (paragraphs.join(" ").length < 200) {
+    const blockSeparated = html
       .replace(/<br\s*\/?>/gi, "\n")
       .replace(/<\/(div|p|strong|h[1-6]|li|blockquote)>/gi, "\n\n")
       .replace(/<[^>]+>/g, " ");
@@ -184,6 +189,103 @@ function extractArticleParagraphs(html: string): string[] {
   }
 
   return paragraphs;
+}
+
+const TARGET_ARTICLE_CLASSES = [
+  "news-content",
+  "news-detail",
+  "article-content",
+  "article-body",
+  "article-text",
+  "story-body",
+  "post-content",
+  "entry-content",
+  "content-text",
+  "content-body",
+  "text-content",
+  "read__content",
+  "article__content",
+  "haber-metni",
+  "haber-metin",
+  "icerik-detay",
+  "icerik-metin",
+  "detay-metin",
+  "detay-icerik",
+  "detay-govde",
+  "dh-detay-metin",
+  "yazi-detay",
+  "haber-detay",
+  "detail-content",
+  "hDetay",
+].join("|");
+
+function extractArticleParagraphs(html: string): string[] {
+  const cleaned = stripNonContentElements(html);
+
+  const containerSpecs: Array<{ tag: string; regex: RegExp }> = [
+    // 1. Schema.org / Microdata itemprop="articleBody"
+    {
+      tag: "div",
+      regex: /<div[^>]+itemprop=["']articleBody["']/i,
+    },
+    {
+      tag: "section",
+      regex: /<section[^>]+itemprop=["']articleBody["']/i,
+    },
+    {
+      tag: "article",
+      regex: /<article[^>]+itemprop=["']articleBody["']/i,
+    },
+    // 2. Specific class name tokens (delimited by whitespace or quotes)
+    {
+      tag: "div",
+      regex: new RegExp(
+        `<div[^>]+class=["'](?:[^"']*\\s)?(?:${TARGET_ARTICLE_CLASSES})(?:\\s[^"']*)?["']`,
+        "i"
+      ),
+    },
+    {
+      tag: "section",
+      regex: new RegExp(
+        `<section[^>]+class=["'](?:[^"']*\\s)?(?:${TARGET_ARTICLE_CLASSES})(?:\\s[^"']*)?["']`,
+        "i"
+      ),
+    },
+    {
+      tag: "article",
+      regex: new RegExp(
+        `<article[^>]+class=["'](?:[^"']*\\s)?(?:${TARGET_ARTICLE_CLASSES})(?:\\s[^"']*)?["']`,
+        "i"
+      ),
+    },
+    // 3. HTML5 semantic article / main
+    {
+      tag: "article",
+      regex: /<article\b[^>]*>/i,
+    },
+    {
+      tag: "main",
+      regex: /<main\b[^>]*>/i,
+    },
+  ];
+
+  for (const spec of containerSpecs) {
+    const extracted = extractBalancedTag(cleaned, spec.tag, spec.regex);
+    if (extracted && extracted.length > 250) {
+      const candidates = extractBlocksFromHtml(extracted);
+      if (candidates.length >= 3 || candidates.join(" ").length >= 250) {
+        return candidates;
+      }
+    }
+  }
+
+  // Fallback: extract paragraphs from the whole cleaned HTML
+  const fallbackParagraphs = extractBlocksFromHtml(cleaned);
+  if (fallbackParagraphs.length > 0) {
+    return fallbackParagraphs;
+  }
+
+  return [];
 }
 
 function extractMetaContent(
@@ -220,13 +322,17 @@ function extractMetaContent(
   return undefined;
 }
 
-function extractJsonLdText(html: string): string {
+export function extractJsonLdText(html: string): {
+  articleBody?: string;
+  description?: string;
+} {
   const blocks =
     html.match(
       /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
     ) || [];
 
-  const parts: string[] = [];
+  const bodies: string[] = [];
+  const descriptions: string[] = [];
 
   for (const block of blocks) {
     const jsonMatch = block.match(/>([\s\S]*?)<\/script>/i);
@@ -239,28 +345,35 @@ function extractJsonLdText(html: string): string {
       for (const node of nodes) {
         if (!node || typeof node !== "object") continue;
         const record = node as Record<string, unknown>;
-        for (const key of ["articleBody", "description", "headline"]) {
-          const value = record[key];
-          if (typeof value === "string" && value.trim()) {
-            parts.push(decodeHtmlEntities(value.replace(/\s+/g, " ").trim()));
-          }
+        if (typeof record.articleBody === "string" && record.articleBody.trim()) {
+          bodies.push(
+            decodeHtmlEntities(record.articleBody.replace(/\s+/g, " ").trim())
+          );
+        }
+        if (typeof record.description === "string" && record.description.trim()) {
+          descriptions.push(
+            decodeHtmlEntities(record.description.replace(/\s+/g, " ").trim())
+          );
         }
       }
     } catch {
-      // Regex fallback for malformed JSON-LD (e.g. Turkish news sites with unescaped newlines in articleBody)
+      // Regex fallback for malformed JSON-LD (e.g. unescaped newlines in articleBody)
       const rawJson = jsonMatch[1];
       const bodyMatch = rawJson.match(/"articleBody"\s*:\s*"([\s\S]*?)"\s*,\s*"/);
       if (bodyMatch?.[1]) {
-        parts.push(decodeHtmlEntities(bodyMatch[1].replace(/\s+/g, " ").trim()));
+        bodies.push(decodeHtmlEntities(bodyMatch[1].replace(/\s+/g, " ").trim()));
       }
       const descMatch = rawJson.match(/"description"\s*:\s*"([^"]*)"/);
       if (descMatch?.[1]) {
-        parts.push(decodeHtmlEntities(descMatch[1].replace(/\s+/g, " ").trim()));
+        descriptions.push(decodeHtmlEntities(descMatch[1].replace(/\s+/g, " ").trim()));
       }
     }
   }
 
-  return parts.join("\n\n");
+  return {
+    articleBody: bodies.join("\n\n").trim() || undefined,
+    description: descriptions.join("\n\n").trim() || undefined,
+  };
 }
 
 function deduplicateBlocks(blocks: string[]): string[] {
@@ -290,16 +403,30 @@ export function extractPageTextFromHtml(
   const metaDescription = extractMetaContent(html, "name", "description");
 
   const articleText = articleParagraphs.join("\n\n");
+  const jsonBody = jsonLd.articleBody || "";
 
-  // If jsonLd has significantly more content (e.g. sites with DOM broken up by in-article ads), prefer jsonLd
-  const bestBody =
-    jsonLd.length > articleText.length + 300
-      ? jsonLd.split(/\n{2,}/)
-      : articleParagraphs.length > 0 && articleText.length >= 100
-      ? articleParagraphs
-      : jsonLd.length >= 100
-      ? jsonLd.split(/\n{2,}/)
-      : [];
+  let bestBody: string[] = [];
+
+  // Prioritize true article body:
+  // 1. If JSON-LD has an extensive articleBody (> 300 chars longer than DOM paragraphs), prefer it
+  // 2. Otherwise if DOM paragraphs exist and have >= 100 chars, use DOM paragraphs
+  // 3. Otherwise if JSON-LD has articleBody (>= 100 chars), use it
+  // 4. Otherwise fall back to stripped HTML
+  // 5. If nothing else, fall back to JSON-LD description
+  if (jsonBody.length > articleText.length + 300) {
+    bestBody = jsonBody.split(/\n{2,}/);
+  } else if (articleParagraphs.length > 0 && articleText.length >= 100) {
+    bestBody = articleParagraphs;
+  } else if (jsonBody.length >= 100) {
+    bestBody = jsonBody.split(/\n{2,}/);
+  } else {
+    const stripped = stripHtml(html);
+    if (stripped.length >= 100) {
+      bestBody = stripped.split(/\n{2,}/);
+    } else if (jsonLd.description && jsonLd.description.length >= 40) {
+      bestBody = [jsonLd.description];
+    }
+  }
 
   if (bestBody.length > 0) {
     const combinedBlocks = deduplicateBlocks([
