@@ -12,6 +12,7 @@ import {
 } from "@/lib/discovery/resolve-google-news-url";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
+import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
 import { getAdminEventBySlug } from "@/lib/data/admin-events";
 import { slugify } from "@/lib/slugify";
 import type { EventType } from "@/lib/events/types";
@@ -122,11 +123,19 @@ export async function createEvent(formData: FormData) {
     uniqueSlug
   );
 
+  const finalCoverImage = await resolveArtistOrEventCover({
+    title: data.title,
+    summary: data.summary,
+    event_type: data.event_type,
+    sourceCover: storedCoverImage,
+    slug: uniqueSlug,
+  });
+
   const { error } = await supabaseAdmin.from("cultural_events").insert({
     ...data,
     slug: uniqueSlug,
     source_url: uniqueSourceUrl,
-    cover_image: storedCoverImage,
+    cover_image: finalCoverImage,
     status: publishNow ? "published" : "pending_review",
     published_at: publishNow ? new Date().toISOString() : null,
   });
@@ -299,20 +308,34 @@ export async function importEventFromUrlAction(rawUrl: string) {
     const slug = await ensureUniqueEventSlug(title);
     const citySlug = normalizeCitySlug(imported.city_slug);
 
-    let rawCover = imported.cover_image || null;
-    if (!rawCover) {
-      rawCover = await resolveFallbackCulturalImage({
+    const safeEventType = sanitizeEventType(imported.event_type, title);
+
+    const storedCoverImage = await ensureStoredCoverImage(
+      imported.cover_image || null,
+      "events",
+      slug
+    );
+
+    let finalCoverImage = await resolveArtistOrEventCover({
+      title,
+      summary: imported.summary,
+      event_type: safeEventType,
+      sourceCover: storedCoverImage,
+      slug,
+    });
+
+    if (
+      !finalCoverImage &&
+      safeEventType !== "konser" &&
+      !title.toLowerCase().includes("konser")
+    ) {
+      const rawCover = await resolveFallbackCulturalImage({
         title,
         cityName: getCityName(citySlug),
         category: "kultur_sanat",
       });
+      finalCoverImage = await ensureStoredCoverImage(rawCover, "events", slug);
     }
-
-    const storedCoverImage = await ensureStoredCoverImage(
-      rawCover,
-      "events",
-      slug
-    );
 
     let sourceName = "Etkinlik Kaynağı";
     try {
@@ -328,7 +351,7 @@ export async function importEventFromUrlAction(rawUrl: string) {
         slug,
         summary: (imported.summary || title).trim(),
         description: imported.description || imported.summary || null,
-        event_type: sanitizeEventType(imported.event_type, title),
+        event_type: safeEventType,
         status: "pending_review",
         source_name: sourceName,
         source_url: url,
@@ -337,7 +360,7 @@ export async function importEventFromUrlAction(rawUrl: string) {
         venue_name: imported.venue_name || null,
         starts_at: sanitizeIsoDate(imported.starts_at),
         ends_at: sanitizeIsoDate(imported.ends_at),
-        cover_image: storedCoverImage,
+        cover_image: finalCoverImage,
         meta_title: (imported.meta_title || `${title} | Etkinlik Takvimi`).slice(0, 60),
         meta_description: (
           imported.meta_description ||

@@ -10,6 +10,7 @@ import {
 } from "@/lib/discovery/resolve-google-news-url";
 import { slugify } from "@/lib/slugify";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
+import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -57,13 +58,26 @@ export async function POST(req: NextRequest) {
       const slugHint = slugify(imported.title || topic || "etkinlik");
       let coverImage = imported.cover_image || null;
 
-      if (!coverImage) {
+      const resolvedCover = await resolveArtistOrEventCover({
+        title: imported.title || topic,
+        summary: imported.summary,
+        event_type: imported.event_type,
+        sourceCover: coverImage,
+        slug: slugHint,
+      });
+
+      let finalCover = resolvedCover;
+      if (
+        !finalCover &&
+        imported.event_type !== "konser" &&
+        !(imported.title || topic).toLowerCase().includes("konser")
+      ) {
         const fallbackImg = await resolveFallbackCulturalImage({
           title: imported.title || topic,
           cityName: getCityName(resolvedCity) || body.cityName,
           category: "kultur_sanat",
         });
-        coverImage = await ensureStoredCoverImage(fallbackImg, "events", slugHint);
+        finalCover = await ensureStoredCoverImage(fallbackImg, "events", slugHint);
       }
 
       let sourceName = "";
@@ -76,7 +90,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         ...imported,
         city_slug: resolvedCity,
-        cover_image: coverImage,
+        cover_image: finalCover,
         source_url: sourceUrl,
         source_name: sourceName,
       });
@@ -91,21 +105,33 @@ export async function POST(req: NextRequest) {
 
     const resolvedCity = normalizeCitySlug(normalized.city_slug);
     const slugHint = slugify(normalized.title || topic || "etkinlik");
-    const fallbackImg = await resolveFallbackCulturalImage({
+
+    const resolvedCover = await resolveArtistOrEventCover({
       title: normalized.title || topic,
-      cityName: getCityName(resolvedCity) || body.cityName,
-      category: "kultur_sanat",
+      summary: normalized.summary,
+      event_type: normalized.event_type,
+      sourceCover: null,
+      slug: slugHint,
     });
-    const storedCover = await ensureStoredCoverImage(
-      fallbackImg,
-      "events",
-      slugHint
-    );
+
+    let finalCover = resolvedCover;
+    if (
+      !finalCover &&
+      normalized.event_type !== "konser" &&
+      !(normalized.title || topic).toLowerCase().includes("konser")
+    ) {
+      const fallbackImg = await resolveFallbackCulturalImage({
+        title: normalized.title || topic,
+        cityName: getCityName(resolvedCity) || body.cityName,
+        category: "kultur_sanat",
+      });
+      finalCover = await ensureStoredCoverImage(fallbackImg, "events", slugHint);
+    }
 
     return NextResponse.json({
       ...normalized,
       city_slug: resolvedCity,
-      cover_image: storedCover,
+      cover_image: finalCover,
       source_url: null,
       source_name: null,
       ticket_url: null,

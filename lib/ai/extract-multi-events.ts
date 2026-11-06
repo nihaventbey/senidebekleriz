@@ -10,10 +10,8 @@ import { normalizeCitySlug } from "@/lib/cities/lookup";
 import { detectTurkishCityInText } from "@/lib/discovery/classify-content";
 import { uniqueEventSlug } from "@/lib/events/slug";
 import { cleanTicketUrl } from "@/lib/events/ticket-url";
-import {
-  isNonEventTitle,
-  resolveCuratedEventImage,
-} from "@/lib/events/artist-matcher";
+import { isNonEventTitle } from "@/lib/events/artist-matcher";
+import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { EventType } from "@/lib/events/types";
@@ -249,18 +247,13 @@ export async function extractEventsFromBulletin(input: {
     // If there are multiple events from a bulletin, the bulletin's cover image
     // is almost always a generic flyer or municipal building. Do NOT copy it to all sub-events!
     const isMultiEventBulletin = parsedEvents.length > 1;
-    const storedCover = isMultiEventBulletin
-      ? resolveCuratedEventImage({
-          title: item.title,
-          summary: item.summary,
-          event_type: safeEventType,
-        })
-      : storedCoversPool[0] ||
-        resolveCuratedEventImage({
-          title: item.title,
-          summary: item.summary,
-          event_type: safeEventType,
-        });
+    const storedCover = await resolveArtistOrEventCover({
+      title: item.title,
+      summary: item.summary,
+      event_type: safeEventType,
+      sourceCover: isMultiEventBulletin ? null : storedCoversPool[0] || null,
+      slug,
+    });
 
     const cleanedTicket = cleanTicketUrl(item.ticket_url, input.url);
     const resolvedCity =

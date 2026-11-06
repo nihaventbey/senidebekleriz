@@ -17,10 +17,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { slugify } from "@/lib/slugify";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
 import { extractEventsFromBulletin } from "@/lib/ai/extract-multi-events";
-import {
-  isNonEventTitle,
-  resolveCuratedEventImage,
-} from "@/lib/events/artist-matcher";
+import { isNonEventTitle } from "@/lib/events/artist-matcher";
+import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
 
 function revalidateDiscoveryPaths() {
   try {
@@ -187,13 +185,13 @@ export async function importDiscoveryAsEvent(id: string) {
   );
 
   const storedCoverImage = await ensureStoredCoverImage(rawCover, "events", slug);
-  const finalCoverImage =
-    storedCoverImage ||
-    resolveCuratedEventImage({
-      title: safeTitle,
-      summary: imported.summary || item.snippet,
-      event_type: safeEventType,
-    });
+  const finalCoverImage = await resolveArtistOrEventCover({
+    title: safeTitle,
+    summary: imported.summary || item.snippet,
+    event_type: safeEventType,
+    sourceCover: storedCoverImage,
+    slug,
+  });
 
   const { data, error } = await supabaseAdmin
     .from("cultural_events")

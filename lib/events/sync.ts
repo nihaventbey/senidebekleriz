@@ -9,10 +9,8 @@ import { fetchKtbRssItems } from "@/lib/events/sources/ktb-rss";
 import type { FeedSourceRow } from "@/lib/events/types";
 import { uniqueEventSlug } from "@/lib/events/slug";
 import { uploadEventImagesFromUrls } from "@/lib/storage/upload-image-from-url";
-import {
-  isNonEventTitle,
-  resolveCuratedEventImage,
-} from "@/lib/events/artist-matcher";
+import { isNonEventTitle } from "@/lib/events/artist-matcher";
+import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
 
 async function getActiveFeedSources(): Promise<FeedSourceRow[]> {
   const { data, error } = await supabaseAdmin
@@ -137,13 +135,13 @@ export async function syncCulturalEvents(): Promise<SyncEventsResult> {
             slug,
           });
 
-          const finalCoverImage =
-            media.coverImage ||
-            resolveCuratedEventImage({
-              title: normalized.title,
-              summary: normalized.summary,
-              event_type: normalized.event_type,
-            });
+          const finalCoverImage = await resolveArtistOrEventCover({
+            title: normalized.title,
+            summary: normalized.summary,
+            event_type: normalized.event_type,
+            sourceCover: media.coverImage,
+            slug,
+          });
 
           const inserted = await insertPendingEvent({
             title: normalized.title,

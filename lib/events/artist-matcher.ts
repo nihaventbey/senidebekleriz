@@ -239,13 +239,20 @@ export function resolveCuratedGenreKey(event: {
 }
 
 /**
- * Returns a guaranteed high-resolution WebP curated image URL for the given event.
+ * Returns a high-resolution WebP curated image URL for the given event.
+ * Note: concert-rock is permanently banned from returning generic duplicate stock photos
+ * and returns null so that CulturalCoverPlaceholder or authentic artist covers are used.
  */
 export function resolveCuratedEventImage(event: {
   title: string;
   summary?: string | null;
   event_type?: string | null;
-}): string {
+}): string | null {
   const genre = resolveCuratedGenreKey(event);
-  return CURATED_GENRE_IMAGES[genre] || CURATED_GENRE_IMAGES["festival-heritage"];
+  if (genre === "concert-rock") {
+    return null;
+  }
+  return CURATED_GENRE_IMAGES[genre] || null;
 }
+
+

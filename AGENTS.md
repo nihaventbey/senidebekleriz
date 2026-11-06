@@ -42,3 +42,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Mobil Öncelikli & Tam Responsive:** 320px mobil ekranlardan 4K geniş ekranlara kadar taşma yapmayan, fluid clamp tipografili ve container query'li kartlar.
 - **Performans:** LCP adayı manşet görsellerinde `fetchpriority="high"`, diğerlerinde `aspect-ratio` rezerve edilerek Cumulative Layout Shift (CLS) sıfırlanmalıdır.
 - **SEO & Temiz Yapı:** Yayındaki haberler, etkinlikler, blog yazıları ve 81 il ajandası Schema.org (`NewsArticle`, `Event`, `BreadcrumbList`) ile arama motorlarına eksiksiz açılmalıdır.
+
+### 6. Görsel & Medya Standartları (Duplicate Stock Banned)
+- **Tekrarlayan Jenerik Konser Stok Görselleri Kesinlikle Yasaktır:** Konser veya canlı müzik etkinliklerine asla aynı jenerik rock/pop sahne stok görseli (`concert-rock.webp`) körlemesine atanmaz.
+- **Otantik Sanatçı Görseli İlkesi:** Konser etkinliklerinde sanatçı adı ayrıştırılarak Deezer API (veya ikincil fallback olarak TR/EN Wikipedia) üzerinden doğrulanmış, yüksek çözünürlüklü basın/sanatçı fotoğrafı çekilir, `sharp` ile WebP formatına dönüştürülüp Supabase Storage bucket `media` (`events/artists/<slug>.webp`) yoluna kaydedilir.
+- **Tipografik Placeholder Güvencesi:** Doğrulanmış otantik sanatçı fotoğrafı veya geçerli kaynak görseli bulunamıyorsa `cover_image` MUTLAKA `null` bırakılır. Boş bırakıldığında arayüzdeki `CulturalCoverPlaceholder` temiz, şık ve tipografik şehir/mühür tasarımıyla render edilir.
+

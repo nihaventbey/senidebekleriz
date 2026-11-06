@@ -134,13 +134,21 @@ describe("artist-matcher & event curation", () => {
   });
 
   describe("resolveCuratedEventImage", () => {
-    it("returns verified WebP storage URL for each genre", () => {
+    it("returns verified WebP storage URL for classical genre", () => {
       const img = resolveCuratedEventImage({
         title: "Borusan Filarmoni Konseri",
         event_type: "konser",
       });
       expect(img).toBe(CURATED_GENRE_IMAGES["concert-classical"]);
       expect(img).toMatch(/^https:\/\/.*\.supabase\.co\/storage\/.*\.webp$/);
+    });
+
+    it("returns null for concert-rock to ban duplicate stock photos", () => {
+      const img = resolveCuratedEventImage({
+        title: "Edis Konseri",
+        event_type: "konser",
+      });
+      expect(img).toBeNull();
     });
   });
 });
