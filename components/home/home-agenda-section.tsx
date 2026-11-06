@@ -54,7 +54,7 @@ export function HomeAgendaSection({ events }: { events: PublicEvent[] }) {
   }, [events, selectedType, selectedCity]);
 
   return (
-    <section className="container mx-auto px-4 py-12">
+    <section className="container mx-auto px-4 py-8 sm:py-10">
       {/* Header with Title and "Tümünü Gör" Button */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">

@@ -458,6 +458,27 @@ export async function toggleAllAdPlacements(isActive: boolean) {
   return { success: true };
 }
 
+export async function invertAllAdPlacements() {
+  const { data, error: fetchErr } = await supabaseAdmin
+    .from("ad_placements")
+    .select("id, is_active");
+  if (fetchErr) throw new Error(fetchErr.message);
+
+  if (data && data.length > 0) {
+    await Promise.all(
+      data.map((item) =>
+        supabaseAdmin
+          .from("ad_placements")
+          .update({ is_active: !item.is_active })
+          .eq("id", item.id)
+      )
+    );
+  }
+
+  revalidateAdPaths();
+  return { success: true };
+}
+
 export async function bulkDeleteAdPlacements(ids: string[]) {
   if (!ids || ids.length === 0) return { success: true, count: 0 };
 

@@ -377,6 +377,10 @@ const CATEGORY_FALLBACK_COVERS: Record<string, string[]> = {
     "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Aspendos_Theatre_Antalya_Turkey.jpg/1280px-Aspendos_Theatre_Antalya_Turkey.jpg",
     "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Atat%C3%BCrk_Cultural_Center_Istanbul_2021.jpg/1280px-Atat%C3%BCrk_Cultural_Center_Istanbul_2021.jpg",
   ],
+  sinema: [
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Atat%C3%BCrk_Cultural_Center_Istanbul_2021.jpg/1280px-Atat%C3%BCrk_Cultural_Center_Istanbul_2021.jpg",
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/S%C3%BCreyya_Opera_House_interior.jpg/1280px-S%C3%BCreyya_Opera_House_interior.jpg",
+  ],
   kultur_sanat: [
     "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Atat%C3%BCrk_Cultural_Center_Istanbul_2021.jpg/1280px-Atat%C3%BCrk_Cultural_Center_Istanbul_2021.jpg",
     "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/S%C3%BCreyya_Opera_House_interior.jpg/1280px-S%C3%BCreyya_Opera_House_interior.jpg",

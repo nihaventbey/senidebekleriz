@@ -5,6 +5,7 @@ export type NewsCategory =
   | "arkeoloji"
   | "restorasyon"
   | "muze_sergi"
+  | "sinema"
   | "kultur_sanat"
   | "festival_haberleri"
   | "genel";

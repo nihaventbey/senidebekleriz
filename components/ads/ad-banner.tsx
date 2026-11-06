@@ -17,9 +17,10 @@ type AdBannerProps = {
   slot: string;
   className?: string;
   style?: React.CSSProperties;
+  wrapperClassName?: string;
 };
 
-export function AdBanner({ slot, className, style }: AdBannerProps) {
+export function AdBanner({ slot, className, style, wrapperClassName }: AdBannerProps) {
   const pathname = usePathname();
   const insRef = useRef<HTMLModElement>(null);
   const placement = useAdPlacement(slot);
@@ -62,7 +63,7 @@ export function AdBanner({ slot, className, style }: AdBannerProps) {
   const adFormat = placement?.adFormat || "auto";
   const isFluid = adFormat === "fluid";
 
-  return (
+  const insElement = (
     <ins
       ref={insRef}
       className={`adsbygoogle ${className || ""}`}
@@ -76,4 +77,10 @@ export function AdBanner({ slot, className, style }: AdBannerProps) {
       {...(!isFluid ? { "data-full-width-responsive": "true" } : {})}
     />
   );
+
+  if (wrapperClassName) {
+    return <div className={wrapperClassName}>{insElement}</div>;
+  }
+
+  return insElement;
 }

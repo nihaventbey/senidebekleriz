@@ -7,6 +7,7 @@ import type { PublicEvent } from "@/lib/data/events";
 type Props = {
   featuredNews: PublicNewsArticle[];
   latestEvents: PublicEvent[];
+  headlineNews?: PublicNewsArticle[];
 };
 
 function formatDate(iso: string | null) {
@@ -22,12 +23,13 @@ const CATEGORY_LABELS: Record<string, string> = {
   arkeoloji: "Arkeoloji & Kazı",
   restorasyon: "Tarihi Miras",
   muze_sergi: "Müze & Sergi",
+  sinema: "Sinema & Film",
   kultur_sanat: "Kültür & Sanat",
   festival_haberleri: "Festival",
   genel: "Kültür Gündemi",
 };
 
-export function EditorialHero({ featuredNews, latestEvents }: Props) {
+export function EditorialHero({ featuredNews, latestEvents, headlineNews }: Props) {
   const leadNews = featuredNews[0];
   const secondaryNews = featuredNews.slice(1, 4);
 
@@ -166,6 +168,82 @@ export function EditorialHero({ featuredNews, latestEvents }: Props) {
             <p className="text-sm mt-1 max-w-md mx-auto">
               Türkiye genelinde sergiler, tiyatro oyunları ve güncel kültür haberleri burada listelenir.
             </p>
+          </div>
+        )}
+
+        {/* Editorial Sub-Headlines / Gündemden Başlıklar Hızlı Bakış */}
+        {headlineNews && headlineNews.length > 0 && (
+          <div className="mt-8 pt-6 border-t border-border/50">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <h3 className="text-xs font-bold tracking-wider uppercase text-muted-foreground">
+                  Kültür Gündemi · Hızlı Bakış
+                </h3>
+              </div>
+              <Link
+                href="/haberler"
+                className="group inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+              >
+                <span>Tüm Gündem</span>
+                <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {headlineNews.map((item) => (
+                <article
+                  key={item.id}
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/60 bg-card p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-primary/40"
+                >
+                  <div className="space-y-2.5">
+                    {item.coverImage && (
+                      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-muted">
+                        <img
+                          src={item.coverImage}
+                          alt={item.title}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between text-[11px] font-semibold">
+                      <span className="text-primary font-bold">
+                        {CATEGORY_LABELS[item.category] || "Kültür Haberi"}
+                      </span>
+                      <span className="text-muted-foreground font-normal">
+                        {formatDate(item.publishedAt)}
+                      </span>
+                    </div>
+
+                    <h4 className="line-clamp-2 text-sm font-bold tracking-tight text-foreground group-hover:text-primary transition-colors leading-snug">
+                      <Link href={`/haber/${item.slug}`} className="hover:underline">
+                        {item.title}
+                      </Link>
+                    </h4>
+
+                    <p className="line-clamp-2 text-xs text-muted-foreground leading-relaxed">
+                      {item.summary}
+                    </p>
+                  </div>
+
+                  <div className="mt-3 pt-2.5 border-t border-border/40 flex items-center justify-between text-xs">
+                    {item.cityName ? (
+                      <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                        <MapPin className="h-3 w-3" />
+                        {item.cityName}
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground font-medium">Genel Kültür</span>
+                    )}
+                    <span className="text-xs font-semibold text-primary inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                      Detay <ArrowRight className="h-3 w-3" />
+                    </span>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
         )}
       </div>

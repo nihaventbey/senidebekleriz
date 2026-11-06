@@ -31,6 +31,7 @@ export type GeneratedNewsDraft = {
     | "arkeoloji"
     | "restorasyon"
     | "muze_sergi"
+    | "sinema"
     | "kultur_sanat"
     | "festival_haberleri"
     | "genel";
@@ -44,6 +45,7 @@ const VALID_CATEGORIES = new Set([
   "arkeoloji",
   "restorasyon",
   "muze_sergi",
+  "sinema",
   "kultur_sanat",
   "festival_haberleri",
   "genel",
@@ -79,6 +81,9 @@ function inferNewsCategory(
   }
   if (/(müze|sergi|bienal|küratör|galeri|koleksiyon|retrospektif|çağdaş sanat)/.test(lower)) {
     return "muze_sergi";
+  }
+  if (/(sinema|film|yönetmen|senaryo|vizyon|altın portakal|altın koza|berlinale|cannes|oscar|kısa film|belgesel|oyuncu|başrol|gişe|sinematek|animasyon)/.test(lower)) {
+    return "sinema";
   }
   if (/(festival|kültür yolu|şenlik|karnaval)/.test(lower)) {
     return "festival_haberleri";
@@ -147,7 +152,7 @@ KURUMSAL YAYINCILIK, EDİTÖRYAL DÜZEN VE AIO KURALLARI:
   "title": "60-90 karakter arası, kurumsal, çarpıcı ve SEO uyumlu Türkçe haber başlığı",
   "summary": "130-160 karakter arası, 5N1K kuralına uygun, tam bir cümle olarak biten (asla yarım bırakılmamış) SEO uyumlu haber spotu",
   "content": "Haberin bağlamına uygun 2-4 derli toplu ## alt başlık ve kurumsal paragraflarla yazılmış Markdown haber metni",
-  "category": "arkeoloji | restorasyon | muze_sergi | kultur_sanat | festival_haberleri | genel",
+  "category": "arkeoloji | restorasyon | muze_sergi | sinema | kultur_sanat | festival_haberleri | genel",
   "city_slug": "Haberin geçtiği ilin küçük harfli Türkçe karakter içermeyen slug'ı (örn: trabzon, canakkale, istanbul) veya genel ise null",
   "source_name": "Haberin kaynağı olan kurum veya yayın adı (örn: Taka Gazete, Cumhuriyet, Anadolu Ajansı)"
 }`;

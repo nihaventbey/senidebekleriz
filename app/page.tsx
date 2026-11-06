@@ -14,14 +14,20 @@ import { getSiteUrl } from "@/lib/agents/site";
 export const revalidate = 7200; // 2 hours Edge CDN caching (revalidated on-demand on content publish)
 
 export default async function HomePage() {
-  const [featuredNews, latestNews, upcomingEvents, publishedArticles, popularCities] =
+  const [featuredNews, allLatestNews, upcomingEvents, publishedArticles, popularCities] =
     await Promise.all([
       getFeaturedNews(4),
-      getPublishedNews({ limit: 6 }),
+      getPublishedNews({ limit: 12 }),
       getPublishedEvents({ limit: 16 }),
       getPublishedArticles(6),
       getPopularCities(6),
     ]);
+
+  const featuredIds = new Set(featuredNews.map((n) => n.id));
+  const remainingNews = allLatestNews.filter((n) => !featuredIds.has(n.id));
+  const headlineNews = remainingNews.slice(0, 4);
+  const feedNews = remainingNews.slice(4, 10);
+  const displayNews = feedNews.length > 0 ? feedNews : remainingNews;
 
   const siteUrl = getSiteUrl();
 
@@ -55,26 +61,26 @@ export default async function HomePage() {
     <div className="flex flex-col min-h-screen">
       <JsonLd data={websiteJsonLd} />
 
-      {/* 1. Günün Manşetleri */}
+      {/* 1. Günün Manşetleri ve Kültür Gündemi Hızlı Bakış */}
       <EditorialHero
-        featuredNews={featuredNews.length > 0 ? featuredNews : latestNews}
+        featuredNews={featuredNews.length > 0 ? featuredNews : allLatestNews}
+        headlineNews={headlineNews}
         latestEvents={upcomingEvents}
       />
 
-      {/* Reklam - Manşet Altı Banner */}
-      <section className="container mx-auto px-4 py-2 sm:py-4">
-        <AdBanner
-          slot="home-hero-bottom"
-          className="min-h-[90px] w-full"
-          style={{ display: "block", minHeight: "90px", width: "100%" }}
-        />
-      </section>
+      {/* Reklam - Manşet Altı Banner (Reklam pasifken sıfır boşluk) */}
+      <AdBanner
+        slot="home-hero-bottom"
+        wrapperClassName="container mx-auto px-4 py-3"
+        className="min-h-[90px] w-full"
+        style={{ display: "block", minHeight: "90px", width: "100%" }}
+      />
 
       {/* 2. "Bu Hafta Ne Var?" Şehir & Tür Filtreli Ajanda */}
       <HomeAgendaSection events={upcomingEvents} />
 
       {/* 3. Kültür & Sanat Haberleri */}
-      <CultureNewsSection news={latestNews} />
+      <CultureNewsSection news={displayNews.length > 0 ? displayNews : allLatestNews} />
 
       {/* 4. Kültür & Şehir Rehberleri */}
       <CultureGuidesSection articles={publishedArticles} />
@@ -82,14 +88,13 @@ export default async function HomePage() {
       {/* 5. 81 İl Kültür Rotası */}
       <PopularCitiesSection cities={popularCities} />
 
-      {/* Reklam - Footer Öncesi Banner */}
-      <section className="container mx-auto px-4 py-6 pb-12">
-        <AdBanner
-          slot="home-footer-top"
-          className="min-h-[90px] w-full"
-          style={{ display: "block", minHeight: "90px", width: "100%" }}
-        />
-      </section>
+      {/* Reklam - Footer Öncesi Banner (Reklam pasifken sıfır boşluk) */}
+      <AdBanner
+        slot="home-footer-top"
+        wrapperClassName="container mx-auto px-4 py-4 pb-8"
+        className="min-h-[90px] w-full"
+        style={{ display: "block", minHeight: "90px", width: "100%" }}
+      />
     </div>
   );
 }

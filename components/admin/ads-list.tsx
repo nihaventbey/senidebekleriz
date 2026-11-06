@@ -21,11 +21,14 @@ import {
   Pencil,
   Trash2,
   Loader2,
+  ArrowLeftRight,
+  ShieldCheck,
 } from "lucide-react";
 import {
   toggleAdPlacementActive,
   bulkToggleAdPlacements,
   toggleAllAdPlacements,
+  invertAllAdPlacements,
   bulkDeleteAdPlacements,
   deleteAdPlacement,
 } from "@/lib/actions/admin";
@@ -97,6 +100,19 @@ export function AdsList({ placements }: Props) {
     });
   }
 
+  function handleInvertAll() {
+    startTransition(async () => {
+      try {
+        await invertAllAdPlacements();
+        toast.success("Reklam durumları tersine çevrildi: Aktifler kapatıldı, pasifler açıldı 🔄");
+        setSelectedIds(new Set());
+        router.refresh();
+      } catch (err: any) {
+        toast.error("İşlem başarısız", err.message);
+      }
+    });
+  }
+
   function handleBulkToggle(isActive: boolean) {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
@@ -156,7 +172,52 @@ export function AdsList({ placements }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Quick All-On / All-Off Toolbar */}
+      {/* 1. Tek Tuşla Master Reklam Aç / Kapa Kartı */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-2xl border-2 border-primary/20 bg-card p-5 shadow-xs">
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h2 className="text-base font-bold text-foreground">Sistem Geneli Reklam Anahtarı</h2>
+            <Badge
+              variant={activeCount > 0 ? "default" : "secondary"}
+              className={
+                activeCount > 0
+                  ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                  : "bg-muted text-muted-foreground"
+              }
+            >
+              {activeCount > 0 ? "● REKLAMLAR AÇIK" : "○ REKLAMLAR KAPALI (REKLAMSIZ MOD)"}
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed max-w-xl">
+            Sitedeki tüm AdSense reklam alanlarını tek tıkla kapatabilir veya açabilirsiniz. Reklamlar kapalıyken sitede hiçbir boşluk veya reklam çerçevesi görünmez.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0">
+          <Button
+            type="button"
+            size="default"
+            disabled={isPending}
+            onClick={() => handleToggleAll(activeCount === 0)}
+            className={`font-bold text-xs sm:text-sm h-10 px-5 transition-all shadow-xs ${
+              activeCount > 0
+                ? "bg-amber-600 hover:bg-amber-700 text-white"
+                : "bg-emerald-600 hover:bg-emerald-700 text-white"
+            }`}
+          >
+            {isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : activeCount > 0 ? (
+              <PowerOff className="mr-2 h-4 w-4" />
+            ) : (
+              <Power className="mr-2 h-4 w-4" />
+            )}
+            {activeCount > 0 ? "Tüm Reklamları Kapat" : "Tüm Reklamları Aç"}
+          </Button>
+        </div>
+      </div>
+
+      {/* 2. Toplu Kontrol ve Durum Çevirme Araç Çubuğu */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border bg-card p-3.5 shadow-xs">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="font-semibold text-foreground">
@@ -178,6 +239,7 @@ export function AdsList({ placements }: Props) {
             disabled={isPending || activeCount === placements.length}
             onClick={() => handleToggleAll(true)}
             className="h-8 text-xs font-semibold gap-1.5 border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400"
+            title="Sitedeki tüm reklam alanlarını aktif duruma getirir"
           >
             {isPending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -194,6 +256,7 @@ export function AdsList({ placements }: Props) {
             disabled={isPending || activeCount === 0}
             onClick={() => handleToggleAll(false)}
             className="h-8 text-xs font-semibold gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400"
+            title="Sitedeki tüm reklam alanlarını pasif duruma getirir"
           >
             {isPending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -201,6 +264,23 @@ export function AdsList({ placements }: Props) {
               <PowerOff className="h-3.5 w-3.5" />
             )}
             Tümünü Pasif Yap
+          </Button>
+
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={isPending || placements.length === 0}
+            onClick={handleInvertAll}
+            className="h-8 text-xs font-semibold gap-1.5 border-primary/30 text-primary hover:bg-primary/5"
+            title="Aktif olanları kapatır, pasif olanları açar"
+          >
+            {isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <ArrowLeftRight className="h-3.5 w-3.5" />
+            )}
+            Aktifleri Kapat, Pasifleri Aç
           </Button>
         </div>
       </div>

@@ -8,6 +8,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   arkeoloji: "Arkeoloji & Kazı",
   restorasyon: "Tarihi Miras",
   muze_sergi: "Müze & Sergi",
+  sinema: "Sinema & Film",
   kultur_sanat: "Kültür & Sanat",
   festival_haberleri: "Festival",
   genel: "Kültür Gündemi",

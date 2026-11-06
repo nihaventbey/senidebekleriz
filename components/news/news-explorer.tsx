@@ -21,6 +21,7 @@ const CATEGORY_TABS = [
   { key: "arkeoloji", label: "Arkeoloji & Kazı", emoji: "🏛️" },
   { key: "restorasyon", label: "Restorasyon & Tarih", emoji: "🏰" },
   { key: "muze_sergi", label: "Müze & Sergi", emoji: "🖼️" },
+  { key: "sinema", label: "Sinema & Film", emoji: "🎬" },
   { key: "kultur_sanat", label: "Kültür & Sanat", emoji: "🎨" },
   { key: "festival_haberleri", label: "Festival Gündemi", emoji: "🎪" },
 ] as const;

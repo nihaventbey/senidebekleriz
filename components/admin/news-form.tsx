@@ -38,6 +38,7 @@ const CATEGORY_OPTIONS = [
   { value: "arkeoloji", label: "🏛️ Arkeoloji & Kazı" },
   { value: "restorasyon", label: "🏰 Restorasyon & Tarih" },
   { value: "muze_sergi", label: "🖼️ Müze & Sergi" },
+  { value: "sinema", label: "🎬 Sinema & Görsel Sanatlar" },
   { value: "kultur_sanat", label: "🎨 Kültür & Sanat" },
   { value: "festival_haberleri", label: "🎪 Festival Gündemi" },
   { value: "genel", label: "📰 Genel Kültür" },
