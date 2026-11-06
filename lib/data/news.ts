@@ -63,32 +63,50 @@ function mapNews(row: CulturalNewsRow): PublicNewsArticle {
   };
 }
 
-export async function getFeaturedNews(limit = 5): Promise<PublicNewsArticle[]> {
-  // Freshness threshold: news published within last 21 days for featured hero
-  const freshnessThreshold = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString();
-
-  const { data, error } = await supabaseAdmin
+export async function getFeaturedNews(limit = 4): Promise<PublicNewsArticle[]> {
+  // 1. Fetch news explicitly marked as featured (Manşet) and published
+  const { data: featuredRows, error: featuredErr } = await supabaseAdmin
     .from("cultural_news")
     .select("*")
     .eq("is_published", true)
-    .gte("published_at", freshnessThreshold)
-    .order("is_featured", { ascending: false })
-    .order("published_at", { ascending: false })
+    .eq("is_featured", true)
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (error || !data || data.length === 0) {
-    // Fallback to latest published news regardless of freshness window if empty
-    const { data: fallbackData } = await supabaseAdmin
-      .from("cultural_news")
-      .select("*")
-      .eq("is_published", true)
-      .order("published_at", { ascending: false })
-      .limit(limit);
-
-    return (fallbackData || []).map((r) => mapNews(r as CulturalNewsRow));
+  if (featuredErr) {
+    console.error("getFeaturedNews featured error:", featuredErr.message);
   }
 
-  return data.map((r) => mapNews(r as CulturalNewsRow));
+  const featured = (featuredRows || []).map((r) => mapNews(r as CulturalNewsRow));
+
+  // If we have enough featured news to fill the hero slots, return them directly
+  if (featured.length >= limit) {
+    return featured.slice(0, limit);
+  }
+
+  // 2. Otherwise, fill the remaining slots with the freshest published news
+  const remainingSlots = limit - featured.length;
+  const existingIds = new Set(featured.map((f) => f.id));
+
+  const { data: latestRows, error: latestErr } = await supabaseAdmin
+    .from("cultural_news")
+    .select("*")
+    .eq("is_published", true)
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .limit(limit * 3);
+
+  if (latestErr) {
+    console.error("getFeaturedNews latest fill error:", latestErr.message);
+  }
+
+  const filler = (latestRows || [])
+    .filter((r) => !existingIds.has(r.id))
+    .slice(0, remainingSlots)
+    .map((r) => mapNews(r as CulturalNewsRow));
+
+  return [...featured, ...filler];
 }
 
 export async function getPublishedNews(options?: {
@@ -101,7 +119,8 @@ export async function getPublishedNews(options?: {
     .from("cultural_news")
     .select("*")
     .eq("is_published", true)
-    .order("published_at", { ascending: false });
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false });
 
   if (options?.category && options.category !== "all") {
     query = query.eq("category", options.category);

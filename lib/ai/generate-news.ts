@@ -1,5 +1,6 @@
 import { callGeminiJson } from "@/lib/ai/gemini-client";
 import { fetchUrlContent } from "@/lib/ai/fetch-url-content";
+import { formatHeadingsWithHeuristics } from "@/lib/ai/format-headings";
 import {
   filterImageCandidatesBySize,
   pickCoverImageUrl,
@@ -122,10 +123,11 @@ Verilen kaynak sayfa içeriğini dikkatle inceleyip, kurumsal bir üslup, edebi 
 ${depthInstructions[depth]}
 
 KURUMSAL YAYINCILIK, EDİTÖRYAL DÜZEN VE AIO KURALLARI:
-1. DERLİ TOPLU BAŞLIK MİMARİSİ:
-   - Metni 10-15 küçük parçaya bölme! Metnin uzunluğuna göre sadece 2 ila 4 adet ana ve anlamlı "## Alt Başlık" kullan.
+1. DERLİ TOPLU VE BAĞLAMSAL BAŞLIK MİMARİSİ (ZORUNLU):
+   - Metin ASLA alt başlıksız düz paragraf yığını olamaz! Giriş paragrafından sonra haberin farklı boyutlarını, sanatçı/yetkili açıklamalarını ve tarihsel/sanatsal detaylarını ele alan 2 ila 4 adet anlamlı "## Alt Başlık" (Markdown H2) kullan.
    - Her "## Alt Başlık" altında en az 2-3 doyurucu, birbiriyle mantıksal bağı olan güçlü paragraf yer almalıdır. Cümle cümle başlık atmak kesinlikle yasaktır.
-   - Başlıklar konunun özünü kurumsal bir dille yansıtmalıdır (Örn: "## Yaşam Boyu Onur Ödülü Türkan Şoray'a Takdim Edilecek", "## Altı Günlük Zengin Festival Programı").
+   - Giriş paragrafının hemen üstüne başlık ATMA; ilk paragraf daima başlıksız editoryal giriş olmalıdır.
+   - Başlıklar o bölümde anlatılan konuyu kurumsal ve edebi bir dille yansıtmalıdır (Örn: "## Yaşam Boyu Onur Ödülü Türkan Şoray'a Takdim Edilecek", "## Cüneyt Gökçer Sahnesi Kasımda Perdelerini Açıyor", "## Türk Dünyasını Buluşturan Uluslararası Proje: Geçit").
    - ASLA kalıp veya şablon başlıklar ("## Gelişmeler ve Kültürel Detaylar", "## Program, Mekân ve Katılım Bilgileri", "## Kaynak ve Detaylar", "## Merak Edilenler") kullanma.
 
 2. KURUMSAL VE SAYGIN DİL:
@@ -204,7 +206,7 @@ export async function generateNewsDraft(
     topic !== "Kültür ve Sanat Haberi" ? `Haber Başlığı / Konusu: ${topic}` : null,
     input.cityName ? `İlgili Şehir: ${input.cityName}` : null,
     sourceBlock || "Türkiye kültür ve sanat gündemine uygun özgün bir haber metni oluştur.",
-    "Yukarıdaki kaynak içeriği bağlamına göre analiz et; şablon başlıklar kullanmadan, haberin kendi akışına ve gerçek verilerine sadık kalarak gazetecilik dilinde özgün bir haber metni ve 5N1K özeti üret.",
+    "Yukarıdaki kaynak içeriği bağlamına göre analiz et; şablon başlıklar kullanmadan, haberin kendi akışına ve gerçek verilerine sadık kalarak gazetecilik dilinde özgün bir haber metni ve 5N1K özeti üret. Metni giriş paragrafından sonra haberin akışına ve bağlamına göre 2 ila 4 adet '## [Konuya Özgü Markdown Alt Başlık]' ile tematik bölümlere ayırarak oluştur.",
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -326,10 +328,15 @@ export async function generateNewsDraft(
         ? formattedBlocks.slice(1)
         : formattedBlocks;
 
-    const fallbackContent =
+    const rawFallbackContent =
       bodyBlocks.length > 0
         ? bodyBlocks.join("\n\n")
         : fallbackSummary;
+
+    const fallbackContent = formatHeadingsWithHeuristics(
+      rawFallbackContent,
+      cleanFallbackTitle
+    );
 
     return {
       title: cleanFallbackTitle,

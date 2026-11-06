@@ -139,6 +139,20 @@ export async function updateNews(
   // Transfer cover image to Supabase Storage upon update
   const coverImage = await ensureStoredCoverImage(coverImageRaw, "news", slug);
 
+  // Fetch existing record to ensure published_at is set properly when published
+  const { data: existingNews } = await supabaseAdmin
+    .from("cultural_news")
+    .select("published_at")
+    .eq("slug", originalSlug)
+    .maybeSingle();
+
+  let publishedAt = existingNews?.published_at || null;
+  if (isPublished && !publishedAt) {
+    publishedAt = new Date().toISOString();
+  } else if (!isPublished) {
+    publishedAt = null;
+  }
+
   const { data, error } = await supabaseAdmin
     .from("cultural_news")
     .update({
@@ -153,6 +167,7 @@ export async function updateNews(
       source_url: sourceUrl,
       is_published: isPublished,
       is_featured: isFeatured,
+      published_at: publishedAt,
       updated_at: new Date().toISOString(),
     })
     .eq("slug", originalSlug)
@@ -194,12 +209,25 @@ export async function togglePublishNews(id: string, isPublished: boolean): Promi
 }
 
 export async function toggleFeaturedNews(id: string, isFeatured: boolean): Promise<void> {
+  const { data: existing } = await supabaseAdmin
+    .from("cultural_news")
+    .select("is_published, published_at")
+    .eq("id", id)
+    .maybeSingle();
+
+  const updates: Record<string, unknown> = {
+    is_featured: isFeatured,
+    updated_at: new Date().toISOString(),
+  };
+
+  // If the news is published but published_at was null, populate it so hero ordering works seamlessly
+  if (existing?.is_published && !existing.published_at) {
+    updates.published_at = new Date().toISOString();
+  }
+
   const { error } = await supabaseAdmin
     .from("cultural_news")
-    .update({
-      is_featured: isFeatured,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updates)
     .eq("id", id);
 
   if (error) throw new Error(error.message);

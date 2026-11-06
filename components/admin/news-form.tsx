@@ -89,11 +89,66 @@ export function NewsForm({
   const [isAiImageModalOpen, setIsAiImageModalOpen] = useState(false);
   const [uploadingInlineImage, setUploadingInlineImage] = useState(false);
   const [aiPending, startAiTransition] = useTransition();
+  const [formattingPending, startFormattingTransition] = useTransition();
   const [savePending, startSaveTransition] = useTransition();
   const [deletePending, startDeleteTransition] = useTransition();
   const [aiSourceUrl, setAiSourceUrl] = useState(initialSourceUrl || defaultValues.source_url || "");
   const [aiTopic, setAiTopic] = useState("");
   const [aiDepth, setAiDepth] = useState<"standard" | "deep" | "comprehensive">("standard");
+
+  function handleFormatHeadings() {
+    if (!content.trim()) {
+      toast.error("Önce haber metnini girin veya üretin");
+      return;
+    }
+
+    startFormattingTransition(async () => {
+      try {
+        const res = await fetch("/api/admin/format-news-headings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: title.trim(),
+            content: content.trim(),
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Başlıklandırma işlemi başarısız oldu");
+
+        if (data.content) {
+          setContent(data.content);
+          toast.success("Metin bağlamına göre Markdown alt başlıklarıyla düzenlendi! ✨");
+        }
+      } catch (err: any) {
+        toast.error(err.message || "Başlıklandırılamadı");
+      }
+    });
+  }
+
+  function insertMarkdown(prefix: string, suffix = "", defaultPlaceholder = "Başlık") {
+    const textarea = document.getElementById("content-editor") as HTMLTextAreaElement | null;
+    if (!textarea) {
+      setContent((prev) => `${prev.trimEnd()}\n\n${prefix}${defaultPlaceholder}${suffix}\n\n`);
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = content.slice(start, end);
+    const textToWrap = selected || defaultPlaceholder;
+    const replacement = `${prefix}${textToWrap}${suffix}`;
+    const nextContent = content.slice(0, start) + replacement + content.slice(end);
+
+    setContent(nextContent);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(
+        start + prefix.length,
+        start + prefix.length + textToWrap.length
+      );
+    }, 50);
+  }
 
   const wordCount = useMemo(
     () => content.trim().split(/\s+/).filter(Boolean).length,
@@ -581,14 +636,65 @@ export function NewsForm({
                 <>
                   <Button
                     type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={formattingPending || !content.trim()}
+                    onClick={handleFormatHeadings}
+                    className="h-7 px-2.5 text-xs font-semibold gap-1 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20"
+                    title="Yapay zeka metni analiz edip bağlama uygun '## [Alt Başlık]' markdown başlıkları yerleştirir"
+                  >
+                    {formattingPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3 w-3 text-amber-500" />
+                    )}
+                    <span>{formattingPending ? "Başlıklandırılıyor..." : "✨ Başlıklandır (AI)"}</span>
+                  </Button>
+
+                  <div className="h-4 w-[1px] bg-border mx-0.5 hidden sm:block" />
+
+                  <Button
+                    type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() =>
-                      setContent((prev) => `${prev.trimEnd()}\n\n## Alt Başlık\n\n`)
-                    }
-                    className="h-7 px-2.5 text-xs"
+                    onClick={() => insertMarkdown("\n\n## ", "\n\n", "Alt Başlık")}
+                    className="h-7 px-2 text-xs font-bold"
+                    title="Seçili metni H2 Markdown başlığı yapar (## Başlık)"
                   >
-                    + Alt Başlık
+                    H2
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => insertMarkdown("\n\n### ", "\n\n", "Ara Başlık")}
+                    className="h-7 px-2 text-xs font-bold"
+                    title="Seçili metni H3 Markdown alt başlığı yapar (### Başlık)"
+                  >
+                    H3
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => insertMarkdown("**", "**", "kalın metin")}
+                    className="h-7 px-2 text-xs font-bold"
+                    title="Metni kalın yapar (**metin**)"
+                  >
+                    B
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => insertMarkdown("\n\n> ", "\n\n", "Önemli açıklama veya sanatçı alıntısı...")}
+                    className="h-7 px-2 text-xs"
+                    title="Alıntı kutusu ekler (> alıntı)"
+                  >
+                    &ldquo; &rdquo;
                   </Button>
 
                   <label className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border border-input bg-background px-2.5 text-xs font-medium hover:bg-accent hover:text-accent-foreground">
@@ -597,7 +703,7 @@ export function NewsForm({
                     ) : (
                       <Upload className="h-3.5 w-3.5" />
                     )}
-                    <span>Metne Görsel Ekle</span>
+                    <span className="hidden sm:inline">Metne Görsel Ekle</span>
                     <input
                       type="file"
                       accept="image/*"
