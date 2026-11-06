@@ -10,6 +10,10 @@ import { normalizeCitySlug } from "@/lib/cities/lookup";
 import { detectTurkishCityInText } from "@/lib/discovery/classify-content";
 import { uniqueEventSlug } from "@/lib/events/slug";
 import { cleanTicketUrl } from "@/lib/events/ticket-url";
+import {
+  isNonEventTitle,
+  resolveCuratedEventImage,
+} from "@/lib/events/artist-matcher";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { EventType } from "@/lib/events/types";
@@ -219,6 +223,11 @@ export async function extractEventsFromBulletin(input: {
     const item = parsedEvents[i];
     if (!item || !item.title) continue;
 
+    if (isNonEventTitle(item.title)) {
+      console.warn("Skipping non-event title from bulletin:", item.title);
+      continue;
+    }
+
     const baseSlug = uniqueEventSlug(item.title);
     let slug = baseSlug;
     let counter = 1;
@@ -232,10 +241,26 @@ export async function extractEventsFromBulletin(input: {
       slug = `${baseSlug.slice(0, 85)}-${counter++}`;
     }
 
-    const storedCover =
-      storedCoversPool.length > 0
-        ? storedCoversPool[i % storedCoversPool.length]
-        : imageUrls[0] || null;
+    const safeEventType: EventType = sanitizeEventType(
+      item.event_type,
+      `${item.title} ${item.summary || ""}`
+    );
+
+    // If there are multiple events from a bulletin, the bulletin's cover image
+    // is almost always a generic flyer or municipal building. Do NOT copy it to all sub-events!
+    const isMultiEventBulletin = parsedEvents.length > 1;
+    const storedCover = isMultiEventBulletin
+      ? resolveCuratedEventImage({
+          title: item.title,
+          summary: item.summary,
+          event_type: safeEventType,
+        })
+      : storedCoversPool[0] ||
+        resolveCuratedEventImage({
+          title: item.title,
+          summary: item.summary,
+          event_type: safeEventType,
+        });
 
     const cleanedTicket = cleanTicketUrl(item.ticket_url, input.url);
     const resolvedCity =
@@ -265,11 +290,6 @@ export async function extractEventsFromBulletin(input: {
       });
       continue;
     }
-
-    const safeEventType: EventType = sanitizeEventType(
-      item.event_type,
-      `${item.title} ${item.summary || ""}`
-    );
 
     const { data, error } = await supabaseAdmin
       .from("cultural_events")

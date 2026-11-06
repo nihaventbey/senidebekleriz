@@ -17,6 +17,10 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { slugify } from "@/lib/slugify";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
 import { extractEventsFromBulletin } from "@/lib/ai/extract-multi-events";
+import {
+  isNonEventTitle,
+  resolveCuratedEventImage,
+} from "@/lib/events/artist-matcher";
 
 function revalidateDiscoveryPaths() {
   try {
@@ -169,8 +173,27 @@ export async function importDiscoveryAsEvent(id: string) {
     });
   }
 
-  const storedCoverImage = await ensureStoredCoverImage(rawCover, "events", slug);
   const safeTitle = (imported.title || item.title || "Kültür Etkinliği").trim();
+
+  if (isNonEventTitle(safeTitle)) {
+    throw new Error(
+      `Bu içerik tekil bir etkinlik değil ("${safeTitle}"). Lütfen haber veya kültür yazısı olarak aktarın.`
+    );
+  }
+
+  const safeEventType = sanitizeEventType(
+    imported.event_type,
+    `${safeTitle} ${item.snippet || ""}`
+  );
+
+  const storedCoverImage = await ensureStoredCoverImage(rawCover, "events", slug);
+  const finalCoverImage =
+    storedCoverImage ||
+    resolveCuratedEventImage({
+      title: safeTitle,
+      summary: imported.summary || item.snippet,
+      event_type: safeEventType,
+    });
 
   const { data, error } = await supabaseAdmin
     .from("cultural_events")
@@ -179,7 +202,7 @@ export async function importDiscoveryAsEvent(id: string) {
       slug,
       summary: (imported.summary || item.snippet || safeTitle).trim(),
       description: imported.description || item.snippet || null,
-      event_type: sanitizeEventType(imported.event_type, `${safeTitle} ${item.snippet || ""}`),
+      event_type: safeEventType,
       status: "pending_review",
       source_name: item.source_name,
       source_url: publisherUrl,
@@ -188,7 +211,7 @@ export async function importDiscoveryAsEvent(id: string) {
       venue_name: imported.venue_name || null,
       starts_at: sanitizeIsoDate(imported.starts_at),
       ends_at: sanitizeIsoDate(imported.ends_at),
-      cover_image: storedCoverImage,
+      cover_image: finalCoverImage,
       meta_title: imported.meta_title ? String(imported.meta_title).slice(0, 60) : null,
       meta_description: (
         imported.meta_description ||
