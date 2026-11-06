@@ -1,11 +1,11 @@
-import { getFeaturedNews, getPublishedNews } from "@/lib/data/news";
+import { getFeaturedNews, getPublishedNews, getNewsGroupedByCategory } from "@/lib/data/news";
 import { getPublishedEvents } from "@/lib/data/events";
 import { getPublishedArticles } from "@/lib/data/articles";
 import { getPopularCities } from "@/lib/data/cities";
 import { EditorialHero } from "@/components/home/editorial-hero";
+import { NetflixNewsRails } from "@/components/home/netflix-news-rails";
 import { HomeAgendaSection } from "@/components/home/home-agenda-section";
 import { CultureGuidesSection } from "@/components/home/culture-guides-section";
-import { CultureNewsSection } from "@/components/home/culture-news-section";
 import { PopularCitiesSection } from "@/components/home/popular-cities-section";
 import { AdBanner } from "@/components/ads/ad-banner";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -14,20 +14,19 @@ import { getSiteUrl } from "@/lib/agents/site";
 export const revalidate = 7200; // 2 hours Edge CDN caching (revalidated on-demand on content publish)
 
 export default async function HomePage() {
-  const [featuredNews, allLatestNews, upcomingEvents, publishedArticles, popularCities] =
+  const [featuredNews, allLatestNews, upcomingEvents, publishedArticles, popularCities, groupedNews] =
     await Promise.all([
       getFeaturedNews(4),
       getPublishedNews({ limit: 12 }),
       getPublishedEvents({ limit: 16 }),
       getPublishedArticles(6),
       getPopularCities(6),
+      getNewsGroupedByCategory(8),
     ]);
 
   const featuredIds = new Set(featuredNews.map((n) => n.id));
   const remainingNews = allLatestNews.filter((n) => !featuredIds.has(n.id));
   const headlineNews = remainingNews.slice(0, 4);
-  const feedNews = remainingNews.slice(4, 10);
-  const displayNews = feedNews.length > 0 ? feedNews : remainingNews;
 
   const siteUrl = getSiteUrl();
 
@@ -76,17 +75,17 @@ export default async function HomePage() {
         style={{ display: "block", minHeight: "90px", width: "100%" }}
       />
 
-      {/* 2. "Bu Hafta Ne Var?" Şehir & Tür Filtreli Ajanda */}
-      <HomeAgendaSection events={upcomingEvents} />
+      {/* 2. Netflix Tarzı Kategorik Kültür & Sanat Vitrini (Arkeoloji, Restorasyon, Sinema, Müze) */}
+      <NetflixNewsRails groupedNews={groupedNews} />
 
-      {/* 3. Kültür & Sanat Haberleri */}
-      <CultureNewsSection news={displayNews.length > 0 ? displayNews : allLatestNews} />
-
-      {/* 4. Kültür & Şehir Rehberleri */}
+      {/* 3. Kültür Dosyaları & Derinlemesine Şehir Rehberleri */}
       <CultureGuidesSection articles={publishedArticles} />
 
-      {/* 5. 81 İl Kültür Rotası */}
+      {/* 4. 81 İl Kültür Rotası */}
       <PopularCitiesSection cities={popularCities} />
+
+      {/* 5. Güncel Kültür Ajandası (Yaklaşan Etkinlikler - AI beslemeli) */}
+      <HomeAgendaSection events={upcomingEvents} />
 
       {/* Reklam - Footer Öncesi Banner (Reklam pasifken sıfır boşluk) */}
       <AdBanner

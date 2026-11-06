@@ -36,7 +36,7 @@ type CityOption = { slug: string; name: string };
 
 const CATEGORY_OPTIONS = [
   { value: "arkeoloji", label: "🏛️ Arkeoloji & Kazı" },
-  { value: "restorasyon", label: "🏰 Restorasyon & Tarih" },
+  { value: "restorasyon", label: "🏰 Tarihi Miras & Restorasyon" },
   { value: "muze_sergi", label: "🖼️ Müze & Sergi" },
   { value: "sinema", label: "🎬 Sinema & Görsel Sanatlar" },
   { value: "kultur_sanat", label: "🎨 Kültür & Sanat" },

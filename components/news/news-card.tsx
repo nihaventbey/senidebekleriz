@@ -6,9 +6,9 @@ import { CulturalCoverPlaceholder } from "@/components/ui/cultural-cover-placeho
 
 export const NEWS_CATEGORY_LABELS: Record<NewsCategory, string> = {
   arkeoloji: "🏛️ Arkeoloji & Kazı",
-  restorasyon: "🏰 Restorasyon & Tarih",
+  restorasyon: "🏰 Tarihi Miras & Restorasyon",
   muze_sergi: "🖼️ Müze & Sergi",
-  sinema: "🎬 Sinema & Film",
+  sinema: "🎬 Sinema & Görsel Sanatlar",
   kultur_sanat: "🎨 Kültür & Sanat",
   festival_haberleri: "🎪 Festival Gündemi",
   genel: "📰 Genel Kültür",

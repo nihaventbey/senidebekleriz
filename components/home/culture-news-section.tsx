@@ -6,12 +6,12 @@ import type { PublicNewsArticle } from "@/lib/data/news";
 
 const CATEGORY_LABELS: Record<string, string> = {
   arkeoloji: "Arkeoloji & Kazı",
-  restorasyon: "Tarihi Miras",
+  restorasyon: "Tarihi Miras & Restorasyon",
   muze_sergi: "Müze & Sergi",
-  sinema: "Sinema & Film",
+  sinema: "Sinema & Görsel Sanatlar",
   kultur_sanat: "Kültür & Sanat",
-  festival_haberleri: "Festival",
-  genel: "Kültür Gündemi",
+  festival_haberleri: "Festival Gündemi",
+  genel: "Genel Kültür",
 };
 
 function formatDate(iso: string | null) {

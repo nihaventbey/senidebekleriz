@@ -142,15 +142,15 @@ KURUMSAL YAYINCILIK, EDİTÖRYAL DÜZEN VE AIO KURALLARI:
 3. GÜRÜLTÜ VE YAN HABERLERİ TEMİZLEME (KESİN YASAK):
    - Kaynak sayfa içinde yerel sitelerden veya arayüzden sızmış olabilecek alakasız yan haberleri (örneğin başka şehirlerin haberleri, gezi notları, hava durumu, fuar duyuruları veya yazar köşe yazısı anonsları) KESİNLİKLE metne dahil etme! Sadece ve sadece ana haber konusunu işle.
 
-4. 5N1K ÖZET (summary) VE GİRİŞ:
-   - "summary" alanı 130-160 karakter arası, 5N1K kuralına uygun, MUTLAKA tam ve eksiksiz bir cümle (asla yarıda kesilmemiş, sonu nokta ile biten) SEO uyumlu haber spotu olmalıdır (Ne, Nerede, Kim, Ne Zaman). Google News ve yapay zeka arama motorları için referans niteliğinde olmalıdır.
+4. 5N1K ZENGİN HABER SPOTU (summary) VE GİRİŞ:
+   - "summary" alanı 240-340 karakter arası (yaklaşık 35-50 kelime), 5N1K kuralına uygun, 2-3 akıcı ve tam cümleden oluşan, sonu mutlaka nokta ile biten zengin ve doyurucu bir editoryal haber spotu olmalıdır (Ne, Nerede, Kim, Ne Zaman, Nasıl/Niçin). Haberin özünü, kültürel ve tarihsel önemini eksiksiz aktarmalı; asla tek bir kısa cümleyle veya yüzeysel bir özetle geçiştirilmemelidir. Google News, Google Discover ve arama motoru snippet'ları için tam referans niteliğinde olmalıdır.
    - Haber metninin ("content") ilk paragrafı güçlü bir editoryal giriş olmalı, "summary" alanını kelimesi kelimesine kopyalamamalıdır.
 
 5. ÇIKTI FORMATI:
    - Yanıt YALNIZCA geçerli bir JSON objesi olmalıdır:
 {
   "title": "60-90 karakter arası, kurumsal, çarpıcı ve SEO uyumlu Türkçe haber başlığı",
-  "summary": "130-160 karakter arası, 5N1K kuralına uygun, tam bir cümle olarak biten (asla yarım bırakılmamış) SEO uyumlu haber spotu",
+  "summary": "240-340 karakter arası, 5N1K kuralına uygun, 2-3 tam cümle içeren doyurucu ve zengin SEO uyumlu haber spotu",
   "content": "Haberin bağlamına uygun 2-4 derli toplu ## alt başlık ve kurumsal paragraflarla yazılmış Markdown haber metni",
   "category": "arkeoloji | restorasyon | muze_sergi | sinema | kultur_sanat | festival_haberleri | genel",
   "city_slug": "Haberin geçtiği ilin küçük harfli Türkçe karakter içermeyen slug'ı (örn: trabzon, canakkale, istanbul) veya genel ise null",
@@ -254,7 +254,7 @@ export async function generateNewsDraft(
     );
 
     const cleanContent = stripRawHtmlFromMarkdown(parsed.content || "");
-    const cleanSummary = formatSeoSummary(cleanPublisherSuffixes(parsed.summary || cleanTitle), 220);
+    const cleanSummary = formatSeoSummary(cleanPublisherSuffixes(parsed.summary || cleanTitle), 350);
     const wordCount = cleanContent.split(/\s+/).filter(Boolean).length;
 
     return {
@@ -325,7 +325,7 @@ export async function generateNewsDraft(
       leadSummary ||
         input.fallbackText ||
         `${cleanFallbackTitle} hakkında kültür ve sanat gelişmeleri.`,
-      200
+      350
     );
 
     const bodyBlocks =

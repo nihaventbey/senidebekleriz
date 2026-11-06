@@ -19,9 +19,9 @@ type City = { id: string; name: string; slug: string };
 const CATEGORY_TABS = [
   { key: "all", label: "Tüm Haberler", emoji: "📰" },
   { key: "arkeoloji", label: "Arkeoloji & Kazı", emoji: "🏛️" },
-  { key: "restorasyon", label: "Restorasyon & Tarih", emoji: "🏰" },
+  { key: "restorasyon", label: "Tarihi Miras & Restorasyon", emoji: "🏰" },
   { key: "muze_sergi", label: "Müze & Sergi", emoji: "🖼️" },
-  { key: "sinema", label: "Sinema & Film", emoji: "🎬" },
+  { key: "sinema", label: "Sinema & Görsel Sanatlar", emoji: "🎬" },
   { key: "kultur_sanat", label: "Kültür & Sanat", emoji: "🎨" },
   { key: "festival_haberleri", label: "Festival Gündemi", emoji: "🎪" },
 ] as const;

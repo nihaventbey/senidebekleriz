@@ -195,3 +195,31 @@ export async function getNewsSlugs(): Promise<
     updatedAt: row.updated_at,
   }));
 }
+
+export async function getNewsGroupedByCategory(
+  limitPerCategory = 10
+): Promise<Record<NewsCategory, PublicNewsArticle[]>> {
+  const { data, error } = await supabaseAdmin
+    .from("cultural_news")
+    .select("*")
+    .eq("is_published", true)
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return {} as Record<NewsCategory, PublicNewsArticle[]>;
+
+  const grouped: Partial<Record<NewsCategory, PublicNewsArticle[]>> = {};
+
+  for (const row of data) {
+    const item = mapNews(row as CulturalNewsRow);
+    const cat = item.category || "genel";
+    if (!grouped[cat]) {
+      grouped[cat] = [];
+    }
+    if ((grouped[cat]?.length || 0) < limitPerCategory) {
+      grouped[cat]!.push(item);
+    }
+  }
+
+  return grouped as Record<NewsCategory, PublicNewsArticle[]>;
+}
