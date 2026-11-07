@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Search, X, Newspaper, Sparkles, Building2, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -44,13 +45,22 @@ export function NewsExplorer({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
   const [selectedCity, setSelectedCity] = useState<string>(initialCity);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    setSelectedCategory(initialCategory || "all");
+    if (!searchParams) return;
+    const cat = searchParams.get("kategori");
+    const cty = searchParams.get("sehir");
+    if (cat) setSelectedCategory(cat);
+    if (cty) setSelectedCity(cty);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (initialCategory && initialCategory !== "all") setSelectedCategory(initialCategory);
   }, [initialCategory]);
 
   useEffect(() => {
-    setSelectedCity(initialCity || "all");
+    if (initialCity && initialCity !== "all") setSelectedCity(initialCity);
   }, [initialCity]);
 
   const filteredNews = useMemo(() => {

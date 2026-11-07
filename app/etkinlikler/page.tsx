@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Metadata } from "next";
 import { getPublishedEvents } from "@/lib/data/events";
 import { getAllCities } from "@/lib/data/cities";
@@ -23,22 +24,13 @@ export const metadata: Metadata = {
 
 export const revalidate = 3600;
 
-type Props = {
-  searchParams: Promise<{ sehir?: string; tip?: string; tur?: string; zaman?: string }>;
-};
-
-export default async function EventsPage({ searchParams }: Props) {
-  const { sehir, tip, tur, zaman } = await searchParams;
+export default async function EventsPage() {
   const [events, cities] = await Promise.all([
     getPublishedEvents({
       limit: 120,
     }),
     getAllCities(),
   ]);
-
-  const resolvedType = tip || tur || "all";
-  const resolvedDateFilter =
-    zaman === "haftasonu" ? "haftasonu" : "all";
 
   return (
     <div className="pb-16">
@@ -50,14 +42,13 @@ export default async function EventsPage({ searchParams }: Props) {
       />
       <EventsJsonLd events={events} />
 
-      <EventsExplorer
-        initialEvents={events}
-        cities={cities}
-        initialCity={sehir || "all"}
-        initialType={resolvedType}
-        initialDateFilter={resolvedDateFilter}
-        showHeatmap={true}
-      />
+      <Suspense fallback={<div className="container mx-auto px-4 py-8 animate-pulse text-muted-foreground">Etkinlikler yükleniyor...</div>}>
+        <EventsExplorer
+          initialEvents={events}
+          cities={cities}
+          showHeatmap={true}
+        />
+      </Suspense>
     </div>
   );
 }

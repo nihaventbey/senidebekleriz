@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { TurkeyCulturalHeatmap } from "@/components/maps/turkey-cultural-heatmap";
 import {
   Calendar,
@@ -145,17 +146,29 @@ export function EventsExplorer({
   const [selectedCity, setSelectedCity] = useState<string>(initialCity);
   const [selectedDateFilter, setSelectedDateFilter] = useState<string>(initialDateFilter);
   const [onlyFree, setOnlyFree] = useState<boolean>(false);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    setSelectedCity(initialCity || "all");
+    if (!searchParams) return;
+    const urlCity = searchParams.get("sehir");
+    const urlType = searchParams.get("tip") || searchParams.get("tur");
+    const urlZaman = searchParams.get("zaman");
+
+    if (urlCity) setSelectedCity(urlCity);
+    if (urlType) setSelectedType(urlType);
+    if (urlZaman) setSelectedDateFilter(urlZaman === "haftasonu" ? "haftasonu" : "all");
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (initialCity && initialCity !== "all") setSelectedCity(initialCity);
   }, [initialCity]);
 
   useEffect(() => {
-    setSelectedType(initialType || "all");
+    if (initialType && initialType !== "all") setSelectedType(initialType);
   }, [initialType]);
 
   useEffect(() => {
-    setSelectedDateFilter(initialDateFilter || "all");
+    if (initialDateFilter && initialDateFilter !== "all") setSelectedDateFilter(initialDateFilter);
   }, [initialDateFilter]);
 
   // Filtering & Sorting

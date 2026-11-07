@@ -22,17 +22,17 @@ const nextConfig: NextConfig = {
       {
         source: "/mekan/:slug",
         destination: "/etkinlikler",
-        permanent: false,
+        permanent: true,
       },
       {
         source: "/kategori/:slug",
         destination: "/haberler",
-        permanent: false,
+        permanent: true,
       },
       {
         source: "/kategoriler",
         destination: "/haberler",
-        permanent: false,
+        permanent: true,
       },
     ];
   },

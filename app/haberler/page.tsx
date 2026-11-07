@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Metadata } from "next";
 import { getPublishedNews, getFeaturedNews } from "@/lib/data/news";
 import { getAllCities } from "@/lib/data/cities";
@@ -24,12 +25,7 @@ export const metadata: Metadata = {
 // 2 hours Edge CDN caching (revalidated on-demand on news publish)
 export const revalidate = 7200;
 
-type Props = {
-  searchParams: Promise<{ kategori?: string; sehir?: string }>;
-};
-
-export default async function NewsPage({ searchParams }: Props) {
-  const { kategori, sehir } = await searchParams;
+export default async function NewsPage() {
   const [allNews, featuredNews, cities] = await Promise.all([
     getPublishedNews({ limit: 60 }),
     getFeaturedNews(4),
@@ -55,13 +51,13 @@ export default async function NewsPage({ searchParams }: Props) {
         </p>
       </div>
 
-      <NewsExplorer
-        initialNews={allNews}
-        featuredNews={featuredNews}
-        cities={cities}
-        initialCategory={kategori || "all"}
-        initialCity={sehir || "all"}
-      />
+      <Suspense fallback={<div className="py-8 text-muted-foreground animate-pulse">Haberler yükleniyor...</div>}>
+        <NewsExplorer
+          initialNews={allNews}
+          featuredNews={featuredNews}
+          cities={cities}
+        />
+      </Suspense>
     </div>
   );
 }

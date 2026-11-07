@@ -19,50 +19,50 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
+  // Admin routes protection - only run Supabase auth on /yonetim routes to avoid burning CPU on public visits
+  if (pathname.startsWith("/yonetim")) {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              request.cookies.set(name, value);
+              response.cookies.set(name, value, options);
+            });
+          },
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            request.cookies.set(name, value);
-            response.cookies.set(name, value, options);
-          });
-        },
-      },
-    }
-  );
+      }
+    );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  // Admin routes protection
-  if (pathname.startsWith("/yonetim") && pathname !== "/yonetim/giris") {
-    if (!user) {
+    if (pathname !== "/yonetim/giris") {
+      if (!user) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/yonetim/giris";
+        return NextResponse.redirect(url);
+      }
+
+      // Check admin role in user metadata
+      const role = user.user_metadata?.role;
+      if (role !== "admin") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/yonetim/giris";
+        return NextResponse.redirect(url);
+      }
+    } else if (user?.user_metadata?.role === "admin") {
+      // Redirect authenticated admins away from login page
       const url = request.nextUrl.clone();
-      url.pathname = "/yonetim/giris";
+      url.pathname = "/yonetim";
       return NextResponse.redirect(url);
     }
-
-    // Check admin role in user metadata
-    const role = user.user_metadata?.role;
-    if (role !== "admin") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/yonetim/giris";
-      return NextResponse.redirect(url);
-    }
-  }
-
-  // Redirect authenticated admins away from login page
-  if (pathname === "/yonetim/giris" && user?.user_metadata?.role === "admin") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/yonetim";
-    return NextResponse.redirect(url);
   }
 
   if (pathname === "/") {

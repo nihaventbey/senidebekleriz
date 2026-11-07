@@ -90,17 +90,16 @@ export const EVENT_CATEGORY_META: Record<
 
 type Props = {
   params: Promise<{ kategori: string }>;
-  searchParams: Promise<{ sehir?: string; tip?: string }>;
 };
 
 export async function generateStaticParams() {
   const categorySlugs = Object.keys(EVENT_CATEGORY_META).map((kategori) => ({
     kategori,
   }));
-  const popularCitySlugs = ["istanbul", "ankara", "izmir", "antalya", "bursa"].map(
-    (kategori) => ({ kategori })
-  );
-  return [...categorySlugs, ...popularCitySlugs];
+  const citySlugs = turkeyCities.map((c) => ({
+    kategori: c.slug,
+  }));
+  return [...categorySlugs, ...citySlugs];
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -152,10 +151,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function EventCategoryOrCityPage({
   params,
-  searchParams,
 }: Props) {
   const { kategori } = await params;
-  const { sehir, tip } = await searchParams;
   const lower = kategori.toLowerCase();
 
   const categoryMeta = EVENT_CATEGORY_META[lower];
@@ -166,8 +163,8 @@ export default async function EventCategoryOrCityPage({
     notFound();
   }
 
-  const effectiveType = categoryMeta ? categoryMeta.typeSlug : (tip || "all");
-  const effectiveCity = isCity ? lower : (sehir || "all");
+  const effectiveType = categoryMeta ? categoryMeta.typeSlug : "all";
+  const effectiveCity = isCity ? lower : "all";
 
   const [events, cities] = await Promise.all([
     getPublishedEvents({
