@@ -2,7 +2,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import {
   importDiscoveryAsEvent,
   importDiscoveryAsNews,
-} from "@/lib/actions/discovery";
+} from "@/lib/discovery/service";
 import { revalidatePath } from "next/cache";
 
 export type AutopilotStatus = {

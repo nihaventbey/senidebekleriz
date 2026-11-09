@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getBrandSettings } from "@/lib/data/site-settings";
+import { fetchPublicResource } from "@/lib/security/public-fetch";
 
 // Edge CDN Caching: Prevent hundreds of thousands of useless serverless function invocations
 export const revalidate = 86400;
@@ -14,13 +15,14 @@ export async function GET() {
   try {
     const brand = await getBrandSettings();
     if (brand?.faviconUrl) {
-      const res = await fetch(brand.faviconUrl, {
+      const res = await fetchPublicResource(brand.faviconUrl, {
         headers: { "User-Agent": "SeniDeBekleriz/1.0 Favicon" },
+        maxBytes: 1024 * 1024,
       });
       if (res.ok) {
         const contentType = res.headers.get("content-type") || "image/x-icon";
         const buffer = await res.arrayBuffer();
-        return new NextResponse(buffer, {
+        return new NextResponse(new Uint8Array(buffer), {
           headers: {
             "Content-Type": contentType,
             "Cache-Control": "public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000",

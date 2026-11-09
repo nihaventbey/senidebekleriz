@@ -9,10 +9,10 @@ Türkiye'nin müzeleri, tarihi yerleri, sanat mekanları ve kültürel duraklar�
 
 ## Keşfet
 
-- [Şehirler](${site}/sehirler) — 81 il kültür rehberi
-- [Kategoriler](${site}/kategoriler) — müze, tarih, sanat, park
-- [Etkinlikler](${site}/etkinlikler) — kültür ve sanat gündemi
-- [Gezi Rehberi](${site}/blog) — editör yazıları
+- [Haberler](${site}/haberler) — güncel kültür & sanat haberleri
+- [Etkinlikler](${site}/etkinlikler) — canlı etkinlik ajandası ve takvim
+- [Gezi Rehberi](${site}/blog) — derinlemesine kültür ve tarih rehberleri
+- [Şehirler](${site}/sehirler) — 81 il kültür rotası ve ajandası
 
 ## Public API
 

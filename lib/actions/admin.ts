@@ -1,5 +1,7 @@
 "use server";
 
+import { requireAdmin } from "@/lib/auth/admin";
+
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -7,6 +9,7 @@ import { slugify } from "@/lib/slugify";
 
 // Cities
 export async function createCity(formData: FormData) {
+  await requireAdmin();
   const coverImage = (formData.get("cover_image") as string) || null;
   const newSlug = slugify(formData.get("slug") as string);
   const data = {
@@ -38,6 +41,7 @@ export async function createCity(formData: FormData) {
 }
 
 export async function updateCity(slug: string, formData: FormData) {
+  await requireAdmin();
   const coverImage = (formData.get("cover_image") as string) || null;
   const newSlug = slugify(formData.get("slug") as string);
   const data = {
@@ -74,6 +78,7 @@ export async function updateCity(slug: string, formData: FormData) {
 }
 
 export async function deleteCity(id: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin.from("cities").delete().eq("id", id);
   if (error) throw new Error(error.message);
 
@@ -83,6 +88,7 @@ export async function deleteCity(id: string) {
 
 // Categories
 export async function createCategory(formData: FormData) {
+  await requireAdmin();
   const data = {
     name: formData.get("name") as string,
     slug: slugify(formData.get("slug") as string),
@@ -100,6 +106,7 @@ export async function createCategory(formData: FormData) {
 }
 
 export async function updateCategory(slug: string, formData: FormData) {
+  await requireAdmin();
   const data = {
     name: formData.get("name") as string,
     slug: slugify(formData.get("slug") as string),
@@ -120,6 +127,7 @@ export async function updateCategory(slug: string, formData: FormData) {
 }
 
 export async function deleteCategory(id: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin
     .from("categories")
     .delete()
@@ -132,6 +140,7 @@ export async function deleteCategory(id: string) {
 
 // Places
 export async function createPlace(formData: FormData) {
+  await requireAdmin();
   const { data: city } = await supabaseAdmin
     .from("cities")
     .select("id")
@@ -190,6 +199,7 @@ export async function createPlace(formData: FormData) {
 }
 
 export async function updatePlace(slug: string, formData: FormData) {
+  await requireAdmin();
   const newSlug = slugify(formData.get("slug") as string);
   const coverImage = (formData.get("cover_image") as string) || null;
   const placeData = {
@@ -246,6 +256,7 @@ export async function updatePlace(slug: string, formData: FormData) {
 }
 
 export async function deletePlace(id: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin.from("places").delete().eq("id", id);
   if (error) throw new Error(error.message);
 
@@ -254,6 +265,7 @@ export async function deletePlace(id: string) {
 }
 
 export async function bulkDeletePlaces(ids: string[]) {
+  await requireAdmin();
   if (!ids || ids.length === 0) return { success: true, count: 0 };
 
   const { error } = await supabaseAdmin.from("places").delete().in("id", ids);
@@ -265,6 +277,7 @@ export async function bulkDeletePlaces(ids: string[]) {
 }
 
 export async function bulkToggleActivePlaces(ids: string[], isActive: boolean) {
+  await requireAdmin();
   if (!ids || ids.length === 0) return { success: true, count: 0 };
 
   const { error } = await supabaseAdmin
@@ -281,6 +294,7 @@ export async function bulkToggleActivePlaces(ids: string[], isActive: boolean) {
 
 // Pages
 export async function createPage(formData: FormData) {
+  await requireAdmin();
   const data = {
     title: formData.get("title") as string,
     slug: slugify(formData.get("slug") as string),
@@ -299,6 +313,7 @@ export async function createPage(formData: FormData) {
 }
 
 export async function updatePage(slug: string, formData: FormData) {
+  await requireAdmin();
   const data = {
     title: formData.get("title") as string,
     slug: slugify(formData.get("slug") as string),
@@ -320,6 +335,7 @@ export async function updatePage(slug: string, formData: FormData) {
 }
 
 export async function publishPage(id: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin
     .from("pages")
     .update({
@@ -334,6 +350,7 @@ export async function publishPage(id: string) {
 }
 
 export async function unpublishPage(id: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin
     .from("pages")
     .update({
@@ -348,6 +365,7 @@ export async function unpublishPage(id: string) {
 }
 
 export async function deletePage(id: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin.from("pages").delete().eq("id", id);
   if (error) throw new Error(error.message);
 
@@ -377,6 +395,7 @@ function revalidateAdPaths() {
 }
 
 export async function updateAdPlacement(id: string, formData: FormData) {
+  await requireAdmin();
   const data = parseAdPlacementForm(formData);
 
   let { error } = await supabaseAdmin
@@ -399,6 +418,7 @@ export async function updateAdPlacement(id: string, formData: FormData) {
 }
 
 export async function createAdPlacement(formData: FormData) {
+  await requireAdmin();
   const data = parseAdPlacementForm(formData);
 
   let { error } = await supabaseAdmin.from("ad_placements").insert(data);
@@ -415,6 +435,7 @@ export async function createAdPlacement(formData: FormData) {
 }
 
 export async function deleteAdPlacement(id: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin
     .from("ad_placements")
     .delete()
@@ -425,6 +446,7 @@ export async function deleteAdPlacement(id: string) {
 }
 
 export async function toggleAdPlacementActive(id: string, isActive: boolean) {
+  await requireAdmin();
   const { error } = await supabaseAdmin
     .from("ad_placements")
     .update({ is_active: isActive })
@@ -435,6 +457,7 @@ export async function toggleAdPlacementActive(id: string, isActive: boolean) {
 }
 
 export async function bulkToggleAdPlacements(ids: string[], isActive: boolean) {
+  await requireAdmin();
   if (!ids || ids.length === 0) return { success: true, count: 0 };
 
   const { error } = await supabaseAdmin
@@ -448,6 +471,7 @@ export async function bulkToggleAdPlacements(ids: string[], isActive: boolean) {
 }
 
 export async function toggleAllAdPlacements(isActive: boolean) {
+  await requireAdmin();
   const { error } = await supabaseAdmin
     .from("ad_placements")
     .update({ is_active: isActive })
@@ -459,6 +483,7 @@ export async function toggleAllAdPlacements(isActive: boolean) {
 }
 
 export async function invertAllAdPlacements() {
+  await requireAdmin();
   const { data, error: fetchErr } = await supabaseAdmin
     .from("ad_placements")
     .select("id, is_active");
@@ -480,6 +505,7 @@ export async function invertAllAdPlacements() {
 }
 
 export async function bulkDeleteAdPlacements(ids: string[]) {
+  await requireAdmin();
   if (!ids || ids.length === 0) return { success: true, count: 0 };
 
   const { error } = await supabaseAdmin

@@ -7,9 +7,13 @@ import {
   resolveFallbackCulturalImage,
 } from "@/lib/ai/extract-page-images";
 import { normalizeCitySlug } from "@/lib/cities/lookup";
-import { slugify } from "@/lib/slugify";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
 import { formatSeoSummary } from "@/lib/utils";
+import {
+  cleanPublisherText,
+  cleanNewsSlug,
+  stripDatelineFromParagraph,
+} from "@/lib/ai/clean-publisher";
 
 export type NewsDepth = "standard" | "deep" | "comprehensive";
 
@@ -50,15 +54,6 @@ const VALID_CATEGORIES = new Set([
   "festival_haberleri",
   "genel",
 ]);
-
-function cleanPublisherSuffixes(text: string): string {
-  return text
-    .replace(
-      /\s*[-|–—]\s*(Anadolu Ajansı|AA|TRT Haber|Hürriyet|Milliyet Sanat|Milliyet|Sabah|Sözcü|Cumhuriyet|NTV|Habertürk|CNN Türk|Euronews|BBC News Türkçe|Bianet|Diken|Gazete Duvar|T24|BirGün|Kültür Portalı|T\.C\. Kültür ve Turizm Bakanlığı|Arkeofili|Arkitera|Sanat Atak|Argonotlar).*$/i,
-      ""
-    )
-    .trim();
-}
 
 function stripRawHtmlFromMarkdown(md: string): string {
   return md
@@ -115,53 +110,62 @@ function toTurkishTitleCase(str: string): string {
 function buildSystemPrompt(depth: NewsDepth = "standard"): string {
   const depthInstructions: Record<NewsDepth, string> = {
     standard:
-      "Hedef uzunluk: 350 - 550 kelime. Kaynaktaki tüm somut verileri, açıklamaları ve kültürel bağlamı eksiksiz, akıcı ve kurumsal bir dille aktaran odaklı haber metni.",
+      "HEDEF UZUNLUK: 350 - 550 kelime. Kaynaktaki tüm somut verileri, uzman ve yetkili açıklamalarını ve kültürel bağlamı eksiksiz, akıcı ve kurumsal bir dille aktaran odaklı kültür-sanat haberi.",
     deep:
-      "Hedef uzunluk: 500 - 800 kelime. Kaynaktaki tüm somut bilgileri, yetkili/sanatçı açıklamalarını ve konunun sanatsal veya tarihsel arka planını derinlemesine işleyen kapsamlı kültür-sanat haberi.",
+      "HEDEF UZUNLUK: 550 - 850 kelime. Kaynaktaki tüm somut bilgileri, yetkili/sanatçı açıklamalarını ve konunun sanatsal veya tarihsel arka planını derinlemesine işleyen kapsamlı kültür-sanat haberi.",
     comprehensive:
-      "Hedef uzunluk: 800 - 1200 kelime. Konunun tüm boyutlarını, arka planını, uzman değerlendirmelerini ve Türkiye kültür-sanat dünyasındaki yerini derli toplu alt başlıklarla ele alan kapsamlı dosya haberi.",
+      "HEDEF UZUNLUK: 850 - 1300 kelime. Konunun tüm boyutlarını, tarihsel arka planını, uzman değerlendirmelerini ve Türkiye kültür-sanat dünyasındaki yerini derli toplu alt başlıklarla ele alan kapsamlı dosya haberi.",
   };
 
-  return `Sen Türkiye'nin saygın kültür ve sanat yayını "Seni de Bekleriz"in (senidebekleriz.com) kıdemli kültür-sanat editörüsün.
-Verilen kaynak sayfa içeriğini dikkatle inceleyip, kurumsal bir üslup, edebi ciddiyet ve gazetecilik standartlarında akıcı bir Türkçe haber metni hazırlayacaksın.
+  return `Sen Türkiye'nin en seçkin kültür, sanat, tarih ve arkeoloji portalı "Seni de Bekleriz"in (senidebekleriz.com) kıdemli baş editörü ve kültür gazetecisisin.
+Görevin: Verilen kaynak içerikten hareketle, ajans kopyacılığından uzak, edebi ciddiyet, yüksek editoryal kalite ve kurumsal gazetecilik standartlarında akıcı bir Türkçe haber hazırlamaktır.
 
 ${depthInstructions[depth]}
 
-KURUMSAL YAYINCILIK, EDİTÖRYAL DÜZEN VE AIO KURALLARI:
-1. DERLİ TOPLU VE BAĞLAMSAL BAŞLIK MİMARİSİ (ZORUNLU):
-   - Metin ASLA alt başlıksız düz paragraf yığını olamaz! Giriş paragrafından sonra haberin farklı boyutlarını, sanatçı/yetkili açıklamalarını ve tarihsel/sanatsal detaylarını ele alan 2 ila 4 adet anlamlı "## Alt Başlık" (Markdown H2) kullan.
-   - Her "## Alt Başlık" altında en az 2-3 doyurucu, birbiriyle mantıksal bağı olan güçlü paragraf yer almalıdır. Cümle cümle başlık atmak kesinlikle yasaktır.
-   - Giriş paragrafının hemen üstüne başlık ATMA; ilk paragraf daima başlıksız editoryal giriş olmalıdır.
-   - Başlıklar o bölümde anlatılan konuyu kurumsal ve edebi bir dille yansıtmalıdır (Örn: "## Yaşam Boyu Onur Ödülü Türkan Şoray'a Takdim Edilecek", "## Cüneyt Gökçer Sahnesi Kasımda Perdelerini Açıyor", "## Türk Dünyasını Buluşturan Uluslararası Proje: Geçit").
-   - ASLA kalıp veya şablon başlıklar ("## Gelişmeler ve Kültürel Detaylar", "## Program, Mekân ve Katılım Bilgileri", "## Kaynak ve Detaylar", "## Merak Edilenler") kullanma.
+═══════════════════════════════════════════════════════════════════
+KATI EDİTÖRYAL YAYIN İLKELERİ VE HABER MİMARİSİ
+═══════════════════════════════════════════════════════════════════
 
-2. KURUMSAL VE SAYGIN DİL:
-   - Dil; saygın, duru, tarafsız ve kurumsal kültür gazeteciliği standardında olmalıdır.
-   - Basit ajans kopyalamasından veya magazin üslubundan kaçın; cümleleri birbirine mantıksal bağlaçlarla akıcı şekilde bağla.
+1. BAĞLAM ANALİZİ VE GÜRÜLTÜYÜ TEMİZLEME (EN KRİTİK KURAL):
+   - Kaynak metin web sitelerinden kazınmış olabilir; içinde arayüz kalıntıları, başka şehirlere ait yan haberler, hava durumu, reklam sloganları, siyasi polemikler veya magazin detayları bulunabilir.
+   - SADECE ve SADECE haberin ana kültür, sanat, arkeoloji, restorasyon, müze veya festival konusunu tespit et ve işle.
+   - Kaynak metindeki somut verileri (yer adları, tarihler, kişi isimleri, kazı başkanı, müze adı, eser ismi, kullanılan teknikler, katılım koşulları) EKSİKSİZ koru; uydurma bilgi ekleme.
+   - "İSTANBUL (AA) -", "İHA'nın bildirdiğine göre", "DHA muhabirine konuşan" gibi ajans ibarelerini ve şehir dateline'larını KESİNLİKLE METNE DAHİL ETME. Olayı doğrudan bağımsız kültür yayını üslubuyla aktar.
 
-3. GÜRÜLTÜ VE YAN HABERLERİ TEMİZLEME (KESİN YASAK):
-   - Kaynak sayfa içinde yerel sitelerden veya arayüzden sızmış olabilecek alakasız yan haberleri (örneğin başka şehirlerin haberleri, gezi notları, hava durumu, fuar duyuruları veya yazar köşe yazısı anonsları) KESİNLİKLE metne dahil etme! Sadece ve sadece ana haber konusunu işle.
+2. BAŞLIKLANDIRMA (TITLE) STANDARTLARI:
+   - 60 - 90 karakter arası, doğrudan, bilgilendirici, kurumsal ve SEO uyumlu Türkçe başlık oluştur.
+   - Başlık ASLA ajans adı ("AA", "İHA", "DHA", "ANKA", "TRT", "Reuters"), gazete adı ("Hürriyet", "Sabah") veya tırnak işaretli yüzeysel kalıplar içeremez!
+   - Sansasyonel, klik tuzağı (clickbait) soru cümleleri ("Açıldı mı?", "Bunu biliyor muydunuz?", "Şok gelişme!") KESİNLİKLE YASAKTIR.
+   - Başlık haberin asıl kültürel yeniliğini ve değerini etken çatı ile okuyucuya vermelidir (Örn: "Ayasofya'da 1500 Yıllık Mozaiklerin Konservasyonu Tamamlandı", "Troya Kazılarında Tunç Çağına Ait Yeni Mühür Keşfedildi", "Antalya Altın Portakal Film Festivali 61. Kez Perdelerini Açıyor").
 
-4. 5N1K ZENGİN HABER SPOTU (summary) VE GİRİŞ:
-   - "summary" alanı 240-340 karakter arası (yaklaşık 35-50 kelime), 5N1K kuralına uygun, 2-3 akıcı ve tam cümleden oluşan, sonu mutlaka nokta ile biten zengin ve doyurucu bir editoryal haber spotu olmalıdır (Ne, Nerede, Kim, Ne Zaman, Nasıl/Niçin). Haberin özünü, kültürel ve tarihsel önemini eksiksiz aktarmalı; asla tek bir kısa cümleyle veya yüzeysel bir özetle geçiştirilmemelidir. Google News, Google Discover ve arama motoru snippet'ları için tam referans niteliğinde olmalıdır.
-   - Haber metninin ("content") ilk paragrafı güçlü bir editoryal giriş olmalı, "summary" alanını kelimesi kelimesine kopyalamamalıdır.
+3. 5N1K ZENGİN HABER SPOTU (SUMMARY):
+   - "summary" alanı 240 - 340 karakter arası (yaklaşık 35-50 kelime), 5N1K kuralına uygun (Ne, Nerede, Kim, Ne Zaman, Nasıl/Niçin), 2-3 akıcı ve tam Türkçe cümleden oluşan, sonu mutlaka nokta ile biten zengin bir haber spotu olmalıdır.
+   - Google News, Google Discover ve arama motoru özet kartları için referans kalitesinde olmalıdır. Asla tek bir kısa cümleyle veya yüzeysel bir özetle geçiştirilemez.
+   - Ajans veya kaynak isimleri içermez.
+
+4. HABER METNİ VE ALT BAŞLIK DÜZENİ (CONTENT):
+   - GİRİŞ PARAGRAFI: Habere güçlü, editoryal ve bağlamı kuran akıcı bir giriş paragrafıyla başla. Giriş paragrafının üstüne başlık KOYMA. Giriş paragrafı "summary" alanını kelimesi kelimesine kopyalamamalıdır.
+   - TEMATİK ALT BAŞLIKLAR: Girişten sonra haberin farklı boyutlarını, somut teknik detaylarını, yetkili/uzman açıklamalarını ve tarihsel önemini ele alan 2 ila 4 adet "## [Konuya Özgü Markdown Alt Başlık]" kullan.
+   - Her alt başlığın altında en az 2-3 doyurucu, birbiriyle bağlantılı güçlü paragraf yer almalıdır. Cümle cümle başlık atmak yasaktır.
+   - ASLA kalıp veya şablon başlıklar ("## Detaylar", "## Gelişmeler", "## Program ve Katılım", "## Kaynak ve Açıklamalar", "## Tarihçe") KULLANMA. Başlıklar o bölümün somut konusunu yansıtmalıdır (Örn: "## Kubbedeki Çelik İskele ve Deprem Güçlendirmesi", "## Kazı Heyetinden Helenistik Dönem Vurgusu").
+   - Markdown formatında temiz paragraflar ve ara başlıklar haricinde raw HTML (<font>, <table> vb.) kullanma.
 
 5. ÇIKTI FORMATI:
    - Yanıt YALNIZCA geçerli bir JSON objesi olmalıdır:
 {
-  "title": "60-90 karakter arası, kurumsal, çarpıcı ve SEO uyumlu Türkçe haber başlığı",
-  "summary": "240-340 karakter arası, 5N1K kuralına uygun, 2-3 tam cümle içeren doyurucu ve zengin SEO uyumlu haber spotu",
-  "content": "Haberin bağlamına uygun 2-4 derli toplu ## alt başlık ve kurumsal paragraflarla yazılmış Markdown haber metni",
+  "title": "60-90 karakter arası, kurumsal, doğrudan ve SEO uyumlu Türkçe haber başlığı (ajans adı içermez)",
+  "summary": "240-340 karakter arası, 5N1K kuralına uygun, 2-3 tam cümle içeren zengin haber spotu",
+  "content": "Giriş paragrafından sonra 2-4 konuya özgü ## alt başlık ve kurumsal paragraflarla yazılmış Markdown haber metni",
   "category": "arkeoloji | restorasyon | muze_sergi | sinema | kultur_sanat | festival_haberleri | genel",
   "city_slug": "Haberin geçtiği ilin küçük harfli Türkçe karakter içermeyen slug'ı (örn: trabzon, canakkale, istanbul) veya genel ise null",
-  "source_name": "Haberin kaynağı olan kurum veya yayın adı (örn: Taka Gazete, Cumhuriyet, Anadolu Ajansı)"
+  "source_name": "Haberin orijinal kaynağı olan kurum veya yayın adı (örn: Kültür ve Turizm Bakanlığı, İBB Miras, Anadolu Ajansı)"
 }`;
 }
 
 export async function generateNewsDraft(
   input: GenerateNewsInput
 ): Promise<GeneratedNewsDraft> {
-  let topic = cleanPublisherSuffixes((input.topic || "").trim());
+  let topic = cleanPublisherText((input.topic || "").trim());
   let sourceBlock = "";
   let fetchedImages: string[] = [];
   let rawPageText = "";
@@ -178,7 +182,7 @@ export async function generateNewsDraft(
       detectedSiteName = fetched.siteName;
 
       if (!topic && fetched.pageTitle) {
-        topic = cleanPublisherSuffixes(fetched.pageTitle);
+        topic = cleanPublisherText(fetched.pageTitle);
       }
 
       rawPageText = fetched.pageText || "";
@@ -187,7 +191,7 @@ export async function generateNewsDraft(
       sourceBlock = [
         `Kaynak URL: ${fetched.url}`,
         fetched.siteName ? `Kaynak Kurum / Yayın: ${fetched.siteName}` : null,
-        fetched.pageTitle ? `Orijinal Sayfa Başlığı: ${cleanPublisherSuffixes(fetched.pageTitle)}` : null,
+        fetched.pageTitle ? `Orijinal Sayfa Başlığı: ${cleanPublisherText(fetched.pageTitle)}` : null,
         `Sayfa İçeriği:\n${fetched.pageText}`,
       ]
         .filter(Boolean)
@@ -195,7 +199,7 @@ export async function generateNewsDraft(
     } catch {
       rawPageText = (input.fallbackText || "").trim();
       if (input.fallbackText) {
-        sourceBlock = `Kaynak URL: ${input.sourceUrl}\n\nKaynak Özeti:\n${input.fallbackText}`;
+        sourceBlock = `Kaynak URL: ${input.sourceUrl}\n\nKaynak Metin / Özet:\n${input.fallbackText}`;
       }
     }
   } else if (input.fallbackText) {
@@ -208,10 +212,14 @@ export async function generateNewsDraft(
   }
 
   const userPrompt = [
-    topic !== "Kültür ve Sanat Haberi" ? `Haber Başlığı / Konusu: ${topic}` : null,
+    topic !== "Kültür ve Sanat Haberi" ? `Haber Konusu / Odak: ${topic}` : null,
     input.cityName ? `İlgili Şehir: ${input.cityName}` : null,
     sourceBlock || "Türkiye kültür ve sanat gündemine uygun özgün bir haber metni oluştur.",
-    "Yukarıdaki kaynak içeriği bağlamına göre analiz et; şablon başlıklar kullanmadan, haberin kendi akışına ve gerçek verilerine sadık kalarak gazetecilik dilinde özgün bir haber metni ve 5N1K özeti üret. Metni giriş paragrafından sonra haberin akışına ve bağlamına göre 2 ila 4 adet '## [Konuya Özgü Markdown Alt Başlık]' ile tematik bölümlere ayırarak oluştur.",
+    `EDİTÖRYAL YÖNERGE:
+- Yukarıdaki kaynak içeriğin ana kültür-sanat konusunu kavra; sayfa arayüzünden veya üçüncü taraf sitelerden sızmış olabilecek tüm reklam, hava durumu, siyaset, magazin veya başka şehirlere ait yan haberleri tamamen ele.
+- Ajans dateline'larını (örn: "İSTANBUL (AA) -") ve ajans atıflarını metne KESİNLİKLE sokma; doğrudan bağımsız kültür medyası diliyle kurumsal bir haber metni ve 5N1K özeti üret.
+- Başlığı 60-90 karakter arası, konunun özünü ve somut kültürel değerini yansıtan doğrudan bir başlık olarak hazırla (ajans adı veya klik tuzağı soru cümleleri içermez).
+- Metni giriş paragrafından sonra 2 ila 4 adet konuya özgü '## [Tematik Alt Başlık]' ile bölümlendirerek yaz; şablon başlıklar kullanma.`,
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -234,8 +242,9 @@ export async function generateNewsDraft(
       ? parsed.category
       : inferNewsCategory(`${parsed.title || topic} ${rawPageText}`);
 
-    const cleanTitle = cleanPublisherSuffixes(parsed.title || topic);
-    const newsSlug = slugify(cleanTitle) || "kultur-haberi";
+    // Strictly cleanse title and generate guaranteed agency-free slug
+    const cleanTitle = cleanPublisherText(parsed.title || topic);
+    const newsSlug = cleanNewsSlug(cleanTitle);
     const resolvedCitySlug = normalizeCitySlug(parsed.city_slug || input.cityName || null);
 
     if (!candidateCoverImage) {
@@ -246,7 +255,7 @@ export async function generateNewsDraft(
       });
     }
 
-    // Automatically convert external image to EXIF-free WebP named after the news slug
+    // Automatically convert external image to EXIF-free WebP named after the sanitized news slug
     const storedCoverImage = await ensureStoredCoverImage(
       candidateCoverImage,
       "news",
@@ -254,7 +263,10 @@ export async function generateNewsDraft(
     );
 
     const cleanContent = stripRawHtmlFromMarkdown(parsed.content || "");
-    const cleanSummary = formatSeoSummary(cleanPublisherSuffixes(parsed.summary || cleanTitle), 350);
+    const cleanSummary = formatSeoSummary(
+      cleanPublisherText(parsed.summary || cleanTitle),
+      350
+    );
     const wordCount = cleanContent.split(/\s+/).filter(Boolean).length;
 
     return {
@@ -276,7 +288,7 @@ export async function generateNewsDraft(
 
     const rawLines = rawPageText
       .split(/\n+/)
-      .map((p) => p.trim())
+      .map((p) => stripDatelineFromParagraph(p.trim()))
       .filter((p) => p.length >= 20);
 
     // Deduplicate paragraphs and convert ALL-CAPS subheadings into clean Markdown ## headings
@@ -303,8 +315,8 @@ export async function generateNewsDraft(
     }
 
     const fallbackCategory = inferNewsCategory(`${topic} ${rawPageText}`);
-    const cleanFallbackTitle = cleanPublisherSuffixes(topic);
-    const fallbackSlug = slugify(cleanFallbackTitle) || "kultur-haberi";
+    const cleanFallbackTitle = cleanPublisherText(topic);
+    const fallbackSlug = cleanNewsSlug(cleanFallbackTitle);
     const resolvedCitySlug = normalizeCitySlug(input.cityName || `${cleanFallbackTitle} ${leadSummary}`);
 
     if (!candidateCoverImage) {

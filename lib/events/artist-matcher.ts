@@ -1,23 +1,23 @@
+function getCuratedImageUrl(filename: string): string {
+  const base = (
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    "https://xoiqkiszarzmkncwxgjc.supabase.co"
+  ).replace(/\/+$/, "");
+  return `${base}/storage/v1/object/public/media/events/curated/${filename}`;
+}
+
 export const CURATED_GENRE_IMAGES: Record<string, string> = {
   // Concerts
-  "concert-classical":
-    "https://xoiqkiszarzmkncwxgjc.supabase.co/storage/v1/object/public/media/events/curated/concert-classical.webp",
-  "concert-jazz":
-    "https://xoiqkiszarzmkncwxgjc.supabase.co/storage/v1/object/public/media/events/curated/concert-jazz.webp",
-  "concert-rock":
-    "https://xoiqkiszarzmkncwxgjc.supabase.co/storage/v1/object/public/media/events/curated/concert-rock.webp",
+  "concert-classical": getCuratedImageUrl("concert-classical.webp"),
+  "concert-jazz": getCuratedImageUrl("concert-jazz.webp"),
+  "concert-rock": getCuratedImageUrl("concert-rock.webp"),
   // Theater
-  "theatre-drama":
-    "https://xoiqkiszarzmkncwxgjc.supabase.co/storage/v1/object/public/media/events/curated/theatre-drama.webp",
-  "theatre-opera":
-    "https://xoiqkiszarzmkncwxgjc.supabase.co/storage/v1/object/public/media/events/curated/theatre-opera.webp",
-  "theatre-children":
-    "https://xoiqkiszarzmkncwxgjc.supabase.co/storage/v1/object/public/media/events/curated/theatre-children.webp",
+  "theatre-drama": getCuratedImageUrl("theatre-drama.webp"),
+  "theatre-opera": getCuratedImageUrl("theatre-opera.webp"),
+  "theatre-children": getCuratedImageUrl("theatre-children.webp"),
   // Exhibitions & Festivals
-  "exhibition-art":
-    "https://xoiqkiszarzmkncwxgjc.supabase.co/storage/v1/object/public/media/events/curated/exhibition-art.webp",
-  "festival-heritage":
-    "https://xoiqkiszarzmkncwxgjc.supabase.co/storage/v1/object/public/media/events/curated/festival-heritage.webp",
+  "exhibition-art": getCuratedImageUrl("exhibition-art.webp"),
+  "festival-heritage": getCuratedImageUrl("festival-heritage.webp"),
 };
 
 export type EventGenreKey =

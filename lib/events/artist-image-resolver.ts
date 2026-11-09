@@ -1,3 +1,4 @@
+import { fetchPublicResource } from "@/lib/security/public-fetch";
 import { slugify } from "@/lib/slugify";
 import { getMediaPublicUrl } from "@/lib/storage/upload-image-from-url";
 import { turkeyCities } from "@/data/turkey-cities";
@@ -18,8 +19,7 @@ async function getSupabaseAdmin() {
 }
 
 export const GENERIC_STOCK_CONCERT_IMAGE =
-  CURATED_GENRE_IMAGES["concert-rock"] ||
-  "https://xoiqkiszarzmkncwxgjc.supabase.co/storage/v1/object/public/media/events/curated/concert-rock.webp";
+  CURATED_GENRE_IMAGES["concert-rock"];
 
 const WIKI_USER_AGENT = "SeniDeBekleriz/1.0 (info@senidebekleriz.com)";
 const DEEZER_USER_AGENT = "SeniDeBekleriz/1.0 (info@senidebekleriz.com)";
@@ -566,13 +566,13 @@ export async function downloadAndStoreArtistImage(
   const storagePath = `events/artists/${safeSlug}.webp`;
 
   try {
-    const res = await fetch(sourceImageUrl, {
+    const res = await fetchPublicResource(sourceImageUrl, {
       headers: {
         "User-Agent": WIKI_USER_AGENT,
         Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
       },
       signal: AbortSignal.timeout(15000),
-      redirect: "follow",
+      maxBytes: 12 * 1024 * 1024,
     });
 
     if (!res.ok) return null;

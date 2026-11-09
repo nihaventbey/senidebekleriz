@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getCityName } from "@/lib/cities/lookup";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { CulturalEventRow, EventType } from "@/lib/events/types";
@@ -88,13 +89,27 @@ export function sortEventsByClosestUpcoming(events: PublicEvent[]): PublicEvent[
   });
 }
 
-export function isEventExpired(event: { startsAt: string | null; endsAt: string | null }): boolean {
+export function isEventExpired(event: {
+  startsAt: string | null;
+  endsAt: string | null;
+  eventType?: string | null;
+}): boolean {
   const now = new Date();
   if (event.endsAt) {
     return new Date(event.endsAt).getTime() < now.getTime();
   }
   if (event.startsAt) {
     const start = new Date(event.startsAt);
+    // Exhibitions (sergi / muze_sergi) are ongoing and remain open for at least 45 days after opening!
+    const isExhibition =
+      event.eventType === "sergi" ||
+      event.eventType === "muze_sergi";
+    if (isExhibition) {
+      const exhibitionEnd = new Date(start);
+      exhibitionEnd.setDate(exhibitionEnd.getDate() + 45);
+      exhibitionEnd.setHours(23, 59, 59, 999);
+      return exhibitionEnd.getTime() < now.getTime();
+    }
     const endOfDay = new Date(start);
     endOfDay.setHours(23, 59, 59, 999);
     return endOfDay.getTime() < now.getTime();
@@ -191,7 +206,7 @@ export async function getPublishedEventSlugs(options?: { includePast?: boolean }
   const now = new Date().toISOString();
   const { data, error } = await supabaseAdmin
     .from("cultural_events")
-    .select("slug, updated_at, starts_at, ends_at")
+    .select("slug, updated_at, starts_at, ends_at, event_type")
     .eq("status", "published")
     .or(`expires_at.is.null,expires_at.gt.${now}`);
 
@@ -203,7 +218,7 @@ export async function getPublishedEventSlugs(options?: { includePast?: boolean }
   const rows = (data || []) as CulturalEventRow[];
   const valid = options?.includePast
     ? rows
-    : rows.filter((r) => !isEventExpired({ startsAt: r.starts_at, endsAt: r.ends_at }));
+    : rows.filter((r) => !isEventExpired({ startsAt: r.starts_at, endsAt: r.ends_at, eventType: r.event_type }));
 
   return valid.map((row) => ({
     slug: row.slug,
@@ -211,13 +226,13 @@ export async function getPublishedEventSlugs(options?: { includePast?: boolean }
   }));
 }
 
-export async function getEventBySlug(
-  slug: string
-): Promise<PublicEvent | undefined> {
-  const { data, error } = await publishedFilter()
-    .eq("slug", slug)
-    .maybeSingle();
+export const getEventBySlug = cache(
+  async (slug: string): Promise<PublicEvent | undefined> => {
+    const { data, error } = await publishedFilter()
+      .eq("slug", slug)
+      .maybeSingle();
 
-  if (error || !data) return undefined;
-  return mapEvent(data as CulturalEventRow);
-}
+    if (error || !data) return undefined;
+    return mapEvent(data as CulturalEventRow);
+  }
+);

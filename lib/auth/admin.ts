@@ -6,12 +6,20 @@ export async function getAdminUser(): Promise<User | null> {
   const supabase = await createClient();
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
 
-  if (!user || user.user_metadata?.role !== "admin") {
+  if (error || !user || user.app_metadata?.role !== "admin") {
     return null;
   }
 
+  return user;
+}
+
+/** Authorize before accessing privileged services in every management action. */
+export async function requireAdmin(): Promise<User> {
+  const user = await getAdminUser();
+  if (!user) throw new Error("Yetkisiz erişim");
   return user;
 }
 

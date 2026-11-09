@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { turkeyCities } from "@/data/turkey-cities";
 
@@ -14,7 +15,7 @@ export type CityData = {
   metaDescription: string | null;
 };
 
-export async function getAllCities(): Promise<CityData[]> {
+export const getAllCities = cache(async (): Promise<CityData[]> => {
   try {
     const { data, error } = await supabaseAdmin
       .from("cities")
@@ -65,7 +66,7 @@ export async function getAllCities(): Promise<CityData[]> {
       metaDescription: null,
     }));
   }
-}
+});
 
 export async function getPopularCities(limit = 6): Promise<CityData[]> {
   const all = await getAllCities();
@@ -84,16 +85,51 @@ export async function getPopularCities(limit = 6): Promise<CityData[]> {
   return sorted.slice(0, limit);
 }
 
-export async function getCityBySlug(slug: string): Promise<CityData | undefined> {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from("cities")
-      .select("*")
-      .eq("slug", slug)
-      .eq("is_active", true)
-      .single();
+export const getCityBySlug = cache(
+  async (slug: string): Promise<CityData | undefined> => {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("cities")
+        .select("*")
+        .eq("slug", slug)
+        .eq("is_active", true)
+        .single();
 
-    if (error || !data) {
+      if (error || !data) {
+        const fallback = turkeyCities.find((c) => c.slug === slug);
+        if (fallback) {
+          return {
+            id: fallback.slug,
+            name: fallback.name,
+            slug: fallback.slug,
+            region: fallback.region || "",
+            description: fallback.description || "",
+            lat: fallback.lat ? Number(fallback.lat) : 0,
+            lng: fallback.lng ? Number(fallback.lng) : 0,
+            coverImage: null,
+            metaTitle: null,
+            metaDescription: null,
+          };
+        }
+        return undefined;
+      }
+
+      return {
+        id: data.id,
+        name: data.name,
+        slug: data.slug,
+        region: data.region || "",
+        description: data.description || "",
+        lat: data.lat ? Number(data.lat) : 0,
+        lng: data.lng ? Number(data.lng) : 0,
+        coverImage: data.cover_image,
+        metaTitle: data.meta_title ?? null,
+        metaDescription: data.meta_description ?? null,
+      };
+    } catch (err) {
+      if (err) {
+        // silent fallback
+      }
       const fallback = turkeyCities.find((c) => c.slug === slug);
       if (fallback) {
         return {
@@ -111,35 +147,5 @@ export async function getCityBySlug(slug: string): Promise<CityData | undefined>
       }
       return undefined;
     }
-
-    return {
-      id: data.id,
-      name: data.name,
-      slug: data.slug,
-      region: data.region || "",
-      description: data.description || "",
-      lat: data.lat ? Number(data.lat) : 0,
-      lng: data.lng ? Number(data.lng) : 0,
-      coverImage: data.cover_image,
-      metaTitle: data.meta_title ?? null,
-      metaDescription: data.meta_description ?? null,
-    };
-  } catch (err) {
-    const fallback = turkeyCities.find((c) => c.slug === slug);
-    if (fallback) {
-      return {
-        id: fallback.slug,
-        name: fallback.name,
-        slug: fallback.slug,
-        region: fallback.region || "",
-        description: fallback.description || "",
-        lat: fallback.lat ? Number(fallback.lat) : 0,
-        lng: fallback.lng ? Number(fallback.lng) : 0,
-        coverImage: null,
-        metaTitle: null,
-        metaDescription: null,
-      };
-    }
-    return undefined;
   }
-}
+);

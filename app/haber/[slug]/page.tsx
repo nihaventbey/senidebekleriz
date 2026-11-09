@@ -24,7 +24,6 @@ import {
 import { BreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import { NewsArticleJsonLd } from "@/components/seo/news-jsonld";
 import { getSiteUrl } from "@/lib/agents/site";
-import { hasPastDateInText } from "@/lib/discovery/quarter";
 import {
   NewsCard,
   NEWS_CATEGORY_LABELS,
@@ -92,6 +91,13 @@ function estimateReadingTime(content: string): number {
   return Math.max(1, Math.ceil(words / 200));
 }
 
+function isNewsOlderThanDays(publishedAt: string | null | undefined, days = 60): boolean {
+  if (!publishedAt) return false;
+  const publishedMs = new Date(publishedAt).getTime();
+  if (Number.isNaN(publishedMs)) return false;
+  return Date.now() - publishedMs > days * 24 * 60 * 60 * 1000;
+}
+
 export default async function NewsDetailPage({ params }: Props) {
   const { slug } = await params;
   const news = await getNewsBySlug(slug);
@@ -106,17 +112,8 @@ export default async function NewsDetailPage({ params }: Props) {
   const dateStr = formatNewsDate(news.publishedAt);
   const readingTime = estimateReadingTime(news.content);
 
-  // Check if content mentions an event/festival/exhibition date that is already in the past
-  const hasEventPassed =
-    (news.category === "festival_haberleri" ||
-      news.category === "muze_sergi" ||
-      news.category === "kultur_sanat") &&
-    hasPastDateInText(`${news.title} ${news.summary} ${news.content}`);
-
-  const isOldNews =
-    hasEventPassed ||
-    (news.publishedAt &&
-      Date.now() - new Date(news.publishedAt).getTime() > 60 * 24 * 60 * 60 * 1000);
+  // Only show archive banner if the article itself was published more than 90 days ago
+  const isOldNews = isNewsOlderThanDays(news.publishedAt, 90);
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
@@ -193,9 +190,7 @@ export default async function NewsDetailPage({ params }: Props) {
           <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4 text-xs font-medium text-amber-800 dark:text-amber-300 flex items-center gap-3">
             <Clock className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
             <span>
-              {hasEventPassed
-                ? "Bilgilendirme: Bu haberde yer alan etkinlik veya sergi tarihi tamamlanmıştır. Arşiv ve kültürel hafıza kaydı amacıyla yayında tutulmaktadır."
-                : `Arşiv İçeriği: Bu kültür haberi ${dateStr} tarihinde yayınlanmıştır. Sergi takvimi, biletler veya program detayları güncelliğini yitirmiş olabilir.`}
+              Arşiv İçeriği: Bu kültür haberi {dateStr} tarihinde yayınlanmıştır. Sergi takvimi, biletler veya program detayları güncelliğini yitirmiş olabilir.
             </span>
           </div>
         )}

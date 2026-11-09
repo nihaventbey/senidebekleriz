@@ -1,4 +1,5 @@
 import { marked } from "marked";
+import { sanitizeContentHtml } from "@/lib/security/html";
 
 marked.setOptions({
   gfm: true,
@@ -6,7 +7,7 @@ marked.setOptions({
 });
 
 export function renderMarkdown(content: string): string {
-  return marked.parse(content, { async: false }) as string;
+  return sanitizeContentHtml(marked.parse(content, { async: false }) as string);
 }
 
 export function excerptFromMarkdown(content: string, maxLength = 160): string {

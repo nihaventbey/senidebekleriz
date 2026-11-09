@@ -14,6 +14,7 @@ import { getCityName, normalizeCitySlug } from "@/lib/cities/lookup";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
 import { formatSeoSummary } from "@/lib/utils";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { cleanPublisherText, cleanNewsSlug } from "@/lib/ai/clean-publisher";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -238,7 +239,8 @@ export async function POST(request: NextRequest) {
       fallbackText: snippet,
     });
 
-    const baseSlug = slugify(draft.title || title || "haber");
+    const cleanTitle = cleanPublisherText(draft.title || title || "Kültür Haberi");
+    const baseSlug = cleanNewsSlug(cleanTitle);
     let slug = baseSlug.slice(0, 100);
     let counter = 1;
     while (true) {
@@ -256,9 +258,9 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabaseAdmin
       .from("cultural_news")
       .insert({
-        title: draft.title || title,
+        title: cleanTitle,
         slug,
-        summary: draft.summary,
+        summary: cleanPublisherText(draft.summary) || cleanTitle,
         content: draft.content,
         cover_image: storedCoverImage,
         category: draft.category || "genel",

@@ -79,8 +79,16 @@ export function getCurrentQuarterInfo(refDate = new Date()): QuarterInfo {
 }
 
 /**
- * Checks if a title or snippet explicitly references a day and month that has already passed
- * relative to refDate (e.g. "17 Ekim'de başlıyor" when today is 5 Kasım).
+ * Checks if a title or snippet explicitly references an event date that has genuinely ended
+ * and is no longer active, relative to refDate.
+ *
+ * Rules:
+ * 1. If ANY date in the text is in the future (e.g. closing date "... tarihine kadar", or upcoming start),
+ *    the event has NOT passed (returns false).
+ * 2. Exhibitions (sergi, bienal, müze, fuar) and cultural openings run for weeks or months.
+ *    If an exhibition opening occurred recently (within the last 45 days), it is actively ongoing (returns false).
+ * 3. Recent news within the last 7 days reporting on an event/opening is fresh journalism (returns false).
+ * 4. Only returns true if all mentioned dates are genuinely in the past (> 7 days for one-off events, > 45 days for exhibitions/openings).
  */
 export function hasPastDateInText(text: string, refDate = new Date()): boolean {
   if (!text) return false;
@@ -88,11 +96,23 @@ export function hasPastDateInText(text: string, refDate = new Date()): boolean {
   const todayStart = new Date(refDate);
   todayStart.setHours(0, 0, 0, 0);
 
-  // Match Turkish patterns like: "17 Ekim", "17 Ekim'de", "17 Ekim 2026", "28 Kasım'a dek"
+  const lower = text.toLocaleLowerCase("tr");
+
+  // Ongoing exhibition or opening markers
+  const isExhibitionOrMuseum =
+    /\b(sergi|sergisi|sergileri|bienal|müze|galeri|fuar)\b/i.test(lower);
+  const isOpeningOrOngoing =
+    /\b(açıldı|açılan|açılış|açılıyor|kapılarını açtı|kapılarını açıyor|ziyarete açıldı|ziyaretçilerini bekliyor|başladı|başlayan|başlıyor|görücüye çıktı|sürüyor|devam ediyor|ziyaret edilebilir|gezilebilir)\b/i.test(
+      lower
+    );
+
+  // Match Turkish date patterns: "17 Ekim", "17 Ekim'de", "17 Ekim 2026", "28 Kasım'a dek"
   const regex =
     /\b(\d{1,2})\s+(ocak|şubat|subat|mart|nisan|mayıs|mayis|haziran|temmuz|ağustos|agustos|eylül|eylul|ekim|kasım|kasim|aralık|aralik)(?:'?(?:de|da|te|ta|ye|ya|e|a|den|dan|ten|tan|\s*(?:dek|kadar)))?(?:\s+(\d{4}))?\b/gi;
 
+  const foundDates: Date[] = [];
   let match: RegExpExecArray | null;
+
   while ((match = regex.exec(text)) !== null) {
     const day = parseInt(match[1], 10);
     const monthKey = match[2].toLowerCase();
@@ -101,19 +121,37 @@ export function hasPastDateInText(text: string, refDate = new Date()): boolean {
 
     if (monthIndex === undefined || day < 1 || day > 31) continue;
 
-    // Check if whole text is "X'e dek / kadar" (an ongoing exhibition ending on date X)
-    const isUntil = /(?:'?(?:e|a)\s*dek|kadar)\b/i.test(match[0]);
     const eventDate = new Date(explicitYear, monthIndex, day);
     eventDate.setHours(23, 59, 59, 999);
+    foundDates.push(eventDate);
+  }
 
-    // If it is in the past
-    if (eventDate.getTime() < todayStart.getTime()) {
-      // If it says "28 Kasım'a dek", that's future. But if it says "17 Ekim'de açılıyor" or "17 Ekim'e dek" and Oct 17 is past, it's past!
-      return true;
+  if (foundDates.length === 0) return false;
+
+  // 1. If ANY date is today or in the future, the event/deadline is active!
+  const hasFutureDate = foundDates.some((d) => d.getTime() >= todayStart.getTime());
+  if (hasFutureDate) {
+    return false;
+  }
+
+  // 2. If it is an exhibition, museum display or ongoing cultural opening:
+  // Exhibitions stay open for visitors for at least 45 days after opening!
+  if (isExhibitionOrMuseum || isOpeningOrOngoing) {
+    const mostRecentDate = new Date(Math.max(...foundDates.map((d) => d.getTime())));
+    const daysSince = (todayStart.getTime() - mostRecentDate.getTime()) / (24 * 60 * 60 * 1000);
+    if (daysSince <= 45) {
+      return false; // Still ongoing!
     }
   }
 
-  return false;
+  // 3. For any recent news reporting on an event within the last 7 days, consider it fresh news
+  const mostRecentDate = new Date(Math.max(...foundDates.map((d) => d.getTime())));
+  const daysSinceEvent = (todayStart.getTime() - mostRecentDate.getTime()) / (24 * 60 * 60 * 1000);
+  if (daysSinceEvent <= 7) {
+    return false;
+  }
+
+  return true;
 }
 
 /**

@@ -43,8 +43,8 @@ export const revalidate = 2592000;
 export const dynamicParams = true;
 
 export async function generateStaticParams() {
-  const slugs = await getAllPlaceSlugs();
-  return slugs.slice(0, 100).map((slug) => ({ slug }));
+  // /mekan/:slug is permanently redirected to /etkinlikler in next.config.ts
+  return [];
 }
 
 export async function generateMetadata({

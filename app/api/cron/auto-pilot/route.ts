@@ -16,17 +16,16 @@ function authorize(request: Request): boolean {
 }
 
 export async function GET(request: Request) {
-  // Allow checking status if not authorized, but require authorization to execute
+  if (!authorize(request)) {
+    return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
+  }
+
   const url = new URL(request.url);
   const isStatusOnly = url.searchParams.get("action") === "status";
 
   if (isStatusOnly) {
     const status = await getAutopilotStatus();
     return NextResponse.json(status);
-  }
-
-  if (!authorize(request)) {
-    return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
   }
 
   try {

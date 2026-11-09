@@ -22,8 +22,8 @@ import { checkMuzekartStatus } from "@/lib/places/muzekart";
 export const revalidate = 604800;
 
 export async function generateStaticParams() {
-  const categories = await getAllCategories();
-  return categories.map((category) => ({ slug: category.slug }));
+  // /kategori/:slug is permanently redirected to /haberler in next.config.ts
+  return [];
 }
 
 export async function generateMetadata({

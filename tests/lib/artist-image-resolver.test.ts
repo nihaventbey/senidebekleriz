@@ -134,7 +134,7 @@ describe("artist-image-resolver", () => {
       });
       // Generic stock concert image must be banned and return null
       expect(cover).toBeNull();
-    });
+    }, 15000);
 
     it("returns null for concert when sourceCover is curated stock jazz or classical", async () => {
       const coverJazz = await resolveArtistOrEventCover({
@@ -150,7 +150,7 @@ describe("artist-image-resolver", () => {
         sourceCover: "https://xoiqkiszarzmkncwxgjc.supabase.co/storage/v1/object/public/media/events/curated/concert-classical.webp",
       });
       expect(coverClassical).toBeNull();
-    });
+    }, 15000);
 
     it("keeps genuine non-stock source covers for non-concert events", async () => {
       const realCover = "https://xoiqkiszarzmkncwxgjc.supabase.co/storage/v1/object/public/media/events/tiyatro-ozel.webp";

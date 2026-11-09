@@ -1,7 +1,12 @@
+import { fetchPublicResource } from "@/lib/security/public-fetch";
 import {
   extractPageImageUrls,
   BROWSER_USER_AGENT,
 } from "@/lib/ai/extract-page-images";
+import {
+  stripDatelineFromParagraph,
+  cleanPublisherText,
+} from "@/lib/ai/clean-publisher";
 
 export type FetchedUrlContent = {
   url: string;
@@ -66,7 +71,7 @@ export function decodeHtmlEntities(text: string): string {
 }
 
 function stripNonContentElements(html: string): string {
-  return html
+  let cleaned = html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
@@ -77,7 +82,29 @@ function stripNonContentElements(html: string): string {
     .replace(/<aside[\s\S]*?<\/aside>/gi, " ")
     .replace(/<form[\s\S]*?<\/form>/gi, " ")
     .replace(/<iframe[\s\S]*?<\/iframe>/gi, " ")
+    .replace(/<dialog[\s\S]*?<\/dialog>/gi, " ")
     .replace(/<template[\s\S]*?<\/template>/gi, " ");
+
+  // Prune noisy wrapper sections (ads, related stories carousels, social sharing bars, comments)
+  cleaned = cleaned
+    .replace(
+      /<(?:div|section|aside|ul|ol)\b[^>]*\b(?:class|id)=["'][^"']*\b(reklam|advertisement|banner|ad-zone|taboola|outbrain|criteo|teads)\b[^"']*["'][\s\S]*?<\/(?:div|section|aside|ul|ol)>/gi,
+      " "
+    )
+    .replace(
+      /<(?:div|section|aside|ul|ol)\b[^>]*\b(?:class|id)=["'][^"']*\b(social-share|share-buttons|paylas|sosyal-medya|bizi-takip-edin)\b[^"']*["'][\s\S]*?<\/(?:div|section|aside|ul|ol)>/gi,
+      " "
+    )
+    .replace(
+      /<(?:div|section|aside|ul|ol)\b[^>]*\b(?:class|id)=["'][^"']*\b(related-news|ilgili-haber|benzer-haber|diger-haberler|onerilen-haberler|populer-haberler|manset-haberler)\b[^"']*["'][\s\S]*?<\/(?:div|section|aside|ul|ol)>/gi,
+      " "
+    )
+    .replace(
+      /<(?:div|section|aside|ul|ol)\b[^>]*\b(?:class|id)=["'][^"']*\b(comments|yorumlar|yorum-alani|disqus)\b[^"']*["'][\s\S]*?<\/(?:div|section|aside|ul|ol)>/gi,
+      " "
+    );
+
+  return cleaned;
 }
 
 export function extractBalancedTag(
@@ -117,21 +144,59 @@ function isBoilerplateParagraph(text: string): boolean {
   // Email-only or phone/fax/copyright lines
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)) return true;
   if (/»/.test(t) && t.length < 180) return true;
+
+  // Timestamps, editor / reporter bylines
   if (
-    /^(paylaş|fotoğraf:|yazar:|yorumlar|copyright|tüm hakları|çerez politikası|bizi takip edin|ilgili haberler|etiketler\s*:|künye|yeni sayımız bayilerde|yazarlar\s+haberler|gözden kaçırmayın|benzer haberler|diğer haberler|sıradaki haber|öne çıkan haberler|taka okurlarına özel|uyarı\s*:|sosyal medyada takip|yorum kuralları|görüşlerinizi paylaşın)/i.test(
+    /^(giriş(?:\s*tarihi)?|güncelleme(?:\s*tarihi)?|yayınlanma(?:\s*tarihi)?|son\s*güncelleme|tarih|saat|editör|muhabir|fotoğraf|kamera|ajans)\s*:/i.test(
       t
     )
   ) {
     return true;
   }
+  if (/^\d{1,2}[\.\/]\d{1,2}[\.\/]\d{4}\s*-\s*\d{1,2}:\d{2}/.test(t)) {
+    return true;
+  }
+  if (/^(yazar|muhabir|fotoğraf|kaynak)\s*:\s*[A-ZÇĞİÖŞÜa-zçğıöşü\s]{3,35}$/i.test(t)) {
+    return true;
+  }
+  if (/^(aa|iha|dha|anka)\s*[\/–—\-]\s*[A-ZÇĞİÖŞÜa-zçğıöşü\s]{3,35}$/i.test(t)) {
+    return true;
+  }
+
+  // Short navigation or category breadcrumbs
   if (
-    /(künye\s*©|tüm hakları saklıdır|demirören medya|turkuvaz medya|izinsiz kullanılamaz|tel:\s*\+?\d|faks:\s*\+?\d|yazarlar\s+haberler\s+milliyet|hakaret içeren cümleler|yorumları onaylanmamaktadır)/i.test(
+    t.length < 40 &&
+    /^(ana sayfa|haberler|kültür|sanat|yaşam|gündem|güncel|türkiye|dünya)\s*(>|»|\||\/)/i.test(
+      t
+    )
+  ) {
+    return true;
+  }
+
+  // Social shares, push notifications, subscriber banners, clickbait transitions
+  if (
+    /^(paylaş|haberi paylaş|fotoğraf:|yazar:|yorumlar|yorum yap|yorum bırakın|copyright|tüm hakları|çerez politikası|bizi takip edin|bizi google news|google news'ten takip|whatsapp kanalımıza|bildirimleri aç|günün manşetleri|haberin devamı|haberin detayları|tıklayın|detaylar için|abone ol|ilgili haberler|etiketler\s*:|künye|yeni sayımız bayilerde|yazarlar\s+haberler|gözden kaçırmayın|bakmayı unutmayın|benzer haberler|diğer haberler|sıradaki haber|öne çıkan haberler|taka okurlarına özel|uyarı\s*:|sosyal medyada takip|yorum kuralları|görüşlerinizi paylaşın|işte o anlar|işte detaylar)/i.test(
+      t
+    )
+  ) {
+    return true;
+  }
+
+  // Publisher legal/copyright disclaimers
+  if (
+    /(künye\s*©|tüm hakları saklıdır|izinsiz kopyalanamaz|izinsiz ve kaynak gösterilmeden|ajansların aktardığı|yasal uyarı\s*:|demirören medya|turkuvaz medya|izinsiz kullanılamaz|tel:\s*\+?\d|faks:\s*\+?\d|yazarlar\s+haberler\s+milliyet|hakaret içeren cümleler|yorumları onaylanmamaktadır)/i.test(
       t
     )
   ) {
     return true;
   }
   return false;
+}
+
+function isEventOrCulturalDetail(text: string): boolean {
+  return /\b(tarih|saat|yer|mekan|sahne|salon|bilet|ücretsiz|halka açık|katılım|başlangıç|bitiş|sanatçı|yönetmen|oyuncular|program)\b/i.test(
+    text
+  );
 }
 
 function stripHtml(html: string): string {
@@ -142,8 +207,12 @@ function stripHtml(html: string): string {
   const decoded = decodeHtmlEntities(cleaned.replace(/<[^>]+>/g, " "));
   const lines = decoded
     .split(/\n+/)
-    .map((line) => line.replace(/\s+/g, " ").trim())
-    .filter((line) => line.length >= 35 && !isBoilerplateParagraph(line));
+    .map((line) => stripDatelineFromParagraph(line.replace(/\s+/g, " ").trim()))
+    .filter(
+      (line) =>
+        !isBoilerplateParagraph(line) &&
+        (line.length >= 28 || (line.length >= 8 && isEventOrCulturalDetail(line)))
+    );
 
   return lines.join("\n\n");
 }
@@ -164,25 +233,34 @@ function extractBlocksFromHtml(html: string): string[] {
     ) {
       continue;
     }
-    const text = decodeHtmlEntities(
+    const rawText = decodeHtmlEntities(
       match[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
     );
-    const minLen = tag.startsWith("h") ? 12 : 30;
+    const text = tag === "p" ? stripDatelineFromParagraph(rawText) : rawText;
+    const minLen = isEventOrCulturalDetail(text)
+      ? 8
+      : tag.startsWith("h")
+      ? 12
+      : 24;
     if (text.length >= minLen && !isBoilerplateParagraph(text)) {
       paragraphs.push(text);
     }
   }
 
   // Some publishers (e.g. milliyetsanat.com) use <div> or <br> inside the article container instead of <p>
-  if (paragraphs.join(" ").length < 200) {
+  if (paragraphs.length === 0) {
     const blockSeparated = html
       .replace(/<br\s*\/?>/gi, "\n")
       .replace(/<\/(div|p|strong|h[1-6]|li|blockquote)>/gi, "\n\n")
       .replace(/<[^>]+>/g, " ");
     const divLines = decodeHtmlEntities(blockSeparated)
       .split(/\n+/)
-      .map((line) => line.replace(/\s+/g, " ").trim())
-      .filter((line) => line.length >= 35 && !isBoilerplateParagraph(line));
+      .map((line) => stripDatelineFromParagraph(line.replace(/\s+/g, " ").trim()))
+      .filter(
+        (line) =>
+          !isBoilerplateParagraph(line) &&
+          (line.length >= 28 || (line.length >= 8 && isEventOrCulturalDetail(line)))
+      );
     if (divLines.length > 0) {
       return divLines;
     }
@@ -429,11 +507,12 @@ export function extractPageTextFromHtml(
   }
 
   if (bestBody.length > 0) {
-    const combinedBlocks = deduplicateBlocks([
-      ogDescription || "",
-      metaDescription || "",
-      ...bestBody,
-    ]);
+    const rawBestText = bestBody.join(" ");
+    const blocksToMerge =
+      rawBestText.length >= 150
+        ? bestBody
+        : [ogDescription || "", metaDescription || "", ...bestBody];
+    const combinedBlocks = deduplicateBlocks(blocksToMerge);
     return combinedBlocks.join("\n\n").trim().slice(0, maxLength);
   }
 
@@ -456,19 +535,19 @@ function extractTitle(html: string): string | undefined {
   const ogTitle =
     extractMetaContent(html, "property", "og:title") ||
     extractMetaContent(html, "name", "twitter:title");
-  if (ogTitle && ogTitle.length >= 6) return ogTitle;
+  if (ogTitle && ogTitle.length >= 6) return cleanPublisherText(ogTitle);
 
   const h1Match = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i);
   if (h1Match?.[1]) {
     const cleanedH1 = decodeHtmlEntities(
       h1Match[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
     );
-    if (cleanedH1.length >= 6) return cleanedH1;
+    if (cleanedH1.length >= 6) return cleanPublisherText(cleanedH1);
   }
 
   const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
   return titleMatch?.[1]
-    ? decodeHtmlEntities(titleMatch[1].replace(/\s+/g, " ").trim())
+    ? cleanPublisherText(decodeHtmlEntities(titleMatch[1].replace(/\s+/g, " ").trim()))
     : undefined;
 }
 
@@ -538,7 +617,7 @@ export async function fetchUrlContent(
     throw new Error("Geçersiz URL");
   }
 
-  let response = await fetch(url, {
+  let response = await fetchPublicResource(url, {
     headers: {
       "User-Agent": options?.userAgent || BROWSER_USER_AGENT,
       Accept:
@@ -555,20 +634,20 @@ export async function fetchUrlContent(
       "Upgrade-Insecure-Requests": "1",
     },
     signal: AbortSignal.timeout(12000),
-    redirect: "follow",
+    maxBytes: 2 * 1024 * 1024,
   });
 
   // Retry with social crawler User-Agent if blocked by WAF (e.g. 403 / 406 on Euronews, etc.)
   if (!response.ok && [403, 406, 429].includes(response.status)) {
     try {
-      const retryRes = await fetch(url, {
+      const retryRes = await fetchPublicResource(url, {
         headers: {
           "User-Agent": SOCIAL_BOT_USER_AGENT,
           Accept: "*/*",
           "Accept-Language": "tr-TR,tr;q=0.9",
         },
         signal: AbortSignal.timeout(10000),
-        redirect: "follow",
+        maxBytes: 2 * 1024 * 1024,
       });
       if (retryRes.ok) {
         response = retryRes;

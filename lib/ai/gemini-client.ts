@@ -14,23 +14,26 @@ function markModelCooldown(model: string, durationMs: number) {
 
 function getCandidateModels(): string[] {
   const envModel = process.env.GEMINI_MODEL?.trim();
-  const isDeprecatedEnvModel =
-    !envModel || /^gemini-(1\.|2\.)/i.test(envModel);
+  const primaryModel =
+    envModel && !/^gemini-(1\.|2\.)/i.test(envModel)
+      ? envModel
+      : "gemini-3.5-flash";
 
   const rawModels = [
+    primaryModel,
     "gemini-3-flash-preview",
-    "gemini-3.1-flash-lite-preview",
-    "gemini-3.1-flash-lite",
+    "gemini-3.6-flash",
+    "gemini-3.7-flash",
+    "gemini-flash-latest",
     "gemini-3.5-flash-lite",
     "gemini-flash-lite-latest",
-    isDeprecatedEnvModel ? "gemini-3.5-flash" : envModel,
   ];
 
   const unique = rawModels.filter((m, i, arr) => Boolean(m) && arr.indexOf(m) === i);
   const now = Date.now();
   const active = unique.filter((m) => (modelCooldownUntil.get(m) || 0) <= now);
   const cooled = unique.filter((m) => (modelCooldownUntil.get(m) || 0) > now);
-  return [...active, ...cooled];
+  return active.length > 0 ? [...active, ...cooled] : unique;
 }
 
 function buildGenerationConfig(
@@ -39,19 +42,30 @@ function buildGenerationConfig(
   maxOutputTokens: number,
   jsonMode: boolean
 ) {
-  const supportsZeroThinking =
+  const disableThinking = process.env.GEMINI_DISABLE_THINKING === "true";
+  const explicitBudget = process.env.GEMINI_THINKING_BUDGET
+    ? parseInt(process.env.GEMINI_THINKING_BUDGET, 10)
+    : undefined;
+
+  const supportsThinking =
     (model.includes("3-flash") ||
       model.includes("3.5-flash") ||
-      model.includes("3.6-flash")) &&
+      model.includes("3.6-flash") ||
+      model.includes("3.7-flash")) &&
     !model.includes("lite");
+
+  const thinkingConfig =
+    supportsThinking && disableThinking
+      ? { thinkingBudget: 0 }
+      : supportsThinking && explicitBudget !== undefined
+      ? { thinkingBudget: explicitBudget }
+      : undefined;
 
   return {
     temperature,
     maxOutputTokens,
     ...(jsonMode ? { responseMimeType: "application/json" } : {}),
-    ...(supportsZeroThinking
-      ? { thinkingConfig: { thinkingBudget: 0 } }
-      : {}),
+    ...(thinkingConfig ? { thinkingConfig } : {}),
   };
 }
 
@@ -120,7 +134,7 @@ export async function callGeminiJson<T>({
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey,
         },
-        signal: AbortSignal.timeout(16000),
+        signal: AbortSignal.timeout(28000),
         body: JSON.stringify({
           systemInstruction: {
             parts: [{ text: systemPrompt }],
@@ -260,7 +274,7 @@ export async function callGeminiText({
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey,
         },
-        signal: AbortSignal.timeout(16000),
+        signal: AbortSignal.timeout(28000),
         body: JSON.stringify({
           systemInstruction: {
             parts: [{ text: systemPrompt }],

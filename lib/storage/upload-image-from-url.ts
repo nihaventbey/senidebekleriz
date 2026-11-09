@@ -1,5 +1,7 @@
+import { fetchPublicResource } from "@/lib/security/public-fetch";
 import { BROWSER_USER_AGENT } from "@/lib/ai/extract-page-images";
 import { slugify } from "@/lib/slugify";
+import { cleanPublisherText, cleanAgencySlug } from "@/lib/ai/clean-publisher";
 
 export const MEDIA_BUCKET = "media";
 
@@ -27,8 +29,10 @@ export function getMediaPublicUrl(path: string): string {
 }
 
 export function safePathSegment(value: string): string {
-  const slug = slugify(value || "");
-  return slug.slice(0, 90).replace(/^-+|-+$/g, "");
+  const cleanedText = cleanPublisherText(value || "");
+  const rawSlug = slugify(cleanedText || value || "");
+  const safeSlug = cleanAgencySlug(rawSlug);
+  return (safeSlug || "gorsel").slice(0, 90).replace(/^-+|-+$/g, "");
 }
 
 function normalizeWebpStoragePath(
@@ -42,9 +46,17 @@ function normalizeWebpStoragePath(
 ): string {
   if (typeof storagePathOrOptions === "string") {
     const withoutExt = storagePathOrOptions.replace(/\.(jpe?g|png|webp|avif|gif)$/i, "");
-    return `${withoutExt}.webp`;
+    const parts = withoutExt.split("/");
+    const rawFilename = parts.pop() || "gorsel";
+    const cleanFilename = safePathSegment(rawFilename);
+    const folder = parts.join("/");
+    return folder ? `${folder}/${cleanFilename}.webp` : `${cleanFilename}.webp`;
   }
   const safeSlug = safePathSegment(storagePathOrOptions.slugHint || "gorsel") || "gorsel";
+  if (storagePathOrOptions.folder === "uploads") {
+    const entropy = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    return `uploads/${safeSlug}-${entropy}.webp`;
+  }
   return `${storagePathOrOptions.folder}/${safeSlug}.webp`;
 }
 
@@ -146,14 +158,14 @@ export async function uploadImageFromUrl(
     }
 
     const origin = new URL(trimmed).origin;
-    const response = await fetch(trimmed, {
+    const response = await fetchPublicResource(trimmed, {
       headers: {
         "User-Agent": BROWSER_USER_AGENT,
         Referer: origin,
         Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
       },
       signal: AbortSignal.timeout(15000),
-      redirect: "follow",
+      maxBytes: MAX_IMAGE_BYTES,
     });
 
     if (!response.ok) return null;

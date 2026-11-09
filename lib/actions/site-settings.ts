@@ -1,5 +1,7 @@
 "use server";
 
+import { requireAdmin } from "@/lib/auth/admin";
+
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import {
@@ -127,6 +129,7 @@ async function resolveBrandAsset(options: {
 export async function updateBrandSettings(
   formData: FormData
 ): Promise<{ error?: string; success?: string }> {
+  await requireAdmin();
   try {
     const current = await getBrandSettings();
 
@@ -188,6 +191,7 @@ export async function updateBrandSettings(
 export async function updateHeroSettings(
   formData: FormData
 ): Promise<{ error?: string; success?: string }> {
+  await requireAdmin();
   try {
     let imageUrl = ((formData.get("imageUrl") as string) || "").trim() || null;
 

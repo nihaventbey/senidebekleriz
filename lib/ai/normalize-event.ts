@@ -78,7 +78,8 @@ Kurallar:
    - Çıktı MUTLAKA geçerli ISO 8601 (YYYY-MM-DDTHH:mm:ss+03:00) biçiminde olmalıdır.
    - Örnek: "18 Ekim 2026 Cumartesi 20:30" -> "2026-10-18T20:30:00+03:00"
    - Saat belirtilmemişse: Tiyatro/konser için "20:00:00", sergi/müze için "10:00:00", festival için "12:00:00" varsay.
-   - Tarih aralığı varsa (Örn: "15 Ekim - 30 Kasım 2026"): starts_at "2026-10-15T10:00:00+03:00", ends_at "2026-11-30T19:00:00+03:00" olmalıdır.
+   - Tarih aralığı varsa (Örn: "15 Ekim - 30 Kasım 2026" veya "15 Ekim'de açılan sergi 30 Kasım'a kadar açık"): starts_at "2026-10-15T10:00:00+03:00", ends_at "2026-11-30T19:00:00+03:00" olmalıdır.
+   - ÇOK ÖNEMLİ (SERGİLER VE AÇILIŞLAR): Sergi (exhibition) etkinlikleri konser gibi günübirlik değildir; haftalarca/aylarca sürer. Eğer serginin açılış tarihi verilmiş (örn: "Dün açıldı", "8 Kasım'da açıldı") ancak kapanış tarihi açıkça yazmıyorsa, sergiyi sakın ertesi gün geçmiş/bitmiş sayma! Metinde "... tarihine kadar / dek / boyunca" ifadesi varsa kapanış tarihini o tarih olarak al. Kapanış tarihi hiç belirtilmemişse, ends_at alanını açılış tarihinden en az 45 gün sonrası olarak belirle.
    - Metinde hiçbir tarih geçmiyorsa starts_at ve ends_at KESİNLİKLE null olmalıdır.
 
 4. Biletleme Servisi URL'si (ticket_url):
@@ -183,6 +184,43 @@ function extractTurkishDates(text: string): {
     }
   }
 
+  // Range pattern 3: "...'den ...'e kadar/dek" e.g. "15 Ekim'de açılan sergi 30 Kasım'a kadar"
+  const rangeWithKadar = lower.match(
+    /(\d{1,2})\s+(ocak|şubat|subat|mart|nisan|mayıs|mayis|haziran|temmuz|ağustos|agustos|eylül|eylul|ekim|kasım|kasim|aralık|aralik)(?:\s+(\d{4}))?[^\d]{1,60}?(\d{1,2})\s+(ocak|şubat|subat|mart|nisan|mayıs|mayis|haziran|temmuz|ağustos|agustos|eylül|eylul|ekim|kasım|kasim|aralık|aralik)(?:\s+(\d{4}))?(?:['’]?[a-z]*\s+)?(?:kadar|dek)/i
+  );
+  if (rangeWithKadar) {
+    const day1 = parseInt(rangeWithKadar[1], 10);
+    const month1 = TR_MONTHS[rangeWithKadar[2].toLowerCase()];
+    const year1 = rangeWithKadar[3] ? parseInt(rangeWithKadar[3], 10) : currentYear;
+    const day2 = parseInt(rangeWithKadar[4], 10);
+    const month2 = TR_MONTHS[rangeWithKadar[5].toLowerCase()];
+    const year2 = rangeWithKadar[6] ? parseInt(rangeWithKadar[6], 10) : year1;
+
+    if (month1 !== undefined && month2 !== undefined && day1 >= 1 && day1 <= 31 && day2 >= 1 && day2 <= 31) {
+      return {
+        starts_at: `${year1}-${pad(month1 + 1)}-${pad(day1)}T10:00:00+03:00`,
+        ends_at: `${year2}-${pad(month2 + 1)}-${pad(day2)}T19:00:00+03:00`,
+      };
+    }
+  }
+
+  // Single date with "kadar/dek": "30 Kasım'a kadar açık kalacak" or "30 Kasım'a dek ziyaret edilebilir"
+  const untilOnly = lower.match(
+    /(\d{1,2})\s+(ocak|şubat|subat|mart|nisan|mayıs|mayis|haziran|temmuz|ağustos|agustos|eylül|eylul|ekim|kasım|kasim|aralık|aralik)(?:\s+(\d{4}))?(?:['’]?[a-z]*\s+)?(?:kadar|dek)/i
+  );
+  if (untilOnly) {
+    const day = parseInt(untilOnly[1], 10);
+    const month = TR_MONTHS[untilOnly[2].toLowerCase()];
+    const year = untilOnly[3] ? parseInt(untilOnly[3], 10) : currentYear;
+
+    if (month !== undefined && day >= 1 && day <= 31) {
+      return {
+        starts_at: null,
+        ends_at: `${year}-${pad(month + 1)}-${pad(day)}T19:00:00+03:00`,
+      };
+    }
+  }
+
   // Single date with optional time: "18 Ekim 2026 saat 20:30" or "18 Ekim"
   const singleDate = lower.match(
     /(\d{1,2})\s+(ocak|şubat|subat|mart|nisan|mayıs|mayis|haziran|temmuz|ağustos|agustos|eylül|eylul|ekim|kasım|kasim|aralık|aralik)(?:\s+(\d{4}))?(?:.*?(\d{1,2})[:.](\d{2}))?/i
@@ -203,6 +241,33 @@ function extractTurkishDates(text: string): {
   }
 
   return { starts_at: null, ends_at: null };
+}
+
+/**
+ * Exhibitions (sergi / bienal / muze_sergi) run for weeks or months.
+ * If only the opening date is known, assign ends_at to at least 45 days after starts_at
+ * so that it is never marked as expired or past the day after opening.
+ */
+export function resolveExhibitionDates(
+  eventType: string | null | undefined,
+  startsAt: string | null | undefined,
+  endsAt: string | null | undefined
+): { starts_at: string | null; ends_at: string | null } {
+  const cleanStartsAt = sanitizeIsoDate(startsAt);
+  const cleanEndsAt = sanitizeIsoDate(endsAt);
+
+  if ((eventType === "sergi" || eventType === "muze_sergi") && cleanStartsAt && !cleanEndsAt) {
+    const startDate = new Date(cleanStartsAt);
+    if (!Number.isNaN(startDate.getTime())) {
+      const endDate = new Date(startDate.getTime() + 45 * 24 * 60 * 60 * 1000);
+      return {
+        starts_at: cleanStartsAt,
+        ends_at: endDate.toISOString(),
+      };
+    }
+  }
+
+  return { starts_at: cleanStartsAt, ends_at: cleanEndsAt };
 }
 
 export type FullNormalizedEvent = NormalizedEventDraft & {
@@ -234,7 +299,8 @@ export function heuristicNormalizeEvent(input: {
 
   const rawBody = (input.pageText || "").trim();
   const summary = formatSeoSummary(rawBody || cleanTitle);
-  const dates = extractTurkishDates(text);
+  const rawDates = extractTurkishDates(text);
+  const resolvedDates = resolveExhibitionDates(eventType, rawDates.starts_at, rawDates.ends_at);
 
   const description =
     rawBody.length >= 250
@@ -255,8 +321,8 @@ export function heuristicNormalizeEvent(input: {
     event_type: eventType,
     city_slug: detectedCity,
     venue_name: null,
-    starts_at: sanitizeIsoDate(dates.starts_at),
-    ends_at: sanitizeIsoDate(dates.ends_at),
+    starts_at: resolvedDates.starts_at,
+    ends_at: resolvedDates.ends_at,
     is_cultural_event: true,
     confidence: 0.8,
     ticket_url: cleanTicketUrl(input.url, ""),
@@ -286,17 +352,21 @@ export async function normalizeFeedItem(
     });
 
     const fallbackDates = extractTurkishDates(`${item.title} ${item.description}`);
+    const safeEventType = sanitizeEventType(parsed.event_type, `${item.title} ${item.description}`);
+    const rawStartsAt = sanitizeIsoDate(parsed.starts_at) || sanitizeIsoDate(fallbackDates.starts_at);
+    const rawEndsAt = sanitizeIsoDate(parsed.ends_at) || sanitizeIsoDate(fallbackDates.ends_at);
+    const resolvedDates = resolveExhibitionDates(safeEventType, rawStartsAt, rawEndsAt);
 
     return {
       ...parsed,
       title: (parsed.title || item.title).trim(),
       summary: formatSeoSummary(parsed.summary || item.title, 160),
-      event_type: sanitizeEventType(parsed.event_type, `${item.title} ${item.description}`),
+      event_type: safeEventType,
       city_slug:
         normalizeCitySlug(parsed.city_slug) ||
         normalizeCitySlug(detectTurkishCityInText(`${item.title} ${item.description}`)),
-      starts_at: sanitizeIsoDate(parsed.starts_at) || sanitizeIsoDate(fallbackDates.starts_at),
-      ends_at: sanitizeIsoDate(parsed.ends_at) || sanitizeIsoDate(fallbackDates.ends_at),
+      starts_at: resolvedDates.starts_at,
+      ends_at: resolvedDates.ends_at,
       is_cultural_event: parsed.is_cultural_event ?? true,
     };
   } catch (error) {
@@ -331,6 +401,11 @@ export async function normalizeUrlContent(input: {
 
     const combinedText = `${input.pageTitle || ""} ${input.pageText}`;
     const fallbackDates = extractTurkishDates(combinedText);
+    const safeEventType = sanitizeEventType(parsed.event_type, combinedText);
+    const rawStartsAt = sanitizeIsoDate(parsed.starts_at) || sanitizeIsoDate(fallbackDates.starts_at);
+    const rawEndsAt = sanitizeIsoDate(parsed.ends_at) || sanitizeIsoDate(fallbackDates.ends_at);
+    const resolvedDates = resolveExhibitionDates(safeEventType, rawStartsAt, rawEndsAt);
+
     const cleanedTicket =
       cleanTicketUrl(parsed.ticket_url, input.url) ||
       cleanTicketUrl(input.url, "");
@@ -343,13 +418,13 @@ export async function normalizeUrlContent(input: {
       title: cleanTitle,
       summary: cleanSummary,
       description: parsed.description || input.pageText.slice(0, 3500) || cleanSummary,
-      event_type: sanitizeEventType(parsed.event_type, combinedText),
+      event_type: safeEventType,
       city_slug:
         normalizeCitySlug(parsed.city_slug) ||
         normalizeCitySlug(detectTurkishCityInText(combinedText)),
       venue_name: parsed.venue_name ? String(parsed.venue_name).trim() : null,
-      starts_at: sanitizeIsoDate(parsed.starts_at) || sanitizeIsoDate(fallbackDates.starts_at),
-      ends_at: sanitizeIsoDate(parsed.ends_at) || sanitizeIsoDate(fallbackDates.ends_at),
+      starts_at: resolvedDates.starts_at,
+      ends_at: resolvedDates.ends_at,
       ticket_url: cleanedTicket,
       meta_title: (parsed.meta_title || `${cleanTitle} | Etkinlik Takvimi`).slice(0, 60),
       meta_description: (parsed.meta_description || cleanSummary).slice(0, 155),

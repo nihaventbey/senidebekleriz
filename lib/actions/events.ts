@@ -1,5 +1,7 @@
 "use server";
 
+import { requireAdmin } from "@/lib/auth/admin";
+
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { importEventFromUrl } from "@/lib/ai/import-event-from-url";
@@ -106,6 +108,7 @@ function eventFromForm(formData: FormData) {
 }
 
 export async function createEvent(formData: FormData) {
+  await requireAdmin();
   const data = eventFromForm(formData);
   const publishNow =
     formData.get("publish_now") === "on" ||
@@ -147,6 +150,7 @@ export async function createEvent(formData: FormData) {
 }
 
 export async function updateEvent(slug: string, formData: FormData) {
+  await requireAdmin();
   const data = eventFromForm(formData);
   const existing = await getAdminEventBySlug(slug);
   const wantsPublished =
@@ -205,6 +209,7 @@ export async function updateEvent(slug: string, formData: FormData) {
 }
 
 export async function approveEvent(id: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin
     .from("cultural_events")
     .update({
@@ -219,6 +224,7 @@ export async function approveEvent(id: string) {
 }
 
 export async function unpublishEvent(id: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin
     .from("cultural_events")
     .update({
@@ -233,6 +239,7 @@ export async function unpublishEvent(id: string) {
 }
 
 export async function rejectEvent(id: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin
     .from("cultural_events")
     .update({
@@ -246,6 +253,7 @@ export async function rejectEvent(id: string) {
 }
 
 export async function deleteEvent(id: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin
     .from("cultural_events")
     .delete()
@@ -260,6 +268,7 @@ export async function bulkUpdateEventsStatus(
   ids: string[],
   status: "published" | "pending_review" | "rejected"
 ) {
+  await requireAdmin();
   if (!ids || ids.length === 0) return;
   const { error } = await supabaseAdmin
     .from("cultural_events")
@@ -275,6 +284,7 @@ export async function bulkUpdateEventsStatus(
 }
 
 export async function bulkDeleteEvents(ids: string[]) {
+  await requireAdmin();
   if (!ids || ids.length === 0) return;
   const { error } = await supabaseAdmin
     .from("cultural_events")
@@ -286,6 +296,7 @@ export async function bulkDeleteEvents(ids: string[]) {
 }
 
 export async function importEventFromUrlAction(rawUrl: string) {
+  await requireAdmin();
   try {
     let url = rawUrl.trim();
     if (isGoogleNewsArticleUrl(url)) {

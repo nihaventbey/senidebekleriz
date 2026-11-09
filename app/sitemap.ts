@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 import { getAllCities } from "@/lib/data/cities";
 import { getAllPageSlugs } from "@/lib/data/pages";
-import { getPublishedArticles } from "@/lib/data/articles";
+import { getPublishedArticleSitemapEntries } from "@/lib/data/articles";
 import { getPublishedEventSlugs } from "@/lib/data/events";
 import { getNewsSlugs } from "@/lib/data/news";
 import { getSiteUrl } from "@/lib/agents/site";
@@ -48,7 +48,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     await Promise.all([
       getAllCities(),
       getAllPageSlugs(),
-      getPublishedArticles(500),
+      getPublishedArticleSitemapEntries(),
       getPublishedEventSlugs({ includePast: false }),
       getNewsSlugs(),
     ]);

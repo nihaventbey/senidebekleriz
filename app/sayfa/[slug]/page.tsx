@@ -1,3 +1,4 @@
+import { sanitizeContentHtml } from "@/lib/security/html";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAllPageSlugs, getPageBySlug } from "@/lib/data/pages";
@@ -57,7 +58,7 @@ export default async function PagePage({
         <h1 className="text-4xl font-bold tracking-tight">{page.title}</h1>
         <div
           className="prose prose-stone mt-8 max-w-none dark:prose-invert"
-          dangerouslySetInnerHTML={{ __html: page.content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeContentHtml(page.content || "") }}
         />
       </article>
     </div>

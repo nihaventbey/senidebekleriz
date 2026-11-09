@@ -1,3 +1,4 @@
+import { fetchPublicResource } from "@/lib/security/public-fetch";
 export const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
@@ -302,7 +303,7 @@ async function fetchImageDimensions(
 
   try {
     const origin = new URL(url).origin;
-    const head = await fetch(url, {
+    const head = await fetchPublicResource(url, {
       method: "HEAD",
       signal: AbortSignal.timeout(2500),
       headers: {

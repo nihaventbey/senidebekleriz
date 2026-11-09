@@ -185,7 +185,8 @@ async function seedAdminUser() {
         existingUser.id,
         {
           password: adminPassword,
-          user_metadata: { full_name: "Admin", role: "admin" },
+          app_metadata: { role: "admin" },
+          user_metadata: { full_name: "Admin" },
         }
       );
       if (updateError) {
@@ -201,7 +202,8 @@ async function seedAdminUser() {
     email: adminEmail,
     password: adminPassword,
     email_confirm: true,
-    user_metadata: { full_name: "Admin", role: "admin" },
+    app_metadata: { role: "admin" },
+    user_metadata: { full_name: "Admin" },
   });
 
   if (error) throw new Error(`Admin user seed error: ${error.message}`);

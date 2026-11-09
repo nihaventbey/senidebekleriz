@@ -21,4 +21,20 @@ describe("generateNewsDraft", () => {
     expect(draft.content).not.toContain("<a ");
     expect(draft.content).not.toContain("<font");
   });
+
+  it("strips agency prefixes, datelines, and suffixes from topic and slug in news drafts", async () => {
+    const draft = await generateNewsDraft({
+      topic: "İSTANBUL (AA) - Ayasofya-i Kebir Camiinde Tarihi Restorasyon - Anadolu Ajansı",
+      fallbackText: "Kültür ve Turizm Bakanlığı Ayasofya restorasyon çalışmalarında 1500 yıllık mozaikleri korumaya aldı. Çelik iskeleler kuruldu.",
+      cityName: "İstanbul",
+      depth: "standard",
+    });
+
+    expect(draft.title).toBe("Ayasofya-i Kebir Camiinde Tarihi Restorasyon");
+    expect(draft.slug).toBe("ayasofya-i-kebir-camiinde-tarihi-restorasyon");
+    expect(draft.slug).not.toContain("aa");
+    expect(draft.slug).not.toContain("anadolu-ajansi");
+    expect(draft.title).not.toContain("AA");
+    expect(draft.title).not.toContain("Anadolu Ajansı");
+  });
 });

@@ -1,3 +1,4 @@
+import { serializeJsonLd } from "@/lib/security/html";
 import type { PublicNewsArticle } from "@/lib/data/news";
 import { getSiteUrl } from "@/lib/agents/site";
 
@@ -64,7 +65,7 @@ export function NewsArticleJsonLd({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }}
     />
   );
 }
@@ -93,7 +94,7 @@ export function NewsListJsonLd({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }}
     />
   );
 }

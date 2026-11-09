@@ -13,11 +13,14 @@ export async function GET(request: NextRequest) {
 
   let query = supabaseAdmin
     .from("places")
-    .select(`
+    .select(
+      `
       *,
       cities!inner(name, slug),
       place_categories(categories(name, slug))
-    `)
+    `,
+      { count: "exact" }
+    )
     .eq("is_active", true);
 
   if (citySlug) {
@@ -50,7 +53,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const { data, error } = await query
+  const { data, count, error } = await query
     .order("name")
     .range(offset, offset + limit - 1);
 
@@ -82,7 +85,7 @@ export async function GET(request: NextRequest) {
   });
 
   return NextResponse.json(
-    { items, total: items.length },
+    { items, total: typeof count === "number" ? count : items.length },
     {
       headers: {
         "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",

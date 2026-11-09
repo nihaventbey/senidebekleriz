@@ -5,7 +5,11 @@ import {
   filterImageCandidatesBySize,
   resolveFallbackCulturalImage,
 } from "@/lib/ai/extract-page-images";
-import { sanitizeEventType, sanitizeIsoDate } from "@/lib/ai/normalize-event";
+import {
+  sanitizeEventType,
+  sanitizeIsoDate,
+  resolveExhibitionDates,
+} from "@/lib/ai/normalize-event";
 import { normalizeCitySlug } from "@/lib/cities/lookup";
 import { detectTurkishCityInText } from "@/lib/discovery/classify-content";
 import { uniqueEventSlug } from "@/lib/events/slug";
@@ -48,6 +52,7 @@ Kurallar:
 4. starts_at & ends_at: ISO 8601 (YYYY-MM-DDTHH:mm:ss+03:00) formatında olmalıdır.
    - Yıl belirtilmemişse ${currentYear} yılını kullan (Örn: "7 Kasım 21:00" -> "${currentYear}-11-07T21:00:00+03:00").
    - Saat yoksa tiyatro/konser için 20:00, sergi/müze için 10:00, festival için 12:00 varsay.
+   - ÇOK ÖNEMLİ (SERGİLER): Sergi etkinlikleri konser gibi 1 günde bitmez. Sergi açılış tarihi verilmiş ancak kapanış tarihi yazmıyorsa veya "... tarihine kadar / dek" deniyorsa ends_at değerini buna göre belirle. Kapanış tarihi hiç verilmemişse açılış tarihinden en az 45 gün sonrasını ends_at yap.
 5. venue_name: Etkinliğin gerçekleştiği sahne, kültür merkezi, müze veya konser mekanının tam adı (Örn: "Harbiye Cemil Topuzlu Açıkhava Tiyatrosu", "AKM Türk Telekom Opera Salonu", "CSO Ada Ankara").
 6. ticket_url: YALNIZCA o spesifik etkinliğin bilet satış linki (Biletix, Passo, Biletinial, Bubilet, Mobilet vb.) varsa yaz; yoksa null yap!
 7. summary: Etkinlik için 1-2 cümlelik (max 160 karakter) temiz Türkçe özet.
@@ -284,6 +289,12 @@ export async function extractEventsFromBulletin(input: {
       continue;
     }
 
+    const resolvedDates = resolveExhibitionDates(
+      safeEventType,
+      item.starts_at,
+      item.ends_at
+    );
+
     const { data, error } = await supabaseAdmin
       .from("cultural_events")
       .insert({
@@ -298,8 +309,8 @@ export async function extractEventsFromBulletin(input: {
         ticket_url: cleanedTicket,
         city_slug: resolvedCity,
         venue_name: item.venue_name || null,
-        starts_at: sanitizeIsoDate(item.starts_at),
-        ends_at: sanitizeIsoDate(item.ends_at),
+        starts_at: resolvedDates.starts_at,
+        ends_at: resolvedDates.ends_at,
         cover_image: storedCover,
         meta_title: (
           item.meta_title || `${item.title} | Etkinlik Takvimi`

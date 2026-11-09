@@ -1,3 +1,4 @@
+import { fetchPublicResource } from "@/lib/security/public-fetch";
 const BATCH_EXECUTE_URL =
   "https://news.google.com/_/DotsSplashUi/data/batchexecute";
 
@@ -70,13 +71,13 @@ export async function resolveGoogleNewsArticleUrl(
   const articleId = extractArticleId(articleUrl);
   if (!articleId) return null;
 
-  const pageResponse = await fetch(articleUrl, {
+  const pageResponse = await fetchPublicResource(articleUrl, {
     headers: {
       "User-Agent": USER_AGENT,
       "Accept-Language": "tr-TR,tr;q=0.9",
     },
     signal: AbortSignal.timeout(timeoutMs),
-    redirect: "follow",
+    maxBytes: 2 * 1024 * 1024,
   });
 
   if (!pageResponse.ok) {

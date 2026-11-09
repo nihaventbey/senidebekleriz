@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { excerptFromMarkdown } from "@/lib/markdown";
 
@@ -11,6 +12,12 @@ export type ArticleData = {
   citySlug: string | null;
   metaTitle: string;
   metaDescription: string;
+  publishedAt: string | null;
+  updatedAt: string;
+};
+
+export type ArticleSitemapEntry = {
+  slug: string;
   publishedAt: string | null;
   updatedAt: string;
 };
@@ -46,7 +53,9 @@ function mapArticle(row: {
 export async function getPublishedArticles(limit = 12): Promise<ArticleData[]> {
   const { data, error } = await supabaseAdmin
     .from("articles")
-    .select("*")
+    .select(
+      "id, title, slug, excerpt, cover_image, city_slug, meta_title, meta_description, published_at, updated_at"
+    )
     .eq("is_published", true)
     .order("published_at", { ascending: false })
     .limit(limit);
@@ -56,37 +65,64 @@ export async function getPublishedArticles(limit = 12): Promise<ArticleData[]> {
     return [];
   }
 
-  return (data || []).map(mapArticle);
+  return (data || []).map((row) => ({
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    excerpt: row.excerpt || "",
+    content: "",
+    coverImage: row.cover_image,
+    citySlug: row.city_slug,
+    metaTitle: row.meta_title || row.title,
+    metaDescription: row.meta_description || row.excerpt || "",
+    publishedAt: row.published_at,
+    updatedAt: row.updated_at,
+  }));
 }
 
-export async function getArticleBySlug(
-  slug: string
-): Promise<ArticleData | undefined> {
+export const getArticleBySlug = cache(
+  async (slug: string): Promise<ArticleData | undefined> => {
+    const { data, error } = await supabaseAdmin
+      .from("articles")
+      .select("*")
+      .eq("slug", slug)
+      .eq("is_published", true)
+      .single();
+
+    if (error || !data) return undefined;
+    return mapArticle(data);
+  }
+);
+
+export const getCityArticle = cache(
+  async (citySlug: string): Promise<ArticleData | undefined> => {
+    const { data, error } = await supabaseAdmin
+      .from("articles")
+      .select("*")
+      .eq("city_slug", citySlug)
+      .eq("is_published", true)
+      .order("published_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data) return undefined;
+    return mapArticle(data);
+  }
+);
+
+export async function getPublishedArticleSitemapEntries(): Promise<ArticleSitemapEntry[]> {
   const { data, error } = await supabaseAdmin
     .from("articles")
-    .select("*")
-    .eq("slug", slug)
+    .select("slug, published_at, updated_at")
     .eq("is_published", true)
-    .single();
+    .order("published_at", { ascending: false });
 
-  if (error || !data) return undefined;
-  return mapArticle(data);
-}
-
-export async function getCityArticle(
-  citySlug: string
-): Promise<ArticleData | undefined> {
-  const { data, error } = await supabaseAdmin
-    .from("articles")
-    .select("*")
-    .eq("city_slug", citySlug)
-    .eq("is_published", true)
-    .order("published_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error || !data) return undefined;
-  return mapArticle(data);
+  if (error || !data) return [];
+  return data.map((r) => ({
+    slug: r.slug,
+    publishedAt: r.published_at,
+    updatedAt: r.updated_at,
+  }));
 }
 
 export async function getAllArticleSlugs(): Promise<string[]> {

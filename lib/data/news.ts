@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getCityName } from "@/lib/cities/lookup";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -9,6 +10,9 @@ export type NewsCategory =
   | "kultur_sanat"
   | "festival_haberleri"
   | "genel";
+
+const NEWS_CARD_FIELDS =
+  "id, title, slug, summary, cover_image, city_slug, category, source_name, source_url, is_published, is_featured, published_at, created_at, updated_at";
 
 export type PublicNewsArticle = {
   id: string;
@@ -51,7 +55,7 @@ function mapNews(row: CulturalNewsRow): PublicNewsArticle {
     title: row.title,
     slug: row.slug,
     summary: row.summary || row.title,
-    content: row.content,
+    content: row.content || "",
     coverImage: row.cover_image,
     citySlug: row.city_slug,
     cityName: getCityName(row.city_slug),
@@ -68,7 +72,7 @@ export async function getFeaturedNews(limit = 4): Promise<PublicNewsArticle[]> {
   // 1. Fetch news explicitly marked as featured (Manşet) and published
   const { data: featuredRows, error: featuredErr } = await supabaseAdmin
     .from("cultural_news")
-    .select("*")
+    .select(NEWS_CARD_FIELDS)
     .eq("is_published", true)
     .eq("is_featured", true)
     .order("published_at", { ascending: false, nullsFirst: false })
@@ -92,7 +96,7 @@ export async function getFeaturedNews(limit = 4): Promise<PublicNewsArticle[]> {
 
   const { data: latestRows, error: latestErr } = await supabaseAdmin
     .from("cultural_news")
-    .select("*")
+    .select(NEWS_CARD_FIELDS)
     .eq("is_published", true)
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
@@ -118,7 +122,7 @@ export async function getPublishedNews(options?: {
 }): Promise<PublicNewsArticle[]> {
   let query = supabaseAdmin
     .from("cultural_news")
-    .select("*")
+    .select(NEWS_CARD_FIELDS)
     .eq("is_published", true)
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
@@ -147,17 +151,19 @@ export async function getPublishedNews(options?: {
   return (data || []).map((r) => mapNews(r as CulturalNewsRow));
 }
 
-export async function getNewsBySlug(slug: string): Promise<PublicNewsArticle | undefined> {
-  const { data, error } = await supabaseAdmin
-    .from("cultural_news")
-    .select("*")
-    .eq("slug", slug)
-    .eq("is_published", true)
-    .maybeSingle();
+export const getNewsBySlug = cache(
+  async (slug: string): Promise<PublicNewsArticle | undefined> => {
+    const { data, error } = await supabaseAdmin
+      .from("cultural_news")
+      .select("*")
+      .eq("slug", slug)
+      .eq("is_published", true)
+      .maybeSingle();
 
-  if (error || !data) return undefined;
-  return mapNews(data as CulturalNewsRow);
-}
+    if (error || !data) return undefined;
+    return mapNews(data as CulturalNewsRow);
+  }
+);
 
 export async function getRelatedNews(
   currentSlug: string,
@@ -166,7 +172,7 @@ export async function getRelatedNews(
 ): Promise<PublicNewsArticle[]> {
   let query = supabaseAdmin
     .from("cultural_news")
-    .select("*")
+    .select(NEWS_CARD_FIELDS)
     .eq("is_published", true)
     .neq("slug", currentSlug)
     .order("published_at", { ascending: false })
@@ -199,18 +205,31 @@ export async function getNewsSlugs(): Promise<
 export async function getNewsGroupedByCategory(
   limitPerCategory = 10
 ): Promise<Record<NewsCategory, PublicNewsArticle[]>> {
-  const { data, error } = await supabaseAdmin
-    .from("cultural_news")
-    .select("*")
-    .eq("is_published", true)
-    .order("published_at", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false });
+  // 1. Try high-performance RPC function from migration 018
+  const { data: rpcData, error: rpcErr } = await supabaseAdmin.rpc(
+    "get_news_rails",
+    { limit_per_cat: limitPerCategory }
+  );
 
-  if (error || !data) return {} as Record<NewsCategory, PublicNewsArticle[]>;
+  let rows = rpcData;
+
+  // 2. Fallback: select only card fields with a safe limit if RPC is not yet applied
+  if (rpcErr || !rows || rows.length === 0) {
+    const { data } = await supabaseAdmin
+      .from("cultural_news")
+      .select(NEWS_CARD_FIELDS)
+      .eq("is_published", true)
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .limit(limitPerCategory * 12);
+    rows = data;
+  }
+
+  if (!rows) return {} as Record<NewsCategory, PublicNewsArticle[]>;
 
   const grouped: Partial<Record<NewsCategory, PublicNewsArticle[]>> = {};
 
-  for (const row of data) {
+  for (const row of rows) {
     const item = mapNews(row as CulturalNewsRow);
     const cat = item.category || "genel";
     if (!grouped[cat]) {

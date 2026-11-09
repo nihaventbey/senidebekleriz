@@ -117,4 +117,28 @@ describe("extractPageTextFromHtml", () => {
     expect(text).toContain("Kazı başkanı Prof. Dr. Bilal Söğüt");
     expect(text).toContain("Mozaik tabanların ve yazıtların konservasyon");
   });
+
+  it("strips opening agency datelines and filters out related-news boilerplate", () => {
+    const html = `<!DOCTYPE html><html><body>
+      <article>
+        <p>İSTANBUL (AA) - Tarihi Yarımada'da yer alan 1600 yıllık sarnıç kapsamlı bir restorasyondan geçiyor.</p>
+        <div class="related-news">
+          <p>İLGİLİ HABER: Altın fiyatlarında son durum ne oldu?</p>
+        </div>
+        <div class="social-share">
+          <p>Bizi Google News üzerinden takip edin!</p>
+        </div>
+        <p>Restorasyon ekipleri, tonozlardaki çatlakları mikro harç enjeksiyon yöntemiyle sağlamlaştırdı.</p>
+        <p>Giriş Tarihi: 09.11.2026 - 14:30</p>
+      </article>
+    </body></html>`;
+
+    const text = extractPageTextFromHtml(html);
+    expect(text).toContain("Tarihi Yarımada'da yer alan 1600 yıllık sarnıç");
+    expect(text).not.toContain("İSTANBUL (AA) -");
+    expect(text).toContain("Restorasyon ekipleri, tonozlardaki çatlakları");
+    expect(text).not.toContain("Altın fiyatlarında son durum");
+    expect(text).not.toContain("Bizi Google News");
+    expect(text).not.toContain("Giriş Tarihi");
+  });
 });

@@ -45,7 +45,8 @@ async function updateAdmin(userId: string, password: string) {
   return supabase.auth.admin.updateUserById(userId, {
     password,
     email_confirm: true,
-    user_metadata: { full_name: "Admin", role: "admin" },
+    app_metadata: { role: "admin" },
+    user_metadata: { full_name: "Admin" },
   });
 }
 
@@ -58,7 +59,8 @@ async function createAdmin(email: string, password: string) {
     email,
     password,
     email_confirm: true,
-    user_metadata: { full_name: "Admin", role: "admin" },
+    app_metadata: { role: "admin" },
+    user_metadata: { full_name: "Admin" },
   });
 }
 

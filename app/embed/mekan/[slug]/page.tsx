@@ -36,7 +36,9 @@ export default async function EmbedPlacePage({
   }
 
   const muzekart = checkMuzekartStatus(place);
-  const detailUrl = `/mekan/${place.slug}`;
+  const detailUrl = place.citySlug
+    ? `/sehir/${place.citySlug}`
+    : `/etkinlikler?q=${encodeURIComponent(place.name)}`;
 
   return (
     <div className="flex h-full w-full items-center justify-center p-2 bg-transparent antialiased">

@@ -3,7 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { applyAgentLinkHeaders } from "@/lib/agents/link-headers";
 import { acceptsMarkdown, isMarkdownNegotiablePath } from "@/lib/agents/negotiation";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (acceptsMarkdown(request) && isMarkdownNegotiablePath(pathname)) {
@@ -19,8 +19,11 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Admin routes protection - only run Supabase auth on /yonetim routes to avoid burning CPU on public visits
-  if (pathname.startsWith("/yonetim")) {
+  // Admin routes protection - run Supabase auth on /yonetim and /api/admin routes to prevent unauthorized access
+  const isAdminPage = pathname.startsWith("/yonetim");
+  const isAdminApi = pathname.startsWith("/api/admin");
+
+  if (isAdminPage || isAdminApi) {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -43,25 +46,26 @@ export async function middleware(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (pathname !== "/yonetim/giris") {
-      if (!user) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/yonetim/giris";
-        return NextResponse.redirect(url);
-      }
+    const role = user?.app_metadata?.role;
+    const isAuthorizedAdmin = Boolean(user && role === "admin");
 
-      // Check admin role in user metadata
-      const role = user.user_metadata?.role;
-      if (role !== "admin") {
+    if (isAdminApi) {
+      if (!isAuthorizedAdmin) {
+        return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 401 });
+      }
+    } else if (isAdminPage) {
+      if (pathname !== "/yonetim/giris") {
+        if (!isAuthorizedAdmin) {
+          const url = request.nextUrl.clone();
+          url.pathname = "/yonetim/giris";
+          return NextResponse.redirect(url);
+        }
+      } else if (isAuthorizedAdmin) {
+        // Redirect authenticated admins away from login page
         const url = request.nextUrl.clone();
-        url.pathname = "/yonetim/giris";
+        url.pathname = "/yonetim";
         return NextResponse.redirect(url);
       }
-    } else if (user?.user_metadata?.role === "admin") {
-      // Redirect authenticated admins away from login page
-      const url = request.nextUrl.clone();
-      url.pathname = "/yonetim";
-      return NextResponse.redirect(url);
     }
   }
 

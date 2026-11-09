@@ -32,7 +32,8 @@ function formatNewsDate(iso: string) {
   });
 }
 
-function estimateReadingTime(content: string): number {
+function estimateReadingTime(content?: string): number {
+  if (!content) return 2;
   const words = content.trim().split(/\s+/).length;
   return Math.max(1, Math.ceil(words / 200));
 }

@@ -1,5 +1,7 @@
 "use server";
 
+import { requireAdmin } from "@/lib/auth/admin";
+
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -72,6 +74,7 @@ function revalidateArticlePaths(slug?: string) {
 export async function createArticle(
   formData: FormData
 ): Promise<ArticleActionResult> {
+  await requireAdmin();
   const data = articleFromForm(formData);
   data.cover_image = await ensureStoredCoverImage(
     data.cover_image,
@@ -90,6 +93,7 @@ export async function updateArticle(
   slug: string,
   formData: FormData
 ): Promise<ArticleActionResult> {
+  await requireAdmin();
   const existing = await getAdminArticleBySlug(slug);
   const data = articleFromForm(formData);
   data.cover_image = await ensureStoredCoverImage(
@@ -118,6 +122,7 @@ export async function updateArticle(
 }
 
 export async function deleteArticle(id: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin.from("articles").delete().eq("id", id);
   if (error) throw new Error(error.message);
 
@@ -126,6 +131,7 @@ export async function deleteArticle(id: string) {
 }
 
 export async function publishArticle(id: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin
     .from("articles")
     .update({
@@ -140,6 +146,7 @@ export async function publishArticle(id: string) {
 }
 
 export async function unpublishArticle(id: string) {
+  await requireAdmin();
   const { error } = await supabaseAdmin
     .from("articles")
     .update({
@@ -154,6 +161,7 @@ export async function unpublishArticle(id: string) {
 }
 
 export async function bulkPublishArticles(ids: string[], isPublished: boolean) {
+  await requireAdmin();
   if (!ids || ids.length === 0) return;
   const { error } = await supabaseAdmin
     .from("articles")
@@ -169,6 +177,7 @@ export async function bulkPublishArticles(ids: string[], isPublished: boolean) {
 }
 
 export async function bulkDeleteArticles(ids: string[]) {
+  await requireAdmin();
   if (!ids || ids.length === 0) return;
   const { error } = await supabaseAdmin
     .from("articles")

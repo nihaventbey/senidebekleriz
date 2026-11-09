@@ -1,10 +1,13 @@
 "use server";
 
+import { requireAdmin } from "@/lib/auth/admin";
+
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { slugify } from "@/lib/slugify";
 import { normalizeCitySlug } from "@/lib/cities/lookup";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
+import { cleanPublisherText, cleanNewsSlug } from "@/lib/ai/clean-publisher";
 
 export type NewsActionResult = {
   success: boolean;
@@ -23,6 +26,7 @@ function revalidateNewsPaths(slug?: string) {
 }
 
 export async function createNews(formData: FormData): Promise<NewsActionResult> {
+  await requireAdmin();
   const title = String(formData.get("title") || "").trim();
   const rawSlug = String(formData.get("slug") || "").trim();
   const summary = String(formData.get("summary") || "").trim();
@@ -42,7 +46,8 @@ export async function createNews(formData: FormData): Promise<NewsActionResult> 
     return { success: false, error: "Haber metni zorunludur." };
   }
 
-  const baseSlug = slugify(rawSlug || title) || "kultur-haberi";
+  const cleanTitle = cleanPublisherText(title);
+  const baseSlug = cleanNewsSlug(rawSlug || cleanTitle);
   let slug = baseSlug.slice(0, 100);
   let counter = 2;
   while (true) {
@@ -62,9 +67,9 @@ export async function createNews(formData: FormData): Promise<NewsActionResult> 
   const { data, error } = await supabaseAdmin
     .from("cultural_news")
     .insert({
-      title,
+      title: cleanTitle || title,
       slug,
-      summary: summary || title,
+      summary: cleanPublisherText(summary) || cleanTitle || title,
       content,
       category,
       city_slug: citySlug,
@@ -100,6 +105,7 @@ export async function updateNews(
   originalSlug: string,
   formData: FormData
 ): Promise<NewsActionResult> {
+  await requireAdmin();
   const title = String(formData.get("title") || "").trim();
   const rawSlug = String(formData.get("slug") || "").trim();
   const summary = String(formData.get("summary") || "").trim();
@@ -119,7 +125,8 @@ export async function updateNews(
     return { success: false, error: "Haber metni zorunludur." };
   }
 
-  const baseSlug = slugify(rawSlug || title) || originalSlug || "kultur-haberi";
+  const cleanTitle = cleanPublisherText(title);
+  const baseSlug = cleanNewsSlug(rawSlug || cleanTitle || originalSlug);
   let slug = baseSlug.slice(0, 100);
   if (slug !== originalSlug) {
     let counter = 2;
@@ -156,9 +163,9 @@ export async function updateNews(
   const { data, error } = await supabaseAdmin
     .from("cultural_news")
     .update({
-      title,
+      title: cleanTitle || title,
       slug,
-      summary: summary || title,
+      summary: cleanPublisherText(summary) || cleanTitle || title,
       content,
       category,
       city_slug: citySlug,
@@ -189,12 +196,14 @@ export async function updateNews(
 }
 
 export async function deleteNews(id: string): Promise<void> {
+  await requireAdmin();
   const { error } = await supabaseAdmin.from("cultural_news").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidateNewsPaths();
 }
 
 export async function togglePublishNews(id: string, isPublished: boolean): Promise<void> {
+  await requireAdmin();
   const { error } = await supabaseAdmin
     .from("cultural_news")
     .update({
@@ -209,6 +218,7 @@ export async function togglePublishNews(id: string, isPublished: boolean): Promi
 }
 
 export async function toggleFeaturedNews(id: string, isFeatured: boolean): Promise<void> {
+  await requireAdmin();
   const { data: existing } = await supabaseAdmin
     .from("cultural_news")
     .select("is_published, published_at")
@@ -235,6 +245,7 @@ export async function toggleFeaturedNews(id: string, isFeatured: boolean): Promi
 }
 
 export async function bulkPublishNews(ids: string[], isPublished: boolean): Promise<void> {
+  await requireAdmin();
   if (!ids || ids.length === 0) return;
   const { error } = await supabaseAdmin
     .from("cultural_news")
@@ -250,6 +261,7 @@ export async function bulkPublishNews(ids: string[], isPublished: boolean): Prom
 }
 
 export async function bulkFeaturedNews(ids: string[], isFeatured: boolean): Promise<void> {
+  await requireAdmin();
   if (!ids || ids.length === 0) return;
   const { error } = await supabaseAdmin
     .from("cultural_news")
@@ -264,6 +276,7 @@ export async function bulkFeaturedNews(ids: string[], isFeatured: boolean): Prom
 }
 
 export async function bulkDeleteNews(ids: string[]): Promise<void> {
+  await requireAdmin();
   if (!ids || ids.length === 0) return;
   const { error } = await supabaseAdmin
     .from("cultural_news")

@@ -1,3 +1,4 @@
+import { serializeJsonLd } from "@/lib/security/html";
 import type { PublicEvent } from "@/lib/data/events";
 import { isEventExpired } from "@/lib/data/events";
 import { getSiteUrl } from "@/lib/agents/site";
@@ -68,7 +69,7 @@ export function EventsJsonLd({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }}
     />
   );
 }
