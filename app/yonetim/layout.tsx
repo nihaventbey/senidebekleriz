@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, ExternalLink } from "lucide-react";
@@ -28,6 +28,19 @@ export default function AdminLayout({
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // Close drawer automatically on navigation
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
+
+  const handleOpenDrawer = useCallback(() => {
+    setDrawerOpen(true);
+  }, []);
+
+  const handleCloseDrawer = useCallback(() => {
+    setDrawerOpen(false);
+  }, []);
+
   if (pathname === "/yonetim/giris") {
     return <>{children}</>;
   }
@@ -47,7 +60,7 @@ export default function AdminLayout({
           <div className="flex min-w-0 items-center gap-2.5">
             <button
               type="button"
-              onClick={() => setDrawerOpen(true)}
+              onClick={handleOpenDrawer}
               className="flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-border/70 bg-background text-foreground hover:bg-muted active:scale-95 transition-all md:hidden"
               aria-label="Yönetim Menüsünü Aç"
             >
@@ -104,10 +117,10 @@ export default function AdminLayout({
       </div>
 
       {/* 3. Mobile Slide-in Navigation Drawer */}
-      <AdminMobileNav open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <AdminMobileNav open={drawerOpen} onClose={handleCloseDrawer} />
 
       {/* 4. Mobile Bottom Tab Bar */}
-      <AdminBottomNav onOpenMenu={() => setDrawerOpen(true)} />
+      <AdminBottomNav onOpenMenu={handleOpenDrawer} />
     </div>
   );
 }

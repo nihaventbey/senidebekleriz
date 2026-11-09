@@ -22,11 +22,6 @@ export function AdminMobileNav({ open, onClose }: AdminMobileNavProps) {
     setMounted(true);
   }, []);
 
-  // Close drawer on path navigation
-  useEffect(() => {
-    onClose();
-  }, [pathname, onClose]);
-
   // Handle ESC key
   useEffect(() => {
     if (!open) return;
@@ -61,15 +56,16 @@ export function AdminMobileNav({ open, onClose }: AdminMobileNavProps) {
     >
       {/* 1. Backdrop with light-dismiss tap */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-200"
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-200 animate-in fade-in"
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* 2. Slide-in Drawer Sheet: min(22rem, 85vw) leaves 15% tap affordance on mobile */}
       <nav
-        className="relative z-10 flex h-[100svh] w-[min(22rem,85vw)] flex-col bg-background shadow-2xl transition-transform duration-200 ease-out"
+        className="relative z-10 flex h-[100svh] w-[min(22rem,85vw)] flex-col bg-background shadow-2xl transition-transform duration-200 ease-out animate-in slide-in-from-left"
         tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Drawer Header */}
         <div className="flex h-14 shrink-0 items-center justify-between border-b border-border/70 px-4 bg-muted/30">
