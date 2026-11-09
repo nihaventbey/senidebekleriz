@@ -81,7 +81,7 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-[min(100%,15rem)] shrink-0 flex-col border-r border-border/60 bg-muted/25 lg:w-60 xl:w-64 md:flex">
+    <aside className="hidden w-[min(100%,15rem)] shrink-0 flex-col border-r border-border/60 bg-muted/25 lg:w-60 xl:w-64 md:flex h-screen sticky top-0">
       <div className="border-b border-border/60 px-5 py-5">
         <Link href="/yonetim" className="block">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">

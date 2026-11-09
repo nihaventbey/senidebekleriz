@@ -20,7 +20,7 @@ export function CookieConsent() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (pathname?.startsWith("/embed")) {
+    if (pathname?.startsWith("/embed") || pathname?.startsWith("/yonetim")) {
       setVisible(false);
       return;
     }

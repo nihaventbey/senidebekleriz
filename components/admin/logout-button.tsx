@@ -11,8 +11,7 @@ export function LogoutButton() {
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    router.push("/");
-    router.refresh();
+    window.location.href = "/";
   }
 
   return (

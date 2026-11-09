@@ -14,7 +14,7 @@ export function Footer({ brand }: FooterProps) {
   const pathname = usePathname();
   const currentYear = new Date().getFullYear();
 
-  if (pathname?.startsWith("/embed")) {
+  if (pathname?.startsWith("/embed") || pathname?.startsWith("/yonetim")) {
     return null;
   }
 

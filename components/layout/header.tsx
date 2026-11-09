@@ -41,7 +41,7 @@ export function Header({ brand }: HeaderProps) {
     document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
   }, [mobileMenuOpen]);
 
-  if (pathname?.startsWith("/embed")) {
+  if (pathname?.startsWith("/embed") || pathname?.startsWith("/yonetim")) {
     return null;
   }
 
