@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +8,6 @@ import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
 
 export function AuthForm() {
-  const router = useRouter();
   const supabase = createClient();
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
@@ -20,8 +18,8 @@ export function AuthForm() {
     setError(null);
 
     const formData = new FormData(event.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
+    const email = (formData.get("email") as string)?.trim() || "";
+    const password = (formData.get("password") as string)?.trim() || "";
 
     const { error: authError } = await supabase.auth.signInWithPassword({
       email,
@@ -32,20 +30,19 @@ export function AuthForm() {
       setError("Kullanıcı adı veya şifre hatalı.");
       setIsPending(false);
     } else {
-      router.push("/yonetim");
-      router.refresh();
+      window.location.href = "/yonetim";
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">Kullanıcı Adı</Label>
+        <Label htmlFor="email">Kullanıcı Adı (E-posta)</Label>
         <Input
           id="email"
           name="email"
           type="email"
-          placeholder="admin@senidebekleriz.com"
+          placeholder="ornek@eposta.com"
           required
           autoComplete="username"
         />
