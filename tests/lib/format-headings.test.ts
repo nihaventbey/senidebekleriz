@@ -34,4 +34,22 @@ describe("formatHeadingsWithHeuristics", () => {
     const result = formatHeadingsWithHeuristics(content);
     expect(result).toContain("## Mevcut Bir Başlık");
   });
+
+  it("never turns comma-prefixed fragments, lowercase conjunctions, or duplicate titles into ## headings", () => {
+    const title = "Dülük antik kenti uluslararası akademik gündeme taşındı";
+    const content = [
+      "Şehitkamil Belediyesi paydaşlığında düzenlenen kazı sonuçları toplantısı tamamlandı.",
+      "## Dülük antik kenti uluslararası akademik gündeme taşındı",
+      ", Gaziantep Vali Yardımcısı Bülent Uygur",
+      "ile Türk Akademisi Başkanı Prof. Dr. Şahin Mustafayev",
+      "Dülük antik kenti uluslararası akademik gündeme taşındı Aksiyon.com.TR",
+      "Toplantıda antik kentin korunması ve arkeolojik bulguların uluslararası bilim dünyasına tanıtılması ele alındı.",
+    ].join("\n\n");
+
+    const result = formatHeadingsWithHeuristics(content, title);
+    expect(result).not.toContain("## , Gaziantep");
+    expect(result).not.toContain("## ile Türk Akademisi");
+    expect(result).not.toContain("Aksiyon.com.TR");
+    expect(result).not.toContain("günde Detayları");
+  });
 });

@@ -2,7 +2,10 @@ import "server-only";
 
 import { revalidatePath } from "next/cache";
 import { importEventFromUrl } from "@/lib/ai/import-event-from-url";
-import { sanitizeEventType, sanitizeIsoDate } from "@/lib/ai/normalize-event";
+import {
+  resolveExhibitionDates,
+  sanitizeEventType,
+} from "@/lib/ai/normalize-event";
 import { generateNewsDraft } from "@/lib/ai/generate-news";
 import { generateArticleDraft } from "@/lib/ai/generate-article";
 import { resolveFallbackCulturalImage } from "@/lib/ai/extract-page-images";
@@ -158,21 +161,11 @@ export async function importDiscoveryAsEvent(id: string) {
 
   const resolvedCity = normalizeCitySlug(imported.city_slug || item.city_slug);
 
-  let rawCover =
-    imported.cover_image ||
-    item.cover_image ||
-    (item.raw_payload as any)?.image_url ||
-    null;
-
-  if (!rawCover) {
-    rawCover = await resolveFallbackCulturalImage({
-      title: imported.title || item.title,
-      cityName: getCityName(resolvedCity),
-      category: "kultur_sanat",
-    });
-  }
-
-  const safeTitle = (imported.title || item.title || "Kültür Etkinliği").trim();
+  const safeTitle = cleanPublisherText(
+    imported.title || item.title || "Kültür Etkinliği"
+  )
+    .replace(/!+$/g, "")
+    .trim();
 
   if (isNonEventTitle(safeTitle)) {
     throw new Error(
@@ -182,17 +175,39 @@ export async function importDiscoveryAsEvent(id: string) {
 
   const safeEventType = sanitizeEventType(
     imported.event_type,
-    `${safeTitle} ${item.snippet || ""}`
+    `${safeTitle} ${item.snippet || ""}`,
+    safeTitle
   );
 
+  const rawCover =
+    imported.cover_image ||
+    item.cover_image ||
+    (item.raw_payload as any)?.image_url ||
+    null;
+
   const storedCoverImage = await ensureStoredCoverImage(rawCover, "events", slug);
-  const finalCoverImage = await resolveArtistOrEventCover({
+  let finalCoverImage = await resolveArtistOrEventCover({
     title: safeTitle,
     summary: imported.summary || item.snippet,
     event_type: safeEventType,
     sourceCover: storedCoverImage,
     slug,
   });
+
+  if (!finalCoverImage && safeEventType !== "konser") {
+    const fallbackCover = await resolveFallbackCulturalImage({
+      title: safeTitle,
+      cityName: getCityName(resolvedCity),
+      category: "kultur_sanat",
+    });
+    finalCoverImage = await ensureStoredCoverImage(fallbackCover, "events", slug);
+  }
+
+  const resolvedDates = resolveExhibitionDates(
+    safeEventType,
+    imported.starts_at,
+    imported.ends_at
+  );
 
   const { data, error } = await supabaseAdmin
     .from("cultural_events")
@@ -208,8 +223,8 @@ export async function importDiscoveryAsEvent(id: string) {
       ticket_url: imported.ticket_url || null,
       city_slug: resolvedCity,
       venue_name: imported.venue_name || null,
-      starts_at: sanitizeIsoDate(imported.starts_at),
-      ends_at: sanitizeIsoDate(imported.ends_at),
+      starts_at: resolvedDates.starts_at,
+      ends_at: resolvedDates.ends_at,
       cover_image: finalCoverImage,
       meta_title: imported.meta_title ? String(imported.meta_title).slice(0, 60) : null,
       meta_description: (
@@ -222,6 +237,7 @@ export async function importDiscoveryAsEvent(id: string) {
         discovery_id: item.id,
         image_urls: imported.image_urls,
         google_news_url: item.raw_payload?.google_news_url,
+        is_free: Boolean(imported.is_free),
       },
       updated_at: new Date().toISOString(),
     })

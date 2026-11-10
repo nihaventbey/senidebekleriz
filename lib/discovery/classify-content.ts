@@ -125,7 +125,7 @@ export function isRejectedNonTurkishOrCommercialContent(input: {
   const source = (input.sourceName || "").toLowerCase();
   const combined = `${title} ${snippet}`.toLocaleLowerCase("tr");
 
-  // 1. Commercial art marketplaces, painting sales pages, e-commerce catalogs
+  // 1. Commercial art marketplaces, painting sales pages, e-commerce catalogs, YouTube video links
   if (
     url.includes("artmajeur.com") ||
     url.includes("saatchiart.com") ||
@@ -133,6 +133,9 @@ export function isRejectedNonTurkishOrCommercialContent(input: {
     url.includes("etsy.com") ||
     url.includes("trendyol.com") ||
     url.includes("hepsiburada.com") ||
+    url.includes("youtube.com/watch") ||
+    url.includes("youtube.com/shorts") ||
+    url.includes("youtu.be/") ||
     source.includes("artmajeur") ||
     /,\s*(tablo|resim|heykel|çizim|fotoğraf|baskı|dijital sanat)\s+[^,]+\s+tarafından/i.test(
       title
@@ -141,10 +144,13 @@ export function isRejectedNonTurkishOrCommercialContent(input: {
     return true;
   }
 
-  // 2. Generic category index pages without a specific article
+  // 2. Generic category index pages, ticketing homepages, or opinion columns without a specific cultural event/news
   if (
     /^kültür[- ]sanat haberleri/i.test(title.trim()) ||
-    /\/(kultur-sanat|sanat|etkinlikler)\/?$/i.test(url)
+    /\/(kultur-sanat|sanat|etkinlikler)\/?$/i.test(url) ||
+    /(maç biletleri,\s*konser biletleri|aradığın tüm maç biletleri)/i.test(combined) ||
+    /\|\s*[^|]*köşe yazısı\s*$/i.test(title.trim()) ||
+    /\bliste şov\b/i.test(title)
   ) {
     return true;
   }
@@ -228,35 +234,87 @@ export function heuristicClassify(input: {
     };
   }
 
-  const text = `${input.title} ${input.snippet || ""}`.toLocaleLowerCase("tr");
+  const titleLower = (input.title || "")
+    .replace(/İ/g, "i")
+    .replace(/I/g, "ı")
+    .toLocaleLowerCase("tr-TR");
+  const text = `${input.title} ${input.snippet || ""}`
+    .replace(/İ/g, "i")
+    .replace(/I/g, "ı")
+    .toLocaleLowerCase("tr-TR");
   const detectedCity = detectTurkishCityInText(text);
 
-  const isEvent =
-    /\b(sergi|sergisi|sergileri|konser|konseri|konserleri|festival|festivali|tiyatro|tiyatrosu|sahne|bale|opera|gösteri|gösterisi|prömiyer|bilet|etkinlik|etkinliği|etkinlikleri|takvimi|ajandası|turne|şenlik|söyleşi|atölye)\b/i.test(
-      text
-    );
-
+  // 1. Evergreen guide / route articles
   const isArticle =
-    /\b(gezilecek yerler|gezi rehberi|gezi rotası|keşif rotası|tarihçesi|tanıtımı|müzesi rehberi|nasıl gidilir)\b/i.test(
+    /(gezilecek yerler|gezi rehberi|gezi rotası|keşif rotası|müzesi rehberi|nasıl gidilir)/.test(
       text
     );
+  if (isArticle) {
+    return {
+      content_type: "article",
+      city_slug: detectedCity,
+      confidence: 0.88,
+    };
+  }
 
-  const isNews =
-    /\b(kazı|arkeoloji|arkeolojik|antik kent|restorasyon|restore|tarihi|müze|müzesi|bulundu|keşfedildi|gün yüzüne|iade edildi|tescil|bakanlık|ödül|ödülleri|kültür merkezi|açılış|miras|edebiyat|kitap|yazar|anma|sempozyum)\b/i.test(
+  // 2. Clearly news reports (archaeology, restoration, completed events, minister statements, awards)
+  // Check these BEFORE event so "etkinlik bittikten sonra devrediliyor" or "... dolu final" is NOT misclassified as an event!
+  const isStrongNews =
+    /(kazı|arkeoloji|arkeolojik|antik kent|höyük|restorasyon|restore edildi|konservasyon|gün yüzüne|iade edildi|tescil|ödüller sahiplerini buldu|sona erdi|dolu final|yönetimine devrediliyor|ziyaretçi rekoru)/.test(
+      titleLower
+    ) || /^bakan\s+[a-zçğıöşü]+\s*:/.test(titleLower);
+
+  if (isStrongNews) {
+    return {
+      content_type: "news",
+      city_slug: detectedCity,
+      confidence: 0.9,
+    };
+  }
+
+  // 3. Concrete upcoming/active cultural events or exhibitions
+  const isEvent =
+    /(sergi|sergisi|sergileri|konser|konseri|konserleri|festival|festivali|tiyatro|tiyatrosu|bale|opera|resital|resitali|prömiyer|bilet|etkinlik takvimi|etkinlik programı|etkinlik ajandası|turnesi|şenlik|söyleşi|atölye)/.test(
       text
     );
-
-  let contentType: ClassifiedDiscovery["content_type"] = "news";
-  if (isArticle) contentType = "article";
-  else if (isEvent) contentType = "event";
-  else if (isNews) contentType = "news";
-  else contentType = "news";
 
   return {
-    content_type: contentType,
+    content_type: isEvent ? "event" : "news",
     city_slug: detectedCity,
     confidence: 0.85,
   };
+}
+
+function normalizeClassifiedContentType(
+  rawType: string | undefined,
+  title: string
+): ClassifiedDiscovery["content_type"] {
+  const validTypes = ["news", "event", "article", "skip"] as const;
+  let contentType: ClassifiedDiscovery["content_type"] = validTypes.includes(
+    rawType as any
+  )
+    ? (rawType as ClassifiedDiscovery["content_type"])
+    : "news";
+
+  // Guard: If AI classified a completed news headline or minister statement as "event", downgrade to "news"
+  if (contentType === "event") {
+    const t = (title || "")
+      .replace(/İ/g, "i")
+      .replace(/I/g, "ı")
+      .toLocaleLowerCase("tr-TR");
+    if (
+      (t.includes("sona erdi") ||
+        t.includes("dolu final") ||
+        t.includes("ödüller sahiplerini buldu") ||
+        t.includes("yönetimine devrediliyor") ||
+        /^bakan\s+[a-zçğıöşü]+\s*:/.test(t)) &&
+      !t.includes("sergi")
+    ) {
+      contentType = "news";
+    }
+  }
+
+  return contentType;
 }
 
 export async function classifyDiscoveryItem(input: {
@@ -287,12 +345,14 @@ export async function classifyDiscoveryItem(input: {
       systemPrompt: SYSTEM_PROMPT,
       userPrompt,
       temperature: 0.1,
+      tier: "fast",
+      thinking: "minimal",
     });
 
-    const validTypes = ["news", "event", "article", "skip"] as const;
-    const contentType = validTypes.includes(parsed.content_type as any)
-      ? parsed.content_type
-      : "news";
+    const contentType = normalizeClassifiedContentType(
+      parsed.content_type,
+      input.title
+    );
 
     const verifiedCity =
       detectTurkishCityInText(`${input.title} ${input.snippet}`) ||
@@ -390,18 +450,22 @@ export async function classifyDiscoveryBatch(
       systemPrompt: BATCH_SYSTEM_PROMPT,
       userPrompt,
       temperature: 0.1,
+      tier: "fast",
+      thinking: "minimal",
     });
 
     if (Array.isArray(parsed)) {
       for (const entry of parsed) {
         const orig = remainingItems.find((r) => r.id === entry.id);
-        const validTypes = ["news", "event", "article", "skip"] as const;
-        const contentType = validTypes.includes(entry.content_type as any)
-          ? (entry.content_type as ClassifiedDiscovery["content_type"])
-          : "news";
+        const contentType = normalizeClassifiedContentType(
+          entry.content_type,
+          orig?.title || ""
+        );
 
         const verifiedCity = orig
-          ? detectTurkishCityInText(`${orig.title} ${orig.snippet}`)
+          ? detectTurkishCityInText(`${orig.title} ${orig.snippet}`) ||
+            entry.city_slug ||
+            null
           : entry.city_slug ?? null;
 
         result.set(entry.id, {

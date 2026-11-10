@@ -1,10 +1,16 @@
 import { callGeminiJson } from "@/lib/ai/gemini-client";
-import { fetchUrlContent } from "@/lib/ai/fetch-url-content";
+import { cleanPublisherText, stripDatelineFromParagraph } from "@/lib/ai/clean-publisher";
 import {
-  filterImageCandidatesBySize,
-} from "@/lib/ai/extract-page-images";
+  CORPORATE_STYLE_GUIDE,
+  buildDateContext,
+  countWords,
+  polishMarkdown,
+} from "@/lib/ai/editorial";
+import { fetchUrlContent } from "@/lib/ai/fetch-url-content";
+import { filterImageCandidatesBySize } from "@/lib/ai/extract-page-images";
 import { slugify } from "@/lib/slugify";
 import { uploadArticleImagesFromUrls } from "@/lib/storage/upload-image-from-url";
+import { formatSeoSummary } from "@/lib/utils";
 
 export type ArticleDepth = "standard" | "deep" | "comprehensive";
 
@@ -27,44 +33,49 @@ export type GeneratedArticle = {
   word_count?: number;
 };
 
+const ARTICLE_RESPONSE_SCHEMA: Record<string, unknown> = {
+  type: "object",
+  properties: {
+    title: { type: "string" },
+    excerpt: { type: "string" },
+    meta_description: { type: "string" },
+    content: { type: "string" },
+  },
+  required: ["title", "excerpt", "meta_description", "content"],
+};
+
 function buildArticleSystemPrompt(depth: ArticleDepth = "deep"): string {
   const depthGuide = {
-    standard: "Hedef uzunluk: 500 - 750 kelime. Konuya özgü 3-4 özgün alt başlık ve pratik gezi/ziyaret ipuçları.",
+    standard:
+      "Hedef uzunluk: 500 - 750 kelime. Konuya özgü 3-4 özgün alt başlık ve somut ziyaret/kültür bilgileri.",
     deep: `Hedef uzunluk: 800 - 1300 kelime.
-İçerikte şu unsurları konuya ve şehre özgü, doğal ve özgün alt başlıklar (## ...) altında işle:
-- Giriş ve mekânın/konunun şehir için kültürel anlamı (2 kapsamlı paragraf)
-- Tarihsel köken ve dönem bilgileri (2-3 paragraf)
-- Mimari doku, sanatsal özellikler ve öne çıkan eserler (2-3 paragraf)
-- Ziyaret deneyimi, yürüyüş/keşif rotaları ve çevre duraklar (2-3 paragraf)
-- Ulaşım, ziyaret saatleri, Müzekart/giriş bilgileri ve pratik tavsiyeler`,
-    comprehensive: `Hedef uzunluk: 1300 - 2000+ kelime.
-Kapsamlı bir kültür-gezi rehberi niteliğinde; konuya ve mekâna özgü özgün alt başlıklar (## ...) altında tarihsel arka planı, mimari ve sanatsal incelemeyi, adım adım gezi güzergâhını ve pratik ziyaretçi bilgilerini ayrıntılı paragraflarla inşa et.`,
+İçerikte şu unsurları konuya ve şehre özgü, doğal ve somut alt başlıklar (## ...) altında işle:
+- Giriş ve mekânın/konunun şehir için kültürel ve tarihsel önemi (2 kapsamlı paragraf)
+- Tarihsel arka plan, dönemler ve arkeolojik/tarihî bağlam (2-3 paragraf)
+- Mimari doku, sanatsal özellikler ve öne çıkan bölümler/eserler (2-3 paragraf)
+- Ziyaret deneyimi, çevre kültür durakları ve pratik ziyaretçi bilgileri (2-3 paragraf)`,
+    comprehensive: `Hedef uzunluk: 1300 - 2000 kelime.
+Kapsamlı bir kültür-gezi dosyası niteliğinde; konuya ve mekâna özgü özgün alt başlıklar (## ...) altında tarihsel arka planı, mimari ve sanatsal incelemeyi, adım adım keşif güzergâhını ve ziyaretçi bilgilerini ayrıntılı paragraflarla inşa et.`,
   };
 
-  return `Sen Türkiye odaklı kıdemli bir kültür araştırmacısı ve gezi editörüsün. Seni de Bekleriz (senidebekleriz.com) portalı için zengin, akıcı, derinlikli Türkçe kültür ve gezi rehberleri üretiyorsun.
+  return `Sen Türkiye odaklı kıdemli bir kültür araştırmacısı ve gezi editörüsün. "Seni de Bekleriz" (senidebekleriz.com) portalı için kurumsal, somut bilgiye dayalı, derinlikli Türkçe kültür ve gezi rehberleri üretiyorsun.
+
+${buildDateContext()}
 
 ${depthGuide[depth]}
 
-KURALLAR:
-- Markdown formatında yaz (## konuya özgü alt başlıklar, temiz paragraflar)
-- ŞABLON BAŞLIK YASAĞI: Asla "Tarihsel Köken ve Dönem Bilgileri", "Mimari ve Sanatsal Özellikler", "Detaylı Şehir Kültürü ve Gezi Tavsiyeleri", "Editör Notu ve Kaynakça", "1. Soru:" gibi yapay zeka şablonu kokan basmakalıp alt başlıklar kullanma; her alt başlık anlatılan antik kente, müzeye veya şehre özel olsun.
-- Yapay zeka klişelerinden ("adeta bir zaman yolculuğu", "büyüleyici atmosfer", "unutulmaz bir deneyim") kaçın; somut ve bilgi dolu bir editoryal dil kullan.
-- Kesinlikle hiçbir ham HTML etiketi (<a href...>, <font>, vb.) kullanma.
-- Kaynak metni kelimesi kelimesine kopyalama; editoryal derinlikle yeniden yazım yap
-- Yanıt yalnızca geçerli JSON:
-{"title":"...","excerpt":"...","meta_description":"...","content":"..."}`;
-}
+${CORPORATE_STYLE_GUIDE}
 
-const BASE_SYSTEM_PROMPT = buildArticleSystemPrompt("deep");
+EK REHBER KURALLARI:
+- Markdown formatında yaz (giriş paragrafından sonra ## konuya özgü alt başlıklar ve doyurucu paragraflar).
+- ŞABLON BAŞLIK YASAĞI: Asla "Tarihsel Köken ve Dönem Bilgileri", "Mimari ve Sanatsal Özellikler", "Detaylı Şehir Kültürü ve Gezi Tavsiyeleri", "Editör Notu", "Kaynakça", "Sonuç" gibi basmakalıp şablon alt başlıklar kullanma; her alt başlık anlatılan antik kente, müzeye veya şehre özel olsun.
+- Kaynak metni kelimesi kelimesine kopyalama; somut verileri koruyarak editoryal derinlikle yeniden yaz.`;
+}
 
 const URL_SYSTEM_APPEND = `
 URL kaynağı verildiğinde:
-- Sayfadaki gerçek bilgileri (mekan, mimari, tarihi dönem, etkinlik, tarih, konum) doğru yansıt
-- Eğer kaynak "kulturportali.gov.tr" veya valilik/bakanlık sitesi ise: Resmi kuru bürokratik dilden tamamen arındır; samimi, sürükleyici ve rehber niteliğinde zengin bir Türkçe gezi/kültür makalesine dönüştür. Tarihçe, mimari detaylar ve ziyaret ipuçlarını akıcı anlat.
-- Eğer kaynak "kulturyolufestivali.com" veya festival duyurusu ise: Festivalin düzenlendiği şehrin kültürel atmosferini, etkinliğin sanat değerini ve katılımcı deneyimini öne çıkar.
-- Ton: Kültür, tarih, sanat ve gezi odaklı Seni de Bekleriz editoryal stili
-- Editör Notu'nda kaynak URL'yi "Kaynak: ..." şeklinde belirt
-- Kaynak kültür/tarih dışıysa yine de nötr özet yap; yeme-içme reklam tonu kullanma`;
+- Sayfadaki doğrulanmış bilgileri (mekan, mimari, tarihi dönem, eserler, konum) eksiksiz koru; kaynakta olmayan uydurma saat/fiyat bilgisi ekleme.
+- Eğer kaynak "kulturportali.gov.tr" veya valilik/bakanlık sitesi ise: Resmi bürokratik dili akıcı, kurumsal ve rehber niteliğinde bir kültür dosyasına dönüştür.`;
 
 function injectInlineImages(
   content: string,
@@ -113,7 +124,7 @@ function replaceSourceImageUrls(
 export async function generateArticleDraft(
   input: GenerateArticleInput
 ): Promise<GeneratedArticle> {
-  let topic = input.topic.trim();
+  let topic = cleanPublisherText(input.topic.trim());
   let sourceBlock: string | null = null;
   let fetchedImages: string[] = [];
   let slugHint = slugify(topic || "draft");
@@ -127,7 +138,7 @@ export async function generateArticleDraft(
       });
 
       if (!topic) {
-        topic = fetched.pageTitle || new URL(fetched.url).hostname;
+        topic = cleanPublisherText(fetched.pageTitle || new URL(fetched.url).hostname);
       }
 
       slugHint = slugify(topic);
@@ -135,13 +146,13 @@ export async function generateArticleDraft(
 
       sourceBlock = [
         `Kaynak URL: ${fetched.url}`,
-        fetched.pageTitle ? `Sayfa başlığı: ${fetched.pageTitle}` : null,
+        fetched.pageTitle ? `Sayfa başlığı: ${cleanPublisherText(fetched.pageTitle)}` : null,
         `Sayfa metni (referans): ${fetched.pageText}`,
       ]
         .filter(Boolean)
         .join("\n");
     } catch {
-      const fallback = [input.topic, input.fallbackText]
+      const fallback = [topic, stripDatelineFromParagraph(input.fallbackText || "")]
         .filter(Boolean)
         .join("\n\n")
         .trim();
@@ -152,7 +163,7 @@ export async function generateArticleDraft(
 
       sourceBlock = [
         `Kaynak URL: ${input.sourceUrl.trim()}`,
-        input.topic ? `Başlık: ${input.topic}` : null,
+        topic ? `Başlık: ${topic}` : null,
         `Kaynak özeti: ${fallback}`,
       ]
         .filter(Boolean)
@@ -169,8 +180,8 @@ export async function generateArticleDraft(
     input.cityName ? `Şehir: ${input.cityName}` : null,
     `Yazı türü: ${input.type || "guide"}`,
     sourceBlock
-      ? `${sourceBlock}\n\nYukarıdaki kaynak referans alınarak özgün bir blog yazısı oluştur.`
-      : "Türkiye kültür/tarih/sanat gezi rehberi sitesi için özgün bir yazı oluştur.",
+      ? `${sourceBlock}\n\nYukarıdaki kaynak referans alınarak kurumsal ve özgün bir kültür/gezi rehberi oluştur.`
+      : "Türkiye kültür, tarih ve sanat portalı için özgün ve kurumsal bir kültür rehberi oluştur.",
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -190,33 +201,41 @@ export async function generateArticleDraft(
         ? `${systemPrompt}\n${URL_SYSTEM_APPEND}`
         : systemPrompt,
       userPrompt,
-      temperature: sourceBlock ? 0.45 : 0.65,
+      temperature: sourceBlock ? 0.4 : 0.55,
       maxOutputTokens: 8192,
+      thinking: "low",
+      responseSchema: ARTICLE_RESPONSE_SCHEMA,
     });
   } catch (error) {
-    console.warn("generateArticleDraft AI fallback triggered:", error instanceof Error ? error.message : error);
+    console.warn(
+      "generateArticleDraft AI fallback triggered:",
+      error instanceof Error ? error.message : error
+    );
+    const cleanFallbackBody = stripDatelineFromParagraph(
+      input.fallbackText || `${topic}, Türkiye'nin öne çıkan kültür ve miras durakları arasında yer almaktadır.`
+    );
     parsed = {
       title: topic,
-      excerpt: (input.fallbackText || topic).slice(0, 160),
-      meta_description: `${topic} hakkında detaylı gezi rehberi, tarihi ve kültürel bilgiler.`,
+      excerpt: formatSeoSummary(cleanFallbackBody, 160),
+      meta_description: formatSeoSummary(
+        `${topic} hakkında kültür, tarih ve ziyaret bilgileri.`,
+        155
+      ),
       content: [
-        `# ${topic}`,
+        cleanFallbackBody,
         "",
-        input.fallbackText || `${topic} hakkında kültür, sanat ve tarih odaklı gezi rehberi Seni de Bekleriz'de.`,
-        "",
-        "## Öne Çıkan Özellikler ve Ziyaret Notları",
-        "Bu mekan ve kültürel değer hakkında güncel gezi notları, mimari doku ve ziyaret saatleri resmi bilgilendirmeler doğrultusunda sunulmaktadır.",
-        "",
-        "## Editör Notu",
-        input.sourceUrl ? `Kaynak: [Orijinal Bilgi ve Detaylar](${input.sourceUrl})` : "Kaynak: Kültür ve Sanat Portalı.",
+        `## ${topic} ve Kültürel Miras Değeri`,
+        "Mekânın tarihsel gelişimi, mimari dokusu ve güncel ziyaret koşulları resmi kültür envanteri verileri doğrultusunda değerlendirilmektedir.",
       ].join("\n"),
     };
   }
 
   const media = await mediaPromise;
+  const cleanTitle = cleanPublisherText(parsed.title || topic);
+  const polishedContent = polishMarkdown(parsed.content, cleanTitle);
 
   const contentWithMappedUrls = replaceSourceImageUrls(
-    parsed.content,
+    polishedContent,
     fetchedImages,
     media.uploadedImages
   );
@@ -224,13 +243,23 @@ export async function generateArticleDraft(
   const contentWithImages = injectInlineImages(
     contentWithMappedUrls,
     media.uploadedImages,
-    parsed.title
+    cleanTitle
   );
 
-  const wordCount = contentWithImages.trim().split(/\s+/).filter(Boolean).length;
+  const wordCount = countWords(contentWithImages);
 
   return {
-    ...parsed,
+    title: cleanTitle,
+    excerpt: formatSeoSummary(
+      stripDatelineFromParagraph(cleanPublisherText(parsed.excerpt || cleanTitle)),
+      180
+    ),
+    meta_description: formatSeoSummary(
+      stripDatelineFromParagraph(
+        cleanPublisherText(parsed.meta_description || parsed.excerpt || cleanTitle)
+      ),
+      155
+    ),
     content: contentWithImages,
     cover_image: media.coverImage,
     uploaded_images: media.uploadedImages,

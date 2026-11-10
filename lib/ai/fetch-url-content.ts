@@ -7,6 +7,23 @@ import {
   stripDatelineFromParagraph,
   cleanPublisherText,
 } from "@/lib/ai/clean-publisher";
+import {
+  isGoogleNewsArticleUrl,
+  resolvePublisherUrl,
+} from "@/lib/discovery/resolve-google-news-url";
+
+export type ExtractedJsonLdEvent = {
+  name?: string;
+  startDate?: string;
+  endDate?: string;
+  venueName?: string;
+  cityLocality?: string;
+  streetAddress?: string;
+  ticketUrl?: string;
+  isFree?: boolean;
+  performer?: string;
+  organizer?: string;
+};
 
 export type FetchedUrlContent = {
   url: string;
@@ -14,6 +31,8 @@ export type FetchedUrlContent = {
   pageText: string;
   imageUrls: string[];
   siteName?: string;
+  publishedAt?: string;
+  jsonLdEvent?: ExtractedJsonLdEvent;
 };
 
 const SOCIAL_BOT_USER_AGENT =
@@ -182,6 +201,15 @@ function isBoilerplateParagraph(text: string): boolean {
     return true;
   }
 
+  // Ticketing site generic SEO meta descriptions (Passo, Biletix, Biletinial homepages)
+  if (
+    /(aradığın tüm maç biletleri|dilediğin etkinlik biletini passo'dan|maç biletleri,\s*konser biletleri,\s*tiyatro biletleri)/i.test(
+      t
+    )
+  ) {
+    return true;
+  }
+
   // Publisher legal/copyright disclaimers
   if (
     /(künye\s*©|tüm hakları saklıdır|izinsiz kopyalanamaz|izinsiz ve kaynak gösterilmeden|ajansların aktardığı|yasal uyarı\s*:|demirören medya|turkuvaz medya|izinsiz kullanılamaz|tel:\s*\+?\d|faks:\s*\+?\d|yazarlar\s+haberler\s+milliyet|hakaret içeren cümleler|yorumları onaylanmamaktadır)/i.test(
@@ -248,14 +276,22 @@ function extractBlocksFromHtml(html: string): string[] {
   }
 
   // Some publishers (e.g. milliyetsanat.com) use <div> or <br> inside the article container instead of <p>
+  // IMPORTANT: Never split on inline </strong>, </b>, </em>, </span> — doing so shatters sentences!
   if (paragraphs.length === 0) {
     const blockSeparated = html
       .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<\/(div|p|strong|h[1-6]|li|blockquote)>/gi, "\n\n")
+      .replace(/<\/(div|p|h[1-6]|li|blockquote|section|article|tr)>/gi, "\n\n")
       .replace(/<[^>]+>/g, " ");
     const divLines = decodeHtmlEntities(blockSeparated)
       .split(/\n+/)
-      .map((line) => stripDatelineFromParagraph(line.replace(/\s+/g, " ").trim()))
+      .map((line) =>
+        stripDatelineFromParagraph(
+          line
+            .replace(/\s+/g, " ")
+            .replace(/\s+([,.;:!?])/g, "$1")
+            .trim()
+        )
+      )
       .filter(
         (line) =>
           !isBoilerplateParagraph(line) &&
@@ -400,9 +436,23 @@ function extractMetaContent(
   return undefined;
 }
 
+function isEventSchemaType(typeVal: unknown): boolean {
+  if (!typeVal) return false;
+  const list = Array.isArray(typeVal) ? typeVal : [typeVal];
+  return list.some(
+    (t) =>
+      typeof t === "string" &&
+      /(^|\/)(Event|MusicEvent|TheaterEvent|VisualArtsEvent|ExhibitionEvent|Festival|ComedyEvent|DanceEvent|ScreeningEvent|EducationEvent|SocialEvent)$/i.test(
+        t.trim()
+      )
+  );
+}
+
 export function extractJsonLdText(html: string): {
   articleBody?: string;
   description?: string;
+  publishedAt?: string;
+  event?: ExtractedJsonLdEvent;
 } {
   const blocks =
     html.match(
@@ -411,6 +461,104 @@ export function extractJsonLdText(html: string): {
 
   const bodies: string[] = [];
   const descriptions: string[] = [];
+  let publishedAt: string | undefined;
+  let extractedEvent: ExtractedJsonLdEvent | undefined;
+
+  function visitNode(node: unknown) {
+    if (!node) return;
+    if (Array.isArray(node)) {
+      for (const item of node) visitNode(item);
+      return;
+    }
+    if (typeof node !== "object") return;
+    const record = node as Record<string, unknown>;
+
+    if (Array.isArray(record["@graph"])) {
+      visitNode(record["@graph"]);
+    }
+    if (record.mainEntity) {
+      visitNode(record.mainEntity);
+    }
+
+    if (typeof record.articleBody === "string" && record.articleBody.trim()) {
+      bodies.push(
+        stripDatelineFromParagraph(
+          decodeHtmlEntities(record.articleBody.replace(/\s+/g, " ").trim())
+        )
+      );
+    }
+    if (typeof record.description === "string" && record.description.trim()) {
+      const desc = decodeHtmlEntities(record.description.replace(/\s+/g, " ").trim());
+      if (!isBoilerplateParagraph(desc)) {
+        descriptions.push(desc);
+      }
+    }
+    if (!publishedAt && typeof record.datePublished === "string" && record.datePublished.trim()) {
+      publishedAt = record.datePublished.trim();
+    }
+
+    if (isEventSchemaType(record["@type"]) && !extractedEvent) {
+      const ev: ExtractedJsonLdEvent = {};
+      if (typeof record.name === "string" && record.name.trim()) {
+        ev.name = decodeHtmlEntities(record.name.trim());
+      }
+      if (typeof record.startDate === "string" && record.startDate.trim()) {
+        ev.startDate = record.startDate.trim();
+      }
+      if (typeof record.endDate === "string" && record.endDate.trim()) {
+        ev.endDate = record.endDate.trim();
+      }
+      if (typeof record.isAccessibleForFree === "boolean") {
+        ev.isFree = record.isAccessibleForFree;
+      }
+
+      const loc = Array.isArray(record.location) ? record.location[0] : record.location;
+      if (loc && typeof loc === "object") {
+        const locObj = loc as Record<string, unknown>;
+        if (typeof locObj.name === "string" && locObj.name.trim()) {
+          ev.venueName = decodeHtmlEntities(locObj.name.trim());
+        }
+        const addr = locObj.address;
+        if (typeof addr === "string" && addr.trim()) {
+          ev.cityLocality = decodeHtmlEntities(addr.trim());
+        } else if (addr && typeof addr === "object") {
+          const addrObj = addr as Record<string, unknown>;
+          const locality =
+            (typeof addrObj.addressRegion === "string" && addrObj.addressRegion.trim()) ||
+            (typeof addrObj.addressLocality === "string" && addrObj.addressLocality.trim()) ||
+            undefined;
+          if (locality) ev.cityLocality = decodeHtmlEntities(locality);
+          if (typeof addrObj.streetAddress === "string" && addrObj.streetAddress.trim()) {
+            ev.streetAddress = decodeHtmlEntities(addrObj.streetAddress.trim());
+          }
+        }
+      }
+
+      const perf = Array.isArray(record.performer) ? record.performer[0] : record.performer;
+      if (perf && typeof perf === "object" && typeof (perf as any).name === "string") {
+        ev.performer = decodeHtmlEntities((perf as any).name.trim());
+      }
+      const org = Array.isArray(record.organizer) ? record.organizer[0] : record.organizer;
+      if (org && typeof org === "object" && typeof (org as any).name === "string") {
+        ev.organizer = decodeHtmlEntities((org as any).name.trim());
+      }
+
+      const offer = Array.isArray(record.offers) ? record.offers[0] : record.offers;
+      if (offer && typeof offer === "object") {
+        const offerObj = offer as Record<string, unknown>;
+        if (typeof offerObj.url === "string" && offerObj.url.startsWith("http")) {
+          ev.ticketUrl = offerObj.url.trim();
+        }
+        if (offerObj.price === 0 || offerObj.price === "0" || offerObj.price === "0.00") {
+          ev.isFree = true;
+        }
+      }
+
+      if (ev.startDate || ev.venueName || ev.name) {
+        extractedEvent = ev;
+      }
+    }
+  }
 
   for (const block of blocks) {
     const jsonMatch = block.match(/>([\s\S]*?)<\/script>/i);
@@ -418,32 +566,24 @@ export function extractJsonLdText(html: string): {
 
     try {
       const parsed = JSON.parse(jsonMatch[1].trim()) as unknown;
-      const nodes = Array.isArray(parsed) ? parsed : [parsed];
-
-      for (const node of nodes) {
-        if (!node || typeof node !== "object") continue;
-        const record = node as Record<string, unknown>;
-        if (typeof record.articleBody === "string" && record.articleBody.trim()) {
-          bodies.push(
-            decodeHtmlEntities(record.articleBody.replace(/\s+/g, " ").trim())
-          );
-        }
-        if (typeof record.description === "string" && record.description.trim()) {
-          descriptions.push(
-            decodeHtmlEntities(record.description.replace(/\s+/g, " ").trim())
-          );
-        }
-      }
+      visitNode(parsed);
     } catch {
       // Regex fallback for malformed JSON-LD (e.g. unescaped newlines in articleBody)
       const rawJson = jsonMatch[1];
       const bodyMatch = rawJson.match(/"articleBody"\s*:\s*"([\s\S]*?)"\s*,\s*"/);
       if (bodyMatch?.[1]) {
-        bodies.push(decodeHtmlEntities(bodyMatch[1].replace(/\s+/g, " ").trim()));
+        bodies.push(
+          stripDatelineFromParagraph(
+            decodeHtmlEntities(bodyMatch[1].replace(/\s+/g, " ").trim())
+          )
+        );
       }
       const descMatch = rawJson.match(/"description"\s*:\s*"([^"]*)"/);
       if (descMatch?.[1]) {
-        descriptions.push(decodeHtmlEntities(descMatch[1].replace(/\s+/g, " ").trim()));
+        const desc = decodeHtmlEntities(descMatch[1].replace(/\s+/g, " ").trim());
+        if (!isBoilerplateParagraph(desc)) {
+          descriptions.push(desc);
+        }
       }
     }
   }
@@ -451,7 +591,26 @@ export function extractJsonLdText(html: string): {
   return {
     articleBody: bodies.join("\n\n").trim() || undefined,
     description: descriptions.join("\n\n").trim() || undefined,
+    publishedAt,
+    event: extractedEvent,
   };
+}
+
+function formatJsonLdEventBlock(ev?: ExtractedJsonLdEvent): string {
+  if (!ev) return "";
+  const lines = [
+    ev.name ? `Etkinlik Adı: ${ev.name}` : null,
+    ev.startDate ? `Başlangıç Tarihi (ISO): ${ev.startDate}` : null,
+    ev.endDate ? `Bitiş Tarihi (ISO): ${ev.endDate}` : null,
+    ev.venueName ? `Mekân / Sahne: ${ev.venueName}` : null,
+    ev.cityLocality ? `Şehir / Konum: ${ev.cityLocality}` : null,
+    ev.streetAddress ? `Adres: ${ev.streetAddress}` : null,
+    ev.performer ? `Sanatçı / Topluluk: ${ev.performer}` : null,
+    ev.organizer ? `Düzenleyen Kurum: ${ev.organizer}` : null,
+    ev.isFree === true ? `Katılım: Ücretsiz / Halka Açık` : null,
+    ev.ticketUrl ? `Bilet Bağlantısı: ${ev.ticketUrl}` : null,
+  ].filter(Boolean);
+  return lines.length >= 2 ? lines.join("\n") : "";
 }
 
 function deduplicateBlocks(blocks: string[]): string[] {
@@ -461,8 +620,17 @@ function deduplicateBlocks(blocks: string[]): string[] {
   for (const raw of blocks) {
     const trimmed = raw.replace(/\s+/g, " ").trim();
     if (!trimmed) continue;
+    if (isBoilerplateParagraph(trimmed)) continue;
     const key = trimmed.toLocaleLowerCase("tr-TR").replace(/[^a-z0-9çğıöşü]/g, "");
     if (key.length < 8) continue;
+    // Skip truncated meta description snippets ending in ellipsis if full paragraph already exists
+    const prefixKey = key.slice(0, 75);
+    if (
+      /[…]$|\.{3}$/.test(trimmed) &&
+      Array.from(seen).some((s) => s.startsWith(prefixKey) && s.length > key.length)
+    ) {
+      continue;
+    }
     if (seen.has(key)) continue;
     seen.add(key);
     result.push(trimmed);
@@ -482,6 +650,7 @@ export function extractPageTextFromHtml(
 
   const articleText = articleParagraphs.join("\n\n");
   const jsonBody = jsonLd.articleBody || "";
+  const eventSummaryBlock = formatJsonLdEventBlock(jsonLd.event);
 
   let bestBody: string[] = [];
 
@@ -510,14 +679,15 @@ export function extractPageTextFromHtml(
     const rawBestText = bestBody.join(" ");
     const blocksToMerge =
       rawBestText.length >= 150
-        ? bestBody
-        : [ogDescription || "", metaDescription || "", ...bestBody];
+        ? [eventSummaryBlock, ...bestBody]
+        : [eventSummaryBlock, ogDescription || "", metaDescription || "", ...bestBody];
     const combinedBlocks = deduplicateBlocks(blocksToMerge);
     return combinedBlocks.join("\n\n").trim().slice(0, maxLength);
   }
 
   // Fallback 2: general stripped HTML with headers/nav removed
   const chunks = deduplicateBlocks([
+    eventSummaryBlock,
     ogDescription || "",
     metaDescription || "",
     stripHtml(html),
@@ -549,6 +719,17 @@ function extractTitle(html: string): string | undefined {
   return titleMatch?.[1]
     ? cleanPublisherText(decodeHtmlEntities(titleMatch[1].replace(/\s+/g, " ").trim()))
     : undefined;
+}
+
+function extractPublishedAt(html: string, jsonLdPub?: string): string | undefined {
+  if (jsonLdPub) return jsonLdPub;
+  return (
+    extractMetaContent(html, "property", "article:published_time") ||
+    extractMetaContent(html, "property", "og:pubdate") ||
+    extractMetaContent(html, "name", "pubdate") ||
+    extractMetaContent(html, "name", "publishdate") ||
+    undefined
+  );
 }
 
 function extractSiteName(html: string, pageUrl: string): string | undefined {
@@ -617,7 +798,16 @@ export async function fetchUrlContent(
     throw new Error("Geçersiz URL");
   }
 
-  let response = await fetchPublicResource(url, {
+  let targetUrl = url;
+  if (isGoogleNewsArticleUrl(url)) {
+    try {
+      targetUrl = await resolvePublisherUrl(url);
+    } catch {
+      targetUrl = url;
+    }
+  }
+
+  let response = await fetchPublicResource(targetUrl, {
     headers: {
       "User-Agent": options?.userAgent || BROWSER_USER_AGENT,
       Accept:
@@ -640,7 +830,7 @@ export async function fetchUrlContent(
   // Retry with social crawler User-Agent if blocked by WAF (e.g. 403 / 406 on Euronews, etc.)
   if (!response.ok && [403, 406, 429].includes(response.status)) {
     try {
-      const retryRes = await fetchPublicResource(url, {
+      const retryRes = await fetchPublicResource(targetUrl, {
         headers: {
           "User-Agent": SOCIAL_BOT_USER_AGENT,
           Accept: "*/*",
@@ -670,10 +860,12 @@ export async function fetchUrlContent(
   }
 
   const html = await response.text();
-  const resolvedUrl = response.url || url;
+  const resolvedUrl = response.url || targetUrl;
   const pageTitle = extractTitle(html);
   const siteName = extractSiteName(html, resolvedUrl);
   const imageUrls = extractPageImageUrls(html, resolvedUrl);
+  const jsonLd = extractJsonLdText(html);
+  const publishedAt = extractPublishedAt(html, jsonLd.publishedAt);
   const maxLength = options?.maxTextLength ?? 12000;
   const pageText = mergeTextParts(
     extractPageTextFromHtml(html, maxLength),
@@ -685,7 +877,15 @@ export async function fetchUrlContent(
     throw new Error("Sayfadan yeterli metin çıkarılamadı");
   }
 
-  return { url: resolvedUrl, pageTitle, pageText, imageUrls, siteName };
+  return {
+    url: resolvedUrl,
+    pageTitle,
+    pageText,
+    imageUrls,
+    siteName,
+    publishedAt,
+    jsonLdEvent: jsonLd.event,
+  };
 }
 
 export function buildTextFromFallback(input: {

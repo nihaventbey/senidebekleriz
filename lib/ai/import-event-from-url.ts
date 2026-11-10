@@ -1,6 +1,7 @@
 import {
   buildTextFromFallback,
   fetchUrlContent,
+  type ExtractedJsonLdEvent,
 } from "@/lib/ai/fetch-url-content";
 import { normalizeUrlContent } from "@/lib/ai/normalize-event";
 import { slugify } from "@/lib/slugify";
@@ -20,6 +21,8 @@ export async function importEventFromUrl(
   let pageTitle = options?.fallbackTitle || undefined;
   let pageText = "";
   let imageUrls: string[] = [];
+  let publishedAt: string | undefined;
+  let jsonLdEvent: ExtractedJsonLdEvent | undefined;
 
   const fallbackText = buildTextFromFallback({
     title: options?.fallbackTitle,
@@ -38,7 +41,9 @@ export async function importEventFromUrl(
     pageTitle = fetched.pageTitle || pageTitle;
     pageText = fetched.pageText;
     imageUrls = fetched.imageUrls;
-  } catch (error) {
+    publishedAt = fetched.publishedAt;
+    jsonLdEvent = fetched.jsonLdEvent;
+  } catch {
     pageText = fallbackText || options?.fallbackTitle || "Kültür ve sanat etkinliği";
     pageTitle = pageTitle || options?.fallbackTitle || undefined;
   }
@@ -51,6 +56,8 @@ export async function importEventFromUrl(
     url: sourceUrl,
     pageTitle,
     pageText,
+    publishedAt,
+    jsonLdEvent,
   });
 
   const media = await uploadEventImagesFromUrls(

@@ -10,7 +10,7 @@ export function isGoogleNewsArticleUrl(url: string): boolean {
     const parsed = new URL(url);
     return (
       parsed.hostname.replace(/^www\./, "") === "news.google.com" &&
-      /\/articles\//.test(parsed.pathname)
+      /\/(articles|read)\//.test(parsed.pathname)
     );
   } catch {
     return false;

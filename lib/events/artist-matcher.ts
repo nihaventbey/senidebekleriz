@@ -46,6 +46,36 @@ export function isNonEventTitle(title: string): boolean {
   if (!title) return true;
   const lower = normalizeTurkish(title);
 
+  // Generic ticketing platform homepages / category index titles
+  if (
+    lower.includes("maç biletleri") ||
+    lower.includes("konser biletleri, tiyatro") ||
+    /^(biletix|passo|biletinial|bubilet|mobilet)\b/.test(lower)
+  ) {
+    return true;
+  }
+
+  // Newspaper opinion columns, YouTube episodes, political/administrative quotes
+  if (
+    lower.includes("köşe yazısı") ||
+    lower.includes("liste şov") ||
+    lower.includes("yönetimine devrediliyor") ||
+    /^bakan\s+[a-zçğıöşü]+\s*:/.test(lower)
+  ) {
+    return true;
+  }
+
+  // Completed / past-final news headlines (excluding ongoing exhibitions)
+  if (
+    (lower.includes("sona erdi") ||
+      lower.includes("dolu final") ||
+      lower.includes("ödüller sahiplerini buldu") ||
+      lower.includes("tamamlandı")) &&
+    !lower.includes("sergi")
+  ) {
+    return true;
+  }
+
   // News questions masquerading as events
   if (
     lower.endsWith("?") ||

@@ -6,8 +6,13 @@ import { generateNewsDraft } from "@/lib/ai/generate-news";
 import { generateArticleDraft } from "@/lib/ai/generate-article";
 import { importEventFromUrl } from "@/lib/ai/import-event-from-url";
 import { resolveFallbackCulturalImage } from "@/lib/ai/extract-page-images";
-import { sanitizeEventType, sanitizeIsoDate } from "@/lib/ai/normalize-event";
+import {
+  resolveExhibitionDates,
+  sanitizeEventType,
+} from "@/lib/ai/normalize-event";
 import { fetchUrlContent } from "@/lib/ai/fetch-url-content";
+import { isNonEventTitle } from "@/lib/events/artist-matcher";
+import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
 import { uniqueEventSlug } from "@/lib/events/slug";
 import { slugify } from "@/lib/slugify";
 import { getCityName, normalizeCitySlug } from "@/lib/cities/lookup";
@@ -54,6 +59,9 @@ export async function POST(request: NextRequest) {
         sourceName,
       });
       detectedType = classified.content_type === "skip" ? "news" : classified.content_type;
+      if (detectedType === "event" && isNonEventTitle(title)) {
+        detectedType = "news";
+      }
       detectedCitySlug = classified.city_slug;
     }
 
@@ -95,18 +103,40 @@ export async function POST(request: NextRequest) {
       }
 
       const resolvedCity = normalizeCitySlug(imported.city_slug || detectedCitySlug);
-      const safeTitle = (imported.title || title).trim();
+      const safeTitle = cleanPublisherText(imported.title || title).replace(/!+$/g, "").trim();
+      const safeEventType = sanitizeEventType(
+        imported.event_type,
+        `${safeTitle} ${snippet}`,
+        safeTitle
+      );
 
-      let rawCover = imported.cover_image || null;
-      if (!rawCover) {
-        rawCover = await resolveFallbackCulturalImage({
+      const storedCoverImage = await ensureStoredCoverImage(
+        imported.cover_image || null,
+        "events",
+        slug
+      );
+      let finalCover = await resolveArtistOrEventCover({
+        title: safeTitle,
+        summary: imported.summary || snippet,
+        event_type: safeEventType,
+        sourceCover: storedCoverImage,
+        slug,
+      });
+
+      if (!finalCover && safeEventType !== "konser") {
+        const fallbackCover = await resolveFallbackCulturalImage({
           title: safeTitle,
           cityName: getCityName(resolvedCity),
           category: "kultur_sanat",
         });
+        finalCover = await ensureStoredCoverImage(fallbackCover, "events", slug);
       }
 
-      const storedCoverImage = await ensureStoredCoverImage(rawCover, "events", slug);
+      const resolvedDates = resolveExhibitionDates(
+        safeEventType,
+        imported.starts_at,
+        imported.ends_at
+      );
 
       const { data, error } = await supabaseAdmin
         .from("cultural_events")
@@ -115,16 +145,16 @@ export async function POST(request: NextRequest) {
           slug,
           summary: formatSeoSummary(imported.summary || snippet || safeTitle),
           description: imported.description || snippet || null,
-          event_type: sanitizeEventType(imported.event_type, `${safeTitle} ${snippet}`),
+          event_type: safeEventType,
           status: "pending_review",
           source_name: sourceName,
           source_url: sourceUrl,
           ticket_url: imported.ticket_url || null,
           city_slug: resolvedCity,
           venue_name: imported.venue_name || null,
-          starts_at: sanitizeIsoDate(imported.starts_at),
-          ends_at: sanitizeIsoDate(imported.ends_at),
-          cover_image: storedCoverImage,
+          starts_at: resolvedDates.starts_at,
+          ends_at: resolvedDates.ends_at,
+          cover_image: finalCover,
           meta_title: imported.meta_title ? String(imported.meta_title).slice(0, 60) : null,
           meta_description: imported.meta_description
             ? formatSeoSummary(String(imported.meta_description), 160)
@@ -132,6 +162,7 @@ export async function POST(request: NextRequest) {
           raw_payload: {
             image_urls: imported.image_urls,
             source_url: sourceUrl,
+            is_free: Boolean(imported.is_free),
           },
           updated_at: new Date().toISOString(),
         })

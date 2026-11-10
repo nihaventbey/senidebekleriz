@@ -170,5 +170,17 @@ describe("stripDatelineFromParagraph", () => {
         "ANKARA (İHA) -- Devlet Tiyatroları yeni sezona hazır."
       )
     ).toBe("Devlet Tiyatroları yeni sezona hazır.");
+
+    expect(
+      stripDatelineFromParagraph(
+        "ANTALYA, (DHA) - KÜLTÜR ve Turizm Bakanlığı tarafından düzenlenen festival sona erdi."
+      )
+    ).toBe("Kültür ve Turizm Bakanlığı tarafından düzenlenen festival sona erdi.");
+
+    expect(
+      stripDatelineFromParagraph(
+        "İSTANBUL, (DHA) - AKM'de düzenlenen konser yoğun ilgi gördü."
+      )
+    ).toBe("AKM'de düzenlenen konser yoğun ilgi gördü.");
   });
 });

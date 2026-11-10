@@ -144,5 +144,12 @@ export async function getDiscoveredContentById(
     .maybeSingle();
 
   if (error || !data) return null;
-  return data as DiscoveredContentRow;
+  const row = data as DiscoveredContentRow;
+  if (
+    row.content_type === "article" &&
+    (row.raw_payload as any)?.inferred_content_type === "news"
+  ) {
+    row.content_type = "news";
+  }
+  return row;
 }
