@@ -6,6 +6,7 @@ import {
   heuristicNormalizeEvent,
 } from "@/lib/ai/normalize-event";
 import { extractJsonLdText, extractPageTextFromHtml } from "@/lib/ai/fetch-url-content";
+import { stripDatelineFromParagraph } from "@/lib/ai/clean-publisher";
 import { heuristicClassify, isRejectedNonTurkishOrCommercialContent } from "@/lib/discovery/classify-content";
 import { isNonEventTitle } from "@/lib/events/artist-matcher";
 import {
@@ -184,6 +185,50 @@ describe("Event & News Editorial Engine", () => {
 
       expect(report.passed).toBe(true);
       expect(report.score).toBeGreaterThanOrEqual(85);
+    });
+
+    it("extracts unclosed <p> paragraphs in property=articleBody and strips author bios and related news", () => {
+      const html = `
+        <html><body>
+          <div class="text-content d-flex flex-column gap-4" property="articleBody">
+            <h2>toplantının kapsamı ve katılımcılar:</h2>
+            <p>Şehitkamil Belediyesi’nin paydaşları arasında yer aldığı I. Uluslararası Türk Dünyası Kazı Sonuçları Toplantısı, ortak tarihî ve kültürel mirasın korunmasını amaçlayan bir platform olarak düzenlendi.
+            <p>Toplantıya, <strong>Kültür ve Turizm Bakan Yardımcısı Nadir Alpaslan</strong>, <strong>Gaziantep Vali Yardımcısı Bülent Uygur</strong> ile 6 ülkeden bilim insanları katıldı.
+            <h3>dülük'ün arkeolojik değeri ve gelecek planları:</h3>
+            <p><strong>Dülük Antik Kenti</strong>, Şehitkamil sınırları içinde önemli bir kültürel miras alanı olarak toplantının dikkat çeken konusu oldu ve Roma dönemi Mithras kutsal alanları incelendi.
+            <p><strong><i>ŞEHİTKAMİL BELEDİYESİ’NİN DE PAYDAŞLARI ARASINDA BULUNDUĞU, TÜRK DÜNYASININ ORTAK TARİHÎ VE KÜLTÜREL MİRASININ KORUNMASI AMACIYLA DÜZENLENEN I. ULUSLARARASI TÜRK DÜNYASI KAZI SONUÇLARI TOPLANTISI GERÇEKLEŞTİRİLDİ.</i></strong>
+          </div>
+          <div class="author-card-modern">
+            <div class="author-info">
+              <span class="author-badge">EDİTÖR</span>
+              <h3 class="author-name">Ayşe Yıldız</h3>
+              <p class="author-bio">Ben Ayşe Yıldız, 29 yaşındayım. aksiyon.com.tr'nin başkent muhabiriyim. Bürokrasi ve diplomasi trafiğini takip ediyorum.</p>
+            </div>
+          </div>
+          <div class="related-news">
+            <div class="section-title"><h4>İLGİLİ HABERLER</h4></div>
+            <div class="row"><h3>Palamut balığını dondurucuda saklama yöntemi</h3><p>Adet fiyatı 40 TL ye gerileyen palamutu temizleme rehberi ve detaylar.</p></div>
+          </div>
+        </body></html>
+      `;
+      const extracted = extractPageTextFromHtml(html);
+      expect(extracted).toContain("## Toplantının Kapsamı ve Katılımcılar");
+      expect(extracted).toContain("## Dülük'ün Arkeolojik Değeri ve Gelecek Planları");
+      expect(extracted).toContain("Nadir Alpaslan, Gaziantep Vali Yardımcısı Bülent Uygur");
+      expect(extracted).not.toContain("Ayşe Yıldız");
+      expect(extracted).not.toContain("29 yaşındayım");
+      expect(extracted).not.toContain("Palamut balığını");
+      expect(extracted).not.toContain("ŞEHİTKAMİL BELEDİYESİ’NİN DE PAYDAŞLARI");
+    });
+
+    it("strips bare ALL-CAPS city datelines from paragraphs", () => {
+      expect(
+        stripDatelineFromParagraph(
+          "SİDE - Antalya’nın Manavgat ilçesindeki Side Antik Kenti’nde yürütülen arkeolojik kazı çalışmaları sürüyor."
+        )
+      ).toBe(
+        "Antalya’nın Manavgat ilçesindeki Side Antik Kenti’nde yürütülen arkeolojik kazı çalışmaları sürüyor."
+      );
     });
 
     it("polishes markdown without eating newlines after headings", () => {

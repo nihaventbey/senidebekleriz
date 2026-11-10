@@ -410,14 +410,19 @@ export async function generateNewsDraft(
       }
     );
 
-    // Self-healing revision pass if the draft failed quality checks
-    if (!report.passed && isGeminiConfigured()) {
+    // Self-healing revision pass ONLY on genuine editorial defects (copying, dateline leak, truncation, or < 140 words)
+    const needsRevision =
+      !report.passed &&
+      (report.wordCount < 140 ||
+        report.issues.some((i) => i.code !== "content_too_short"));
+
+    if (needsRevision && isGeminiConfigured()) {
       try {
         const revisionPrompt = [
           userPrompt,
           `ÖNCEKİ TASLAKTA TESPİT EDİLEN EDİTÖRYAL SORUNLAR:\n${formatIssuesForRevision(report)}`,
           `Önceki Başlık: ${sanitized.cleanTitle}\nÖnceki Spot: ${sanitized.cleanSummary}\nÖnceki Metin:\n${sanitized.cleanContent}`,
-          `GÖREV: Yukarıdaki sorunları gidererek haberi kurumsal yayın ilkelerine uygun, kaynaktaki somut verilere sadık, özgün cümlelerle ve en az ${targetRange.min} kelime olacak biçimde yeniden üret.`,
+          `GÖREV: Yukarıdaki sorunları gidererek haberi kurumsal yayın ilkelerine uygun, kaynaktaki somut verilere sadık ve özgün cümlelerle yeniden üret.`,
         ].join("\n\n");
 
         const revised = await callGeminiJson<GeneratedNewsDraft>({
@@ -426,7 +431,7 @@ export async function generateNewsDraft(
           temperature: 0.3,
           maxOutputTokens: 8192,
           thinking: "minimal",
-          timeoutMs: 30000,
+          timeoutMs: 18000,
           responseSchema: NEWS_RESPONSE_SCHEMA,
         });
 
@@ -490,8 +495,15 @@ export async function generateNewsDraft(
 
     const rawLines = rawPageText
       .split(/\n+/)
-      .map((p) => stripDatelineFromParagraph(cleanPublisherText(p.trim())))
+      .map((p) => {
+        const trimmed = p.trim();
+        if (/^#{2,3}\s+/.test(trimmed)) {
+          return `## ${cleanPublisherText(trimmed.replace(/^#{2,3}\s+/, "").replace(/:+$/, ""))}`;
+        }
+        return stripDatelineFromParagraph(cleanPublisherText(trimmed));
+      })
       .filter((p) => {
+        if (p.startsWith("## ")) return p.length >= 12;
         if (p.length < 24) return false;
         // Skip broken sentence fragments starting with punctuation or lowercase conjunctions
         if (/^[,.;:!?\-–—]/.test(p)) return false;
@@ -500,14 +512,20 @@ export async function generateNewsDraft(
         return true;
       });
 
-    // Deduplicate paragraphs and convert ALL-CAPS subheadings into clean Markdown ## headings
+    // Deduplicate paragraphs and convert ALL-CAPS or colon-suffixed subheadings into clean Markdown ## headings
     const seenKeys = new Set<string>();
     const formattedBlocks: string[] = [];
     let leadSummary = "";
 
     for (const line of rawLines) {
-      if (isAllCapsHeadingLine(line)) {
-        const headingText = cleanPublisherText(toTurkishTitleCase(line));
+      if (line.startsWith("## ")) {
+        if (formattedBlocks.length > 0 && !formattedBlocks[formattedBlocks.length - 1].startsWith("## ")) {
+          formattedBlocks.push(line);
+        }
+        continue;
+      }
+      if (isAllCapsHeadingLine(line) || (line.length <= 75 && /:$/.test(line))) {
+        const headingText = cleanPublisherText(toTurkishTitleCase(line.replace(/:+$/, "")));
         if (headingText.length >= 12 && formattedBlocks.length > 0) {
           formattedBlocks.push(`## ${headingText}`);
         }
@@ -555,16 +573,21 @@ export async function generateNewsDraft(
     );
     const fallbackSummary = formatSeoSummary(rawFallbackSummary, 340);
 
-    const bodyBlocks =
+    let bodyBlocks =
       formattedBlocks.length > 2 && formattedBlocks[0] === leadSummary
         ? formattedBlocks.slice(1)
         : formattedBlocks;
 
+    // Never start the article body with a ## heading before the first paragraph
+    while (bodyBlocks.length > 0 && bodyBlocks[0].startsWith("## ")) {
+      bodyBlocks = bodyBlocks.slice(1);
+    }
+
     const rawFallbackContent =
       bodyBlocks.length > 0 ? bodyBlocks.join("\n\n") : fallbackSummary;
 
-    const fallbackContent = formatHeadingsWithHeuristics(
-      rawFallbackContent,
+    const fallbackContent = polishMarkdown(
+      formatHeadingsWithHeuristics(rawFallbackContent, cleanFallbackTitle),
       cleanFallbackTitle
     );
 

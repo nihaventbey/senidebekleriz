@@ -89,8 +89,51 @@ export function decodeHtmlEntities(text: string): string {
     });
 }
 
+const NOISY_CONTAINER_REGEX =
+  /<(div|section|aside|ul|ol)\b[^>]*\b(?:class|id)=["'][^"']*(?:reklam|advertisement|banner|ad-zone|ad-box|taboola|outbrain|criteo|teads|social-share|share-buttons|paylas|sosyal-medya|bizi-takip-edin|related-news|ilgili-haber|benzer-haber|diger-haberler|onerilen-haberler|populer-haberler|manset-haberler|cok-okunan|most-read|popular-news|trending-news|author-card|author-bio|author-info|author-box|post-author|yazar-kutu|editor-card|comments|yorumlar|yorum-alani|disqus|sidebar|widget)[^"']*["'][^>]*>/i;
+
+function stripBalancedNoisyContainers(html: string): string {
+  let current = html;
+  let safety = 0;
+  while (safety++ < 60) {
+    const match = current.match(NOISY_CONTAINER_REGEX);
+    if (!match || match.index === undefined) break;
+
+    const tag = match[1].toLowerCase();
+    const startIndex = match.index;
+    const tagStart = current.indexOf(">", startIndex);
+    if (tagStart === -1) break;
+
+    let depth = 1;
+    const tagRegex = new RegExp(`<(?:${tag}\\b[^>]*|\\/${tag}\\s*>)`, "gi");
+    tagRegex.lastIndex = tagStart + 1;
+
+    let endIndex = -1;
+    let m: RegExpExecArray | null;
+    while ((m = tagRegex.exec(current)) !== null) {
+      if (m[0].startsWith("</")) {
+        depth--;
+        if (depth === 0) {
+          endIndex = m.index + m[0].length;
+          break;
+        }
+      } else if (!m[0].endsWith("/>")) {
+        depth++;
+      }
+    }
+
+    if (endIndex !== -1) {
+      current = current.slice(0, startIndex) + " " + current.slice(endIndex);
+    } else {
+      // Unbalanced noisy tag: remove just the opening tag so we don't infinite-loop
+      current = current.slice(0, startIndex) + " " + current.slice(tagStart + 1);
+    }
+  }
+  return current;
+}
+
 function stripNonContentElements(html: string): string {
-  let cleaned = html
+  const cleaned = html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
@@ -104,26 +147,7 @@ function stripNonContentElements(html: string): string {
     .replace(/<dialog[\s\S]*?<\/dialog>/gi, " ")
     .replace(/<template[\s\S]*?<\/template>/gi, " ");
 
-  // Prune noisy wrapper sections (ads, related stories carousels, social sharing bars, comments)
-  cleaned = cleaned
-    .replace(
-      /<(?:div|section|aside|ul|ol)\b[^>]*\b(?:class|id)=["'][^"']*\b(reklam|advertisement|banner|ad-zone|taboola|outbrain|criteo|teads)\b[^"']*["'][\s\S]*?<\/(?:div|section|aside|ul|ol)>/gi,
-      " "
-    )
-    .replace(
-      /<(?:div|section|aside|ul|ol)\b[^>]*\b(?:class|id)=["'][^"']*\b(social-share|share-buttons|paylas|sosyal-medya|bizi-takip-edin)\b[^"']*["'][\s\S]*?<\/(?:div|section|aside|ul|ol)>/gi,
-      " "
-    )
-    .replace(
-      /<(?:div|section|aside|ul|ol)\b[^>]*\b(?:class|id)=["'][^"']*\b(related-news|ilgili-haber|benzer-haber|diger-haberler|onerilen-haberler|populer-haberler|manset-haberler)\b[^"']*["'][\s\S]*?<\/(?:div|section|aside|ul|ol)>/gi,
-      " "
-    )
-    .replace(
-      /<(?:div|section|aside|ul|ol)\b[^>]*\b(?:class|id)=["'][^"']*\b(comments|yorumlar|yorum-alani|disqus)\b[^"']*["'][\s\S]*?<\/(?:div|section|aside|ul|ol)>/gi,
-      " "
-    );
-
-  return cleaned;
+  return stripBalancedNoisyContainers(cleaned);
 }
 
 export function extractBalancedTag(
@@ -194,11 +218,31 @@ function isBoilerplateParagraph(text: string): boolean {
 
   // Social shares, push notifications, subscriber banners, clickbait transitions
   if (
-    /^(paylaş|haberi paylaş|fotoğraf:|yazar:|yorumlar|yorum yap|yorum bırakın|copyright|tüm hakları|çerez politikası|bizi takip edin|bizi google news|google news'ten takip|whatsapp kanalımıza|bildirimleri aç|günün manşetleri|haberin devamı|haberin detayları|tıklayın|detaylar için|abone ol|ilgili haberler|etiketler\s*:|künye|yeni sayımız bayilerde|yazarlar\s+haberler|gözden kaçırmayın|bakmayı unutmayın|benzer haberler|diğer haberler|sıradaki haber|öne çıkan haberler|taka okurlarına özel|uyarı\s*:|sosyal medyada takip|yorum kuralları|görüşlerinizi paylaşın|işte o anlar|işte detaylar)/i.test(
+    /^(paylaş|haberi paylaş|fotoğraf:|yazar:|yorumlar|yorum yap|yorum bırakın|copyright|tüm hakları|çerez politikası|bizi takip edin|bizi google news|google news'ten takip|whatsapp kanalımıza|bildirimleri aç|günün manşetleri|haberin devamı|haberin detayları|tıklayın|detaylar için|abone ol|ilgili haberler|çok okunan haberler|son dakika haberleri|etiketler\s*:|künye|yeni sayımız bayilerde|yazarlar\s+haberler|gözden kaçırmayın|bakmayı unutmayın|benzer haberler|diğer haberler|sıradaki haber|öne çıkan haberler|taka okurlarına özel|uyarı\s*:|sosyal medyada takip|yorum kuralları|görüşlerinizi paylaşın|işte o anlar|işte detaylar)/i.test(
       t
     )
   ) {
     return true;
+  }
+
+  // Editor / reporter self-bio boxes (e.g. "EDİTÖR Ayşe Yıldız Ben Ayşe Yıldız, 29 yaşındayım... muhabiriyim...")
+  if (
+    /\b(yaşındayım|muhabiriyim|editörüyüm|köşe yazarıyım|kulis bilgilerini ilk ben)\b/i.test(
+      t
+    ) ||
+    /^(editör|muhabir|yazar)\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+/i.test(
+      t
+    )
+  ) {
+    return true;
+  }
+
+  // Long ALL-CAPS duplicate summary / image caption blocks (> 80 chars, 100% uppercase letters)
+  if (t.length >= 80) {
+    const letters = t.replace(/[^a-zA-ZçğıöşüÇĞİÖŞÜ]/g, "");
+    if (letters.length >= 50 && letters === letters.toLocaleUpperCase("tr-TR")) {
+      return true;
+    }
   }
 
   // Ticketing site generic SEO meta descriptions (Passo, Biletix, Biletinial homepages)
@@ -227,6 +271,37 @@ function isEventOrCulturalDetail(text: string): boolean {
   );
 }
 
+const TURKISH_LOWER_CONJUNCTIONS = new Set([
+  "ve",
+  "ile",
+  "veya",
+  "de",
+  "da",
+  "için",
+  "gibi",
+  "olan",
+  "üzere",
+]);
+
+function normalizeHeadingBlockText(raw: string): string {
+  const cleaned = cleanPublisherText(raw.replace(/:+\s*$/, "").trim());
+  if (!cleaned) return "";
+  const words = cleaned.split(/\s+/);
+  return words
+    .map((word, idx) => {
+      const lower = word.toLocaleLowerCase("tr-TR");
+      if (idx > 0 && TURKISH_LOWER_CONJUNCTIONS.has(lower)) {
+        return lower;
+      }
+      if (/^[A-ZÇĞİÖŞÜ0-9]{2,}/.test(word) && word === word.toLocaleUpperCase("tr-TR") && word.length <= 6) {
+        return word;
+      }
+      const first = lower[0]?.toLocaleUpperCase("tr-TR") || "";
+      return first + lower.slice(1);
+    })
+    .join(" ");
+}
+
 function stripHtml(html: string): string {
   const cleaned = stripNonContentElements(html)
     .replace(/<br\s*\/?>/gi, "\n")
@@ -235,7 +310,14 @@ function stripHtml(html: string): string {
   const decoded = decodeHtmlEntities(cleaned.replace(/<[^>]+>/g, " "));
   const lines = decoded
     .split(/\n+/)
-    .map((line) => stripDatelineFromParagraph(line.replace(/\s+/g, " ").trim()))
+    .map((line) =>
+      stripDatelineFromParagraph(
+        line
+          .replace(/\s+/g, " ")
+          .replace(/\s+([,.;:!?])/g, "$1")
+          .trim()
+      )
+    )
     .filter(
       (line) =>
         !isBoilerplateParagraph(line) &&
@@ -246,8 +328,14 @@ function stripHtml(html: string): string {
 }
 
 function extractBlocksFromHtml(html: string): string[] {
+  // Close HTML5 unclosed <p> tags before the next block-level tag so regex matching never swallows across paragraphs
+  const normalizedHtml = html.replace(
+    /(<p\b[^>]*>(?:(?!<\/p\b|<p\b|<h[1-6]\b|<\/div\b|<\/section\b|<\/article\b|<\/main\b|<hr\b)[\s\S])*?)(?=<(?:p|h[1-6]|hr)\b|<\/(?:div|section|article|main|body)\b|$)/gi,
+    "$1</p>"
+  );
+
   const blockMatches = [
-    ...html.matchAll(/<(p|h2|h3|h4|li|blockquote)\b[^>]*>([\s\S]*?)<\/\1>/gi),
+    ...normalizedHtml.matchAll(/<(p|h2|h3|h4|li|blockquote)\b[^>]*>([\s\S]*?)<\/\1>/gi),
   ];
   const paragraphs: string[] = [];
 
@@ -262,14 +350,24 @@ function extractBlocksFromHtml(html: string): string[] {
       continue;
     }
     const rawText = decodeHtmlEntities(
-      match[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
+      match[2]
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .replace(/\s+([,.;:!?])/g, "$1")
+        .trim()
     );
+    if (isBoilerplateParagraph(rawText)) continue;
+
+    if (tag.startsWith("h")) {
+      const heading = normalizeHeadingBlockText(rawText);
+      if (heading.length >= 10 && heading.length <= 95 && !/[?!]$/.test(heading)) {
+        paragraphs.push(`## ${heading}`);
+      }
+      continue;
+    }
+
     const text = tag === "p" ? stripDatelineFromParagraph(rawText) : rawText;
-    const minLen = isEventOrCulturalDetail(text)
-      ? 8
-      : tag.startsWith("h")
-      ? 12
-      : 24;
+    const minLen = isEventOrCulturalDetail(text) ? 8 : 24;
     if (text.length >= minLen && !isBoilerplateParagraph(text)) {
       paragraphs.push(text);
     }
@@ -277,7 +375,8 @@ function extractBlocksFromHtml(html: string): string[] {
 
   // Some publishers (e.g. milliyetsanat.com) use <div> or <br> inside the article container instead of <p>
   // IMPORTANT: Never split on inline </strong>, </b>, </em>, </span> — doing so shatters sentences!
-  if (paragraphs.length === 0) {
+  const nonHeadingCount = paragraphs.filter((p) => !p.startsWith("## ")).length;
+  if (nonHeadingCount === 0) {
     const blockSeparated = html
       .replace(/<br\s*\/?>/gi, "\n")
       .replace(/<\/(div|p|h[1-6]|li|blockquote|section|article|tr)>/gi, "\n\n")
@@ -337,18 +436,18 @@ function extractArticleParagraphs(html: string): string[] {
   const cleaned = stripNonContentElements(html);
 
   const containerSpecs: Array<{ tag: string; regex: RegExp }> = [
-    // 1. Schema.org / Microdata itemprop="articleBody"
+    // 1. Schema.org / Microdata itemprop="articleBody" or RDFa property="articleBody"
     {
       tag: "div",
-      regex: /<div[^>]+itemprop=["']articleBody["']/i,
+      regex: /<div[^>]+(?:itemprop|property)=["']articleBody["']/i,
     },
     {
       tag: "section",
-      regex: /<section[^>]+itemprop=["']articleBody["']/i,
+      regex: /<section[^>]+(?:itemprop|property)=["']articleBody["']/i,
     },
     {
       tag: "article",
-      regex: /<article[^>]+itemprop=["']articleBody["']/i,
+      regex: /<article[^>]+(?:itemprop|property)=["']articleBody["']/i,
     },
     // 2. Specific class name tokens (delimited by whitespace or quotes)
     {

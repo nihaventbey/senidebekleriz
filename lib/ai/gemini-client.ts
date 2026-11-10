@@ -56,20 +56,18 @@ const DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 const QUALITY_MODELS = [
   "gemini-3.5-flash",
   "gemini-3-flash-preview",
-  "gemini-3.6-flash",
-  "gemini-3.7-flash",
-  "gemini-flash-latest",
   "gemini-3.5-flash-lite",
+  "gemini-3.1-flash-lite-preview",
   "gemini-3.1-flash-lite",
-  "gemini-flash-lite-latest",
+  "gemini-flash-latest",
 ];
 
 const FAST_MODELS = [
   "gemini-3.5-flash-lite",
+  "gemini-3.1-flash-lite-preview",
   "gemini-3.1-flash-lite",
-  "gemini-flash-lite-latest",
-  "gemini-3.5-flash",
   "gemini-3-flash-preview",
+  "gemini-3.5-flash",
 ];
 
 /** Kalıcı olarak "bu yanıtla başka model denemenin anlamı yok" hataları. */
@@ -79,7 +77,14 @@ class FatalGeminiError extends Error {}
 const modelCooldownUntil = new Map<string, number>();
 
 function markModelCooldown(model: string, durationMs: number) {
-  modelCooldownUntil.set(model, Date.now() + durationMs);
+  const until = Date.now() + durationMs;
+  modelCooldownUntil.set(model, until);
+  // gemini-3.5-flash ve gemini-3.6-flash aynı kota havuzunu paylaşıyor
+  if (model === "gemini-3.5-flash") {
+    modelCooldownUntil.set("gemini-3.6-flash", until);
+  } else if (model === "gemini-3.6-flash") {
+    modelCooldownUntil.set("gemini-3.5-flash", until);
+  }
 }
 
 function isLiteModel(model: string): boolean {
@@ -223,6 +228,77 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 type CallMode = "json" | "text";
 
+/**
+ * JSON Schema (draft-2020-12: `type: ["string", "null"]`) yapısını Gemini'nin
+ * yerel `responseSchema` (`type: "STRING", nullable: true`) formatına dönüştürür.
+ * Not: `responseJsonSchema` içinde dizi-tip (`["string", "null"]`) kullanıldığında
+ * `gemini-3.5-flash-lite` ve `gemini-3.1-flash-lite` modellerinin gramer derleyicisi
+ * askıda kalıp zaman aşımına düşmektedir; yerel `responseSchema` ile ~2 sn'de yanıt döner.
+ */
+export function toGeminiResponseSchema(
+  schema: Record<string, unknown>
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  const rawType = schema.type;
+
+  if (Array.isArray(rawType)) {
+    const nonNull = rawType.find((t) => t !== "null");
+    if (typeof nonNull === "string") {
+      out.type = nonNull.toUpperCase();
+    }
+    if (rawType.includes("null")) {
+      out.nullable = true;
+    }
+  } else if (typeof rawType === "string") {
+    out.type = rawType.toUpperCase();
+  }
+
+  if (schema.nullable === true) {
+    out.nullable = true;
+  }
+  if (typeof schema.description === "string") {
+    out.description = schema.description;
+  }
+  if (Array.isArray(schema.enum)) {
+    out.enum = schema.enum;
+  }
+  if (Array.isArray(schema.required)) {
+    out.required = schema.required;
+  }
+  if (schema.properties && typeof schema.properties === "object") {
+    const props: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(
+      schema.properties as Record<string, unknown>
+    )) {
+      if (v && typeof v === "object") {
+        props[k] = toGeminiResponseSchema(v as Record<string, unknown>);
+      }
+    }
+    out.properties = props;
+  }
+  if (schema.items && typeof schema.items === "object") {
+    out.items = toGeminiResponseSchema(schema.items as Record<string, unknown>);
+  }
+
+  return out;
+}
+
+function formatSchemaInstruction(schema?: Record<string, unknown>): string {
+  if (!schema || typeof schema !== "object") return "";
+  const props = schema.properties as Record<string, any> | undefined;
+  if (!props || typeof props !== "object") return "";
+
+  const fields = Object.entries(props).map(([key, def]) => {
+    const rawType = Array.isArray(def?.type) ? def.type.join("|") : def?.type || "any";
+    const enumPart = Array.isArray(def?.enum) ? ` (${def.enum.join(" | ")})` : "";
+    const descPart = typeof def?.description === "string" ? ` — ${def.description}` : "";
+    return `- "${key}": ${rawType}${enumPart}${descPart}`;
+  });
+
+  if (fields.length === 0) return "";
+  return `\n\nZORUNLU JSON ÇIKTI ŞEMASI (yalnızca geçerli JSON döndür, başka açıklama ekleme):\n${fields.join("\n")}`;
+}
+
 async function callGeminiRaw(
   req: GeminiJsonRequest,
   mode: CallMode
@@ -237,10 +313,12 @@ async function callGeminiRaw(
   const baseUrl = process.env.GEMINI_API_BASE || DEFAULT_BASE_URL;
   const tier = req.tier || "quality";
   const startedAt = Date.now();
-  const deadline = startedAt + (req.deadlineMs ?? (tier === "fast" ? 45_000 : 110_000));
-  // Askıda kalan bir model (ölçümde 90 sn+) tüm bütçeyi yememeli
-  const perAttemptTimeout = req.timeoutMs ?? (tier === "fast" ? 20_000 : 40_000);
+  const deadline = startedAt + (req.deadlineMs ?? (tier === "fast" ? 30_000 : 50_000));
+  // Vercel 60sn sunucusuz fonksiyon sınırını aşmamak için deneme başına sıkı zaman aşımı
+  const perAttemptTimeout = req.timeoutMs ?? (tier === "fast" ? 12_000 : 18_000);
   const defaultThinking: ThinkingLevel = tier === "fast" ? "minimal" : "low";
+  const schemaInstruction =
+    mode === "json" ? formatSchemaInstruction(req.responseSchema) : "";
 
   let lastError: Error | null = null;
   let attempts = 0;
@@ -248,13 +326,12 @@ async function callGeminiRaw(
 
   for (const model of getCandidateModels(tier)) {
     let useThinking = true;
-    let useSchema = Boolean(req.responseSchema) && mode === "json";
     let transientRetries = 0;
 
     // Bir model içinde: geçici hata ve yapılandırma uyumsuzluğu yeniden denemeleri
     while (true) {
       const remaining = deadline - Date.now();
-      if (remaining < 4_000) {
+      if (remaining < 3_000) {
         throw lastError || new Error("Gemini süre bütçesi doldu");
       }
 
@@ -263,15 +340,15 @@ async function callGeminiRaw(
         ? buildThinkingConfig(model, req.thinking || defaultThinking)
         : undefined;
 
+      const baseSystem = `${req.systemPrompt}${schemaInstruction}`;
       const systemText = recitationHint
-        ? `${req.systemPrompt}\n\nÖNEMLİ: Kaynak metinden uzun cümleleri birebir aktarma; bilgileri kendi kurumsal cümlelerinle yeniden yaz. Doğrudan alıntıları kısa tut ve tırnak içinde ver.`
-        : req.systemPrompt;
+        ? `${baseSystem}\n\nÖNEMLİ: Kaynak metinden uzun cümleleri birebir aktarma; bilgileri kendi kurumsal cümlelerinle yeniden yaz. Doğrudan alıntıları kısa tut ve tırnak içinde ver.`
+        : baseSystem;
 
       const generationConfig: Record<string, unknown> = {
         temperature: req.temperature ?? (mode === "json" ? 0.4 : 0.6),
         maxOutputTokens: req.maxOutputTokens ?? 8192,
         ...(mode === "json" ? { responseMimeType: "application/json" } : {}),
-        ...(useSchema ? { responseJsonSchema: req.responseSchema } : {}),
         ...(thinkingConfig ? { thinkingConfig } : {}),
       };
 
@@ -283,7 +360,7 @@ async function callGeminiRaw(
             "Content-Type": "application/json",
             "x-goog-api-key": apiKey,
           },
-          signal: AbortSignal.timeout(Math.min(perAttemptTimeout, remaining - 1_000)),
+          signal: AbortSignal.timeout(Math.min(perAttemptTimeout, remaining - 500)),
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: systemText }] },
             contents: [{ role: "user", parts: [{ text: req.userPrompt }] }],
@@ -314,15 +391,11 @@ async function callGeminiRaw(
           useThinking = false;
           continue;
         }
-        if (response.status === 400 && useSchema && /schema|responseJsonSchema/i.test(body)) {
-          useSchema = false;
-          continue;
-        }
 
         if (response.status === 503 || response.status === 500 || response.status === 504) {
-          if (transientRetries < 2 && deadline - Date.now() > 15_000) {
+          if (transientRetries < 1 && deadline - Date.now() > 14_000) {
             transientRetries += 1;
-            await sleep(900 * transientRetries + Math.floor(Math.random() * 400));
+            await sleep(600 + Math.floor(Math.random() * 300));
             continue;
           }
           markModelCooldown(model, 60 * 1000);

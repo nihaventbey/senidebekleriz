@@ -292,6 +292,11 @@ export function stripDatelineFromParagraph(text: string): string {
       /^(AA|İHA|IHA|DHA|ANKA)\s*[-–—:]+\s*/i,
       ""
     )
+    // Bare ALL-CAPS city/district datelines: e.g. "SİDE - Antalya'nın...", "İSTANBUL - Kültür..."
+    .replace(
+      /^[A-ZÇĞİÖŞÜ]{3,20}(?:\s*\/\s*[A-ZÇĞİÖŞÜ]{3,20})?\s+[-–—]+\s+(?=[A-ZÇĞİÖŞÜ])/,
+      ""
+    )
     .trim();
 
   return normalizeScreamingLeadWord(stripped);
