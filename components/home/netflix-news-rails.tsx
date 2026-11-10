@@ -13,6 +13,7 @@ import {
   Calendar,
 } from "lucide-react";
 import type { PublicNewsArticle, NewsCategory } from "@/lib/data/news";
+import { parseCoverImage } from "@/lib/media/cover-position";
 
 type Props = {
   groupedNews: Record<string, PublicNewsArticle[]>;
@@ -195,17 +196,20 @@ function CategoryRail({
           ref={scrollRef}
           className="flex gap-4 overflow-x-auto scrollbar-none snap-x snap-proximity pb-2 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0"
         >
-          {items.map((item) => (
+          {items.map((item) => {
+            const itemCover = parseCoverImage(item.coverImage);
+            return (
             <article
               key={item.id}
               className={`group/card relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs transition-all duration-300 hover:shadow-md ${config.accentBorder} w-[270px] sm:w-[310px] md:w-[330px] shrink-0 snap-start`}
             >
               {/* Media Container with 16:9 Aspect Ratio */}
               <div className="relative aspect-video w-full overflow-hidden bg-muted">
-                {item.coverImage ? (
+                {itemCover.src ? (
                   <img
-                    src={item.coverImage}
+                    src={itemCover.src}
                     alt={item.title}
+                    style={{ objectPosition: itemCover.objectPosition }}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover/card:scale-105"
                     loading="lazy"
                   />
@@ -256,7 +260,8 @@ function CategoryRail({
                 </div>
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Sparkles, ArrowLeft, Trash2, Link2, ExternalLink } from "lucide-react";
+import { Loader2, Sparkles, ArrowLeft, Trash2, Link2, ExternalLink, Check, Eye } from "lucide-react";
 import { renderMarkdown } from "@/lib/markdown";
 import { toast } from "@/lib/toast";
 import { slugify } from "@/lib/slugify";
@@ -79,6 +79,9 @@ export function ArticleForm({
   const [aiSourceUrl, setAiSourceUrl] = useState("");
   const [aiCity, setAiCity] = useState(defaultValues.city_slug || "");
   const [citySlug, setCitySlug] = useState(defaultValues.city_slug || "none");
+  const [isPublished, setIsPublished] = useState<boolean>(
+    defaultValues.is_published ?? false
+  );
 
   function handleTitleChange(value: string) {
     setTitle(value);
@@ -134,9 +137,9 @@ export function ArticleForm({
     });
   }
 
-  function handleSave(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+  function saveWithStatus(publishState: boolean) {
+    setIsPublished(publishState);
+    const formData = new FormData();
     formData.set("title", title.trim());
     formData.set("slug", slugify(slug.trim() || title.trim()));
     formData.set("excerpt", excerpt.trim());
@@ -145,12 +148,15 @@ export function ArticleForm({
     formData.set("city_slug", citySlug || "none");
     formData.set("meta_title", metaTitle.trim());
     formData.set("meta_description", metaDescription.trim());
+    if (publishState) {
+      formData.set("is_published", "on");
+    }
 
     startSaveTransition(async () => {
       try {
         const result = await action(formData);
         toast.success(
-          result.isPublished ? "Yazı yayınlandı" : "Taslak kaydedildi"
+          result.isPublished ? "Gezi rehberi yayına alındı! 🚀" : "Taslak olarak kaydedildi! 📝"
         );
         if (currentSlug && result.slug !== currentSlug) {
           router.replace(`/yonetim/yazilar/${result.slug}/duzenle`);
@@ -166,23 +172,80 @@ export function ArticleForm({
     });
   }
 
+  function handleSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    saveWithStatus(isPublished);
+  }
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/yonetim/yazilar">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Geri
-          </Link>
-        </Button>
-        {deleteAction && (
-          <form action={deleteAction}>
-            <Button type="submit" variant="destructive" size="sm">
-              <Trash2 className="mr-2 h-4 w-4" />
-              Sil
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card/80 px-4 py-3 shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <Button variant="outline" size="sm" asChild className="text-xs gap-1.5">
+            <Link href="/yonetim/yazilar">
+              <ArrowLeft className="h-4 w-4" />
+              Rehberlere Dön
+            </Link>
+          </Button>
+
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+              isPublished
+                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                : "bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30"
+            }`}
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                isPublished ? "bg-emerald-500" : "bg-amber-500"
+              }`}
+            />
+            {isPublished ? "Durum: Yayında" : "Durum: Taslak (Sitede Görünmez)"}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {currentSlug && isPublished && (
+            <Button variant="outline" size="sm" asChild className="text-xs gap-1.5">
+              <Link href={`/blog/${currentSlug}`} target="_blank">
+                <Eye className="h-3.5 w-3.5" />
+                Sitede Gör
+              </Link>
             </Button>
-          </form>
-        )}
+          )}
+          {deleteAction && (
+            <form action={deleteAction}>
+              <Button type="submit" variant="destructive" size="sm" className="text-xs gap-1.5">
+                <Trash2 className="h-3.5 w-3.5" />
+                Sil
+              </Button>
+            </form>
+          )}
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={savePending}
+            onClick={() => saveWithStatus(false)}
+            className="text-xs font-semibold gap-1.5"
+          >
+            📝 Taslak Kaydet
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={savePending}
+            onClick={() => saveWithStatus(true)}
+            className="text-xs font-bold gap-1.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+          >
+            {savePending && isPublished ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Check className="h-3.5 w-3.5" />
+            )}
+            {isPublished && currentSlug ? "Güncelle (Yayında)" : "🚀 Kaydet ve Yayına Al"}
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-lg border bg-muted/30 p-4">
@@ -442,22 +505,35 @@ export function ArticleForm({
           </div>
         </div>
 
-        <label className="flex cursor-pointer items-center gap-2">
-          <input
-            type="checkbox"
-            name="is_published"
-            defaultChecked={defaultValues.is_published ?? false}
-            className="size-4 rounded border border-input"
-          />
-          <span className="text-sm font-medium">
-            Yayında (blog ve şehir rehberi)
-          </span>
-        </label>
-
-        <Button type="submit" disabled={savePending}>
-          {savePending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Kaydet
-        </Button>
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/60 pt-4">
+          <Button variant="outline" size="sm" asChild className="text-xs">
+            <Link href="/yonetim/yazilar">Vazgeç</Link>
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={savePending}
+            onClick={() => saveWithStatus(false)}
+            className="text-xs font-semibold gap-1.5"
+          >
+            📝 Taslak Olarak Kaydet
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={savePending}
+            onClick={() => saveWithStatus(true)}
+            className="text-xs font-bold gap-1.5 px-5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+          >
+            {savePending && isPublished ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Check className="h-3.5 w-3.5" />
+            )}
+            {isPublished && currentSlug ? "Güncelle (Yayında)" : "🚀 Kaydet ve Yayına Al"}
+          </Button>
+        </div>
       </form>
     </div>
   );

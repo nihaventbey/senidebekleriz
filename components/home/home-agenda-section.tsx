@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Ticket, ArrowRight, Sparkles, Filter } from "lucide-react";
 import type { PublicEvent } from "@/lib/data/events";
+import { parseCoverImage } from "@/lib/media/cover-position";
 
 const TYPE_FILTERS = [
   { key: "all", label: "Tümü", emoji: "✨" },
@@ -126,17 +127,20 @@ export function HomeAgendaSection({ events }: { events: PublicEvent[] }) {
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredEvents.slice(0, 8).map((event) => (
+          {filteredEvents.slice(0, 8).map((event) => {
+            const cover = parseCoverImage(event.coverImage);
+            return (
             <article
               key={event.id}
               className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs transition-all duration-300 hover:shadow-lg hover:border-primary/40"
             >
               {/* Media Region with aspect ratio and object fit cover */}
               <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
-                {event.coverImage ? (
+                {cover.src ? (
                   <img
-                    src={event.coverImage}
+                    src={cover.src}
                     alt={event.title}
+                    style={{ objectPosition: cover.objectPosition }}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
                   />
@@ -206,7 +210,8 @@ export function HomeAgendaSection({ events }: { events: PublicEvent[] }) {
                 </div>
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>

@@ -253,9 +253,7 @@ export function NewsForm({
     }
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-
+  async function saveWithStatus(publishState: boolean) {
     const cleanTitle = title.trim();
     const cleanContent = content.trim();
 
@@ -268,6 +266,7 @@ export function NewsForm({
       return;
     }
 
+    setIsPublished(publishState);
     const finalSlug = slugify(slug.trim() || cleanTitle) || "kultur-haberi";
     const formData = new FormData();
     formData.set("title", cleanTitle);
@@ -279,7 +278,7 @@ export function NewsForm({
     formData.set("cover_image", coverImage.trim());
     formData.set("source_name", sourceName.trim());
     formData.set("source_url", sourceUrl.trim());
-    formData.set("is_published", isPublished ? "true" : "false");
+    formData.set("is_published", publishState ? "true" : "false");
     formData.set("is_featured", isFeatured ? "true" : "false");
 
     startSaveTransition(async () => {
@@ -290,13 +289,22 @@ export function NewsForm({
           return;
         }
 
-        toast.success(currentSlug ? "Haber güncellendi! ✅" : "Haber yayınlandı! ✅");
+        toast.success(
+          publishState
+            ? "Haber yayına alındı! 🚀"
+            : "Haber taslak olarak kaydedildi! 📝"
+        );
         router.push("/yonetim/haberler");
         router.refresh();
       } catch (err: any) {
         toast.error("Kaydetme Hatası", err.message);
       }
     });
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    await saveWithStatus(isPublished);
   }
 
   function handleDelete() {
@@ -319,19 +327,36 @@ export function NewsForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
       {/* Üst Eylem Çubuğu */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button variant="outline" size="sm" asChild className="gap-1.5 text-xs">
-          <Link href="/yonetim/haberler">
-            <ArrowLeft className="h-4 w-4" />
-            Haberlere Dön
-          </Link>
-        </Button>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card/80 px-4 py-3 shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <Button variant="outline" size="sm" asChild className="gap-1.5 text-xs">
+            <Link href="/yonetim/haberler">
+              <ArrowLeft className="h-4 w-4" />
+              Haberlere Dön
+            </Link>
+          </Button>
 
-        <div className="flex items-center gap-2">
-          {currentSlug && (
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+              isPublished
+                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                : "bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30"
+            }`}
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                isPublished ? "bg-emerald-500" : "bg-amber-500"
+              }`}
+            />
+            {isPublished ? "Durum: Yayında" : "Durum: Taslak (Sitede Görünmez)"}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {currentSlug && isPublished && (
             <Button variant="outline" size="sm" asChild className="gap-1.5 text-xs">
               <Link href={`/haber/${currentSlug}`} target="_blank">
-                <Eye className="h-3.5 w-3.5" /> Haberi Sitede Gör
+                <Eye className="h-3.5 w-3.5" /> Sitede Gör
               </Link>
             </Button>
           )}
@@ -354,14 +379,36 @@ export function NewsForm({
             </Button>
           )}
 
-          <Button type="submit" size="sm" disabled={savePending} className="text-xs font-semibold gap-1.5 px-4">
-            {savePending ? (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={savePending}
+            onClick={() => saveWithStatus(false)}
+            className="text-xs font-semibold gap-1.5"
+            title="Haberi sitede yayınlamadan sadece taslak olarak kaydeder"
+          >
+            {savePending && !isPublished ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : null}
+            📝 Taslak Kaydet
+          </Button>
+
+          <Button
+            type="button"
+            size="sm"
+            disabled={savePending}
+            onClick={() => saveWithStatus(true)}
+            className="text-xs font-bold gap-1.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+          >
+            {savePending && isPublished ? (
               <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Kaydediliyor...
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Yayınlanıyor...
               </>
             ) : (
               <>
-                <Check className="h-3.5 w-3.5" /> {currentSlug ? "Değişiklikleri Kaydet" : "Haberi Kaydet"}
+                <Check className="h-3.5 w-3.5" />
+                {isPublished && currentSlug ? "Güncelle (Yayında)" : "🚀 Kaydet ve Yayına Al"}
               </>
             )}
           </Button>
@@ -759,16 +806,6 @@ export function NewsForm({
             <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold">
               <input
                 type="checkbox"
-                checked={isPublished}
-                onChange={(e) => setIsPublished(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-primary"
-              />
-              <span>Haberi Yayına Al</span>
-            </label>
-
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold">
-              <input
-                type="checkbox"
                 checked={isFeatured}
                 onChange={(e) => setIsFeatured(e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300 text-primary"
@@ -777,18 +814,35 @@ export function NewsForm({
             </label>
           </div>
 
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <Button variant="outline" size="sm" asChild className="text-xs">
               <Link href="/yonetim/haberler">Vazgeç</Link>
             </Button>
-            <Button type="submit" size="sm" disabled={savePending} className="text-xs font-semibold gap-1.5 px-5">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={savePending}
+              onClick={() => saveWithStatus(false)}
+              className="text-xs font-semibold gap-1.5"
+            >
+              📝 Taslak Olarak Kaydet
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={savePending}
+              onClick={() => saveWithStatus(true)}
+              className="text-xs font-bold gap-1.5 px-5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+            >
               {savePending ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" /> Kaydediliyor...
                 </>
               ) : (
                 <>
-                  <Check className="h-3.5 w-3.5" /> {currentSlug ? "Değişiklikleri Kaydet" : "Haberi Kaydet"}
+                  <Check className="h-3.5 w-3.5" />
+                  {isPublished && currentSlug ? "Güncelle (Yayında)" : "🚀 Kaydet ve Yayına Al"}
                 </>
               )}
             </Button>

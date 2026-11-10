@@ -97,20 +97,22 @@ export function DiscoveryList({
     });
   }
 
-  function handleBulkImport() {
+  function handleBulkImport(publish: boolean = false) {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
-    if (
-      !confirm(
-        `${ids.length} adet içeriği otomatik olarak içeri aktarıp taslak oluşturmak istediğinize emin misiniz?`
-      )
-    )
-      return;
+    const confirmMsg = publish
+      ? `${ids.length} adet içeriği yapay zeka ile üretip DOĞRUDAN YAYINA ALMAK istediğinize emin misiniz?`
+      : `${ids.length} adet içeriği taslak olarak içe aktarmak istediğinize emin misiniz? (Daha sonra Haberler / Etkinlikler menüsünden inceleyip yayınlayabilirsiniz)`;
+    if (!confirm(confirmMsg)) return;
 
     startTransition(async () => {
       try {
-        const res = await bulkImportDiscovery(ids);
-        toast.success(`${res.count} adet içerik başarıyla içe aktarıldı! 🎉`);
+        const res = await bulkImportDiscovery(ids, { publish });
+        toast.success(
+          publish
+            ? `${res.count} adet içerik üretildi ve doğrudan yayına alındı! 🚀`
+            : `${res.count} adet içerik taslak olarak aktarıldı! 📝 Haberler ve Etkinlikler menüsünden inceleyip yayınlayabilirsiniz.`
+        );
         setSelectedIds(new Set());
         router.refresh();
       } catch (err: any) {
@@ -316,11 +318,24 @@ export function DiscoveryList({
               variant="default"
               size="sm"
               disabled={isPending}
-              onClick={handleBulkImport}
+              onClick={() => handleBulkImport(true)}
               className="h-8 text-xs font-bold gap-1.5 shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+              title="Seçilen içerikleri AI ile yazar ve doğrudan sitede yayınlar"
             >
               <Sparkles className="h-3.5 w-3.5" />
-              <span>Seçilenleri İçe Aktar ({selectedIds.size})</span>
+              <span>🚀 Seçilenleri Üret &amp; Yayınla ({selectedIds.size})</span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={isPending}
+              onClick={() => handleBulkImport(false)}
+              className="h-8 text-xs font-semibold gap-1.5"
+              title="Seçilen içerikleri AI ile yazar ama sitede yayınlamadan taslak olarak kaydeder"
+            >
+              <span>📝 Taslaklara Aktar ({selectedIds.size})</span>
             </Button>
 
             <Button

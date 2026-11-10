@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Calendar, MapPin } from "lucide-react";
 import { getCityName } from "@/lib/cities/lookup";
 import { BookmarkButton } from "@/components/common/bookmark-button";
+import { parseCoverImage } from "@/lib/media/cover-position";
 
 type Props = {
   id?: string;
@@ -39,7 +40,8 @@ export function ArticleHero({
   contentLength = 2000,
 }: Props) {
   const [imageFailed, setImageFailed] = useState(false);
-  const showCover = Boolean(coverUrl) && !imageFailed;
+  const cover = parseCoverImage(coverUrl);
+  const showCover = Boolean(cover.src) && !imageFailed;
   const cityName = citySlug ? getCityName(citySlug) : null;
   const estimatedMinutes = Math.max(2, Math.ceil(contentLength / 600));
 
@@ -48,8 +50,9 @@ export function ArticleHero({
       {showCover ? (
         <>
           <img
-            src={coverUrl!}
+            src={cover.src}
             alt=""
+            style={{ objectPosition: cover.objectPosition }}
             className="absolute inset-0 h-full w-full object-cover"
             referrerPolicy="no-referrer"
             loading="eager"

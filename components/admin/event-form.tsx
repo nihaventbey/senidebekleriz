@@ -19,7 +19,7 @@ import { MetaFields } from "@/components/admin/meta-fields";
 import { CoverImageInput } from "@/components/admin/cover-image-input";
 import { slugify } from "@/lib/slugify";
 import { toast } from "@/lib/toast";
-import { ArrowLeft, Loader2, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, Eye, Loader2, Sparkles, Trash2 } from "lucide-react";
 import type { CulturalEventRow } from "@/lib/events/types";
 
 type CityOption = { slug: string; name: string };
@@ -71,6 +71,13 @@ export function EventForm({
   const [aiSourceUrl, setAiSourceUrl] = useState(defaultValues.source_url || "");
   const [aiTopic, setAiTopic] = useState("");
   const [aiPending, startAiTransition] = useTransition();
+  const [savePending, startSaveTransition] = useTransition();
+  const [isPublishedState, setIsPublishedState] = useState<boolean>(
+    defaultValues.status ? defaultValues.status === "published" : true
+  );
+  const [isFeaturedState, setIsFeaturedState] = useState<boolean>(
+    defaultValues.is_featured ?? false
+  );
 
   function handleTitleChange(value: string) {
     setTitle(value);
@@ -135,21 +142,51 @@ export function EventForm({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/yonetim/etkinlikler">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Geri
-          </Link>
-        </Button>
-        {deleteAction && (
-          <form action={deleteAction}>
-            <Button type="submit" variant="destructive" size="sm">
-              <Trash2 className="mr-2 h-4 w-4" />
-              Sil
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card/80 px-4 py-3 shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <Button variant="outline" size="sm" asChild className="text-xs gap-1.5">
+            <Link href="/yonetim/etkinlikler">
+              <ArrowLeft className="h-4 w-4" />
+              Etkinliklere Dön
+            </Link>
+          </Button>
+
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+              isPublishedState
+                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                : "bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30"
+            }`}
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                isPublishedState ? "bg-emerald-500" : "bg-amber-500"
+              }`}
+            />
+            {isPublishedState
+              ? "Durum: Yayında"
+              : "Durum: Onay Bekliyor / Taslak (Sitede Görünmez)"}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {defaultValues.slug && isPublishedState && (
+            <Button variant="outline" size="sm" asChild className="text-xs gap-1.5">
+              <Link href={`/etkinlik/${defaultValues.slug}`} target="_blank">
+                <Eye className="h-3.5 w-3.5" />
+                Sitede Gör
+              </Link>
             </Button>
-          </form>
-        )}
+          )}
+          {deleteAction && (
+            <form action={deleteAction}>
+              <Button type="submit" variant="destructive" size="sm" className="text-xs gap-1.5">
+                <Trash2 className="h-3.5 w-3.5" />
+                Sil
+              </Button>
+            </form>
+          )}
+        </div>
       </div>
 
       {/* AI Event Draft Generator Card */}
@@ -403,36 +440,63 @@ export function EventForm({
           defaultMetaDescription={defaultValues.meta_description}
         />
 
-        <div className="flex flex-wrap gap-6">
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="is_featured"
-              name="is_featured"
-              defaultChecked={defaultValues.is_featured ?? false}
-            />
-            <Label htmlFor="is_featured">Manşette öne çıkar</Label>
-          </div>
-          {!defaultValues.status ? (
-            <div className="flex items-center gap-2">
-              <Checkbox id="publish_now" name="publish_now" />
-              <Label htmlFor="publish_now">Hemen yayınla</Label>
-            </div>
-          ) : defaultValues.status === "published" ||
-            defaultValues.status === "pending_review" ||
-            defaultValues.status === "rejected" ||
-            defaultValues.status === "expired" ? (
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="is_published"
-                name="is_published"
-                defaultChecked={defaultValues.status === "published"}
-              />
-              <Label htmlFor="is_published">Yayında</Label>
-            </div>
-          ) : null}
-        </div>
+        <input
+          type="hidden"
+          name="publish_now"
+          value={isPublishedState ? "true" : "false"}
+        />
+        <input
+          type="hidden"
+          name="is_published"
+          value={isPublishedState ? "true" : "false"}
+        />
+        <input
+          type="hidden"
+          name="is_featured"
+          value={isFeaturedState ? "true" : "false"}
+        />
 
-        <SubmitButton>Kaydet</SubmitButton>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-t border-border/60 pt-4">
+          <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold">
+            <input
+              type="checkbox"
+              checked={isFeaturedState}
+              onChange={(e) => setIsFeaturedState(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-primary"
+            />
+            <span>🔥 Manşette Öne Çıkar</span>
+          </label>
+
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Button variant="outline" size="sm" asChild className="text-xs">
+              <Link href="/yonetim/etkinlikler">Vazgeç</Link>
+            </Button>
+
+            <Button
+              type="submit"
+              variant="secondary"
+              size="sm"
+              disabled={savePending}
+              onClick={() => setIsPublishedState(false)}
+              className="text-xs font-semibold gap-1.5"
+            >
+              📝 Taslak Olarak Kaydet
+            </Button>
+
+            <Button
+              type="submit"
+              size="sm"
+              disabled={savePending}
+              onClick={() => setIsPublishedState(true)}
+              className="text-xs font-bold gap-1.5 px-5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+            >
+              <Check className="h-3.5 w-3.5" />
+              {defaultValues.status === "published"
+                ? "Güncelle (Yayında)"
+                : "🚀 Kaydet ve Yayına Al"}
+            </Button>
+          </div>
+        </div>
       </form>
     </div>
   );

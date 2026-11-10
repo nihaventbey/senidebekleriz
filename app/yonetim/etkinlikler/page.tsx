@@ -27,16 +27,26 @@ export default async function AdminEventsPage({ searchParams }: Props) {
       ? durum
       : undefined;
 
-  const [events, pendingCount] = await Promise.all([
+  const [events, allEvents, pendingCount] = await Promise.all([
     getAdminEvents(status),
+    status ? getAdminEvents(undefined) : Promise.resolve(null),
     countPendingEvents(),
   ]);
 
+  const countSource = allEvents ?? events;
+  const totalCount = countSource.length;
+  const publishedCount = countSource.filter((e) => e.status === "published").length;
+  const rejectedCount = countSource.filter((e) => e.status === "rejected").length;
+  const expiredCount = countSource.filter((e) => e.status === "expired").length;
+
   const filters = [
-    { key: undefined, label: "Tümü" },
-    { key: "pending_review", label: "Onay Bekleyen" },
-    { key: "published", label: "Yayında" },
-    { key: "rejected", label: "Reddedilen" },
+    { key: undefined, label: `Tümü (${totalCount})` },
+    { key: "pending_review", label: `⏳ Onay Bekleyen (${pendingCount})` },
+    { key: "published", label: `✅ Yayında (${publishedCount})` },
+    { key: "rejected", label: `✕ Reddedilen (${rejectedCount})` },
+    ...(expiredCount > 0
+      ? [{ key: "expired" as const, label: `⌛ Süresi Dolan (${expiredCount})` }]
+      : []),
   ] as const;
 
   return (

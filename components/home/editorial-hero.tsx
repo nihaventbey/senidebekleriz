@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, MapPin, Sparkles, ArrowRight, Ticket } from "lucide-react";
 import type { PublicNewsArticle } from "@/lib/data/news";
 import type { PublicEvent } from "@/lib/data/events";
+import { parseCoverImage } from "@/lib/media/cover-position";
 
 type Props = {
   featuredNews: PublicNewsArticle[];
@@ -40,14 +41,17 @@ export function EditorialHero({ featuredNews, latestEvents, headlineNews }: Prop
         {featuredNews.length > 0 ? (
           <div className="grid gap-6 lg:grid-cols-12">
             {/* Primary Main Feature Card (7 Columns) */}
-            {leadNews && (
+            {leadNews && (() => {
+              const leadCover = parseCoverImage(leadNews.coverImage);
+              return (
               <article className="group relative flex flex-col justify-end overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm transition-all duration-300 hover:shadow-xl hover:border-primary/40 lg:col-span-7 min-h-[380px] sm:min-h-[440px]">
                 {/* Media region with aspect ratio and object-fit cover */}
                 <div className="absolute inset-0 bg-muted">
-                  {leadNews.coverImage ? (
+                  {leadCover.src ? (
                     <img
-                      src={leadNews.coverImage}
+                      src={leadCover.src}
                       alt={leadNews.title}
+                      style={{ objectPosition: leadCover.objectPosition }}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       loading="eager"
                       fetchPriority="high"
@@ -93,21 +97,25 @@ export function EditorialHero({ featuredNews, latestEvents, headlineNews }: Prop
                   </p>
                 </div>
               </article>
-            )}
+              );
+            })()}
 
             {/* Secondary Stories Stack (5 Columns) */}
             <div className="flex flex-col gap-3.5 lg:col-span-5">
-              {secondaryNews.map((news, i) => (
+              {secondaryNews.map((news, i) => {
+                const secCover = parseCoverImage(news.coverImage);
+                return (
                 <article
                   key={news.id}
                   className="group relative flex items-center gap-4 p-3.5 rounded-3xl border border-border/60 bg-card shadow-xs transition-all duration-200 hover:shadow-md hover:border-primary/40"
                 >
                   {/* Thumbnail Image with Number Ribbon */}
                   <div className="relative h-24 w-28 shrink-0 overflow-hidden rounded-2xl bg-muted">
-                    {news.coverImage ? (
+                    {secCover.src ? (
                       <img
-                        src={news.coverImage}
+                        src={secCover.src}
                         alt={news.title}
+                        style={{ objectPosition: secCover.objectPosition }}
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         loading="lazy"
                       />
@@ -144,7 +152,8 @@ export function EditorialHero({ featuredNews, latestEvents, headlineNews }: Prop
                     </p>
                   </div>
                 </article>
-              ))}
+                );
+              })}
 
               {/* View All Culture News Link Banner */}
               <div className="mt-auto pt-2">
@@ -191,17 +200,20 @@ export function EditorialHero({ featuredNews, latestEvents, headlineNews }: Prop
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {headlineNews.map((item) => (
+              {headlineNews.map((item) => {
+                const itemCover = parseCoverImage(item.coverImage);
+                return (
                 <article
                   key={item.id}
                   className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/60 bg-card p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-primary/40"
                 >
                   <div className="space-y-2.5">
-                    {item.coverImage && (
+                    {itemCover.src && (
                       <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-muted">
                         <img
-                          src={item.coverImage}
+                          src={itemCover.src}
                           alt={item.title}
+                          style={{ objectPosition: itemCover.objectPosition }}
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                           loading="lazy"
                         />
@@ -242,7 +254,8 @@ export function EditorialHero({ featuredNews, latestEvents, headlineNews }: Prop
                     </span>
                   </div>
                 </article>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

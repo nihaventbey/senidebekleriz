@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, BookOpen, Compass, MapPin, Sparkles, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { ArticleData } from "@/lib/data/articles";
+import { parseCoverImage } from "@/lib/media/cover-position";
 
 type Props = {
   articles: ArticleData[];
@@ -30,17 +31,20 @@ export function CultureGuidesSection({ articles }: Props) {
 
         {/* 3-Column Magazine Card Grid */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {articles.slice(0, 6).map((article) => (
+          {articles.slice(0, 6).map((article) => {
+            const cover = parseCoverImage(article.coverImage);
+            return (
             <article
               key={article.id}
               className="group flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-xs transition-all duration-300 hover:shadow-xl hover:border-indigo-500/40"
             >
               {/* Cover Image Container */}
               <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
-                {article.coverImage ? (
+                {cover.src ? (
                   <img
-                    src={article.coverImage}
+                    src={cover.src}
                     alt={article.title}
+                    style={{ objectPosition: cover.objectPosition }}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
                   />
@@ -98,7 +102,8 @@ export function CultureGuidesSection({ articles }: Props) {
                 </div>
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

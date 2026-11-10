@@ -29,6 +29,7 @@ import {
   NEWS_CATEGORY_LABELS,
   NEWS_CATEGORY_COLORS,
 } from "@/components/news/news-card";
+import { parseCoverImage } from "@/lib/media/cover-position";
 
 // 24 hours Edge CDN caching (revalidated on-demand when edited)
 export const revalidate = 86400;
@@ -51,6 +52,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const categoryLabel = NEWS_CATEGORY_LABELS[news.category] || "Kültür";
+  const cover = parseCoverImage(news.coverImage);
 
   return {
     title: `${news.title} | ${categoryLabel}`,
@@ -65,15 +67,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       publishedTime: news.publishedAt,
       modifiedTime: news.updatedAt,
       url: `${getSiteUrl()}/haber/${news.slug}`,
-      images: news.coverImage
-        ? [{ url: news.coverImage, alt: news.title }]
+      images: cover.src
+        ? [{ url: cover.src, alt: news.title }]
         : undefined,
     },
     twitter: {
       card: "summary_large_image",
       title: news.title,
       description: news.summary,
-      images: news.coverImage ? [news.coverImage] : undefined,
+      images: cover.src ? [cover.src] : undefined,
     },
   };
 }
@@ -173,17 +175,21 @@ export default async function NewsDetailPage({ params }: Props) {
         </header>
 
         {/* Cover Photo */}
-        {news.coverImage && (
-          <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-muted shadow-md aspect-video sm:aspect-[21/9]">
-            <img
-              src={news.coverImage}
-              alt={news.title}
-              fetchPriority="high"
-              decoding="async"
-              className="h-full w-full object-cover"
-            />
-          </div>
-        )}
+        {news.coverImage && (() => {
+          const cover = parseCoverImage(news.coverImage);
+          return (
+            <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-muted shadow-md aspect-video sm:aspect-[21/9]">
+              <img
+                src={cover.src}
+                alt={news.title}
+                fetchPriority="high"
+                decoding="async"
+                style={{ objectPosition: cover.objectPosition }}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          );
+        })()}
 
         {/* Old / Archive News Notice */}
         {isOldNews && (

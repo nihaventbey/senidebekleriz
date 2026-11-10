@@ -2,6 +2,7 @@ import { fetchPublicResource } from "@/lib/security/public-fetch";
 import { BROWSER_USER_AGENT } from "@/lib/ai/extract-page-images";
 import { slugify } from "@/lib/slugify";
 import { cleanPublisherText, cleanAgencySlug } from "@/lib/ai/clean-publisher";
+import { parseCoverImage, formatCoverImageUrl } from "@/lib/media/cover-position";
 
 export const MEDIA_BUCKET = "media";
 
@@ -269,7 +270,8 @@ export function isSupabaseStorageUrl(url?: string | null): boolean {
 
 export function isStoredCleanWebpUrl(url?: string | null): boolean {
   if (!url) return false;
-  return isSupabaseStorageUrl(url) && /\.webp(\?|$)/i.test(url);
+  const clean = url.split("#")[0];
+  return isSupabaseStorageUrl(clean) && /\.webp(\?|$)/i.test(clean);
 }
 
 export async function ensureStoredCoverImage(
@@ -278,7 +280,14 @@ export async function ensureStoredCoverImage(
   slugHint?: string
 ): Promise<string | null> {
   if (!url || !url.trim()) return null;
-  const trimmed = url.trim();
+  const parsed = parseCoverImage(url);
+  const trimmed = parsed.src;
+  if (!trimmed) return null;
+
+  const reapplyPosition = (finalBaseUrl: string) =>
+    parsed.hasCustomPosition
+      ? formatCoverImageUrl(finalBaseUrl, parsed.x, parsed.y, true)
+      : finalBaseUrl;
 
   // Explicitly reject web fonts or non-image file formats
   if (/\.(woff2?|ttf|eot|otf|svg|html?|php)(\?|#|$)/i.test(trimmed) || /\/fonts?\//i.test(trimmed)) {
@@ -291,15 +300,15 @@ export async function ensureStoredCoverImage(
   // Skip only if already stored in our Supabase storage as a clean .webp named after this slug
   const urlWithoutQuery = trimmed.split("?")[0];
   if (isStoredCleanWebpUrl(trimmed) && urlWithoutQuery.endsWith(expectedSuffix)) {
-    return urlWithoutQuery;
+    return reapplyPosition(urlWithoutQuery);
   }
 
   // Download external (or differently-named) URL, strip EXIF, convert to WebP, and save as <folder>/<slug>.webp
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
     const storagePath = `${folder}/${safeSlug}`;
     const storedUrl = await uploadImageFromUrl(trimmed, storagePath);
-    return storedUrl || trimmed;
+    return reapplyPosition(storedUrl || trimmed);
   }
 
-  return trimmed;
+  return reapplyPosition(trimmed);
 }

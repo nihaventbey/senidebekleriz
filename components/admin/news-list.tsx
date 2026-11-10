@@ -240,9 +240,18 @@ export function AdminNewsList({ newsList }: Props) {
         <div className="flex flex-wrap items-center gap-1">
           {[
             { key: "all", label: `Tümü (${newsList.length})` },
-            { key: "published", label: "Yayındakiler" },
-            { key: "draft", label: "Taslaklar" },
-            { key: "featured", label: "🔥 Manşetler" },
+            {
+              key: "published",
+              label: `✅ Yayındakiler (${newsList.filter((n) => n.is_published).length})`,
+            },
+            {
+              key: "draft",
+              label: `📝 Taslaklar (${newsList.filter((n) => !n.is_published).length})`,
+            },
+            {
+              key: "featured",
+              label: `🔥 Manşetler (${newsList.filter((n) => n.is_featured).length})`,
+            },
           ].map((tab) => (
             <button
               key={tab.key}

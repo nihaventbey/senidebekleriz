@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Clock, ExternalLink, MapPin, Ticket } from "lucide-react";
 import { type PublicEvent, isEventExpired } from "@/lib/data/events";
 import { CulturalCoverPlaceholder } from "@/components/ui/cultural-cover-placeholder";
+import { parseCoverImage } from "@/lib/media/cover-position";
 
 const TYPE_LABELS: Record<string, string> = {
   tiyatro: "Tiyatro",
@@ -29,13 +30,17 @@ export function EventSlideCard({ event }: { event: PublicEvent }) {
   const ctaUrl = event.ticketUrl || event.sourceUrl;
   const dateLabel = formatDate(event.startsAt);
   const expired = isEventExpired(event);
+  const cover = parseCoverImage(event.coverImage);
 
   return (
     <div className="relative flex min-h-[240px] flex-col justify-end overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/90 via-primary/80 to-primary/60 p-5 text-primary-foreground sm:min-h-[300px] sm:rounded-3xl sm:p-8 md:min-h-[380px] md:p-10 lg:min-h-[420px] lg:p-12">
-      {event.coverImage && (
+      {cover.src && (
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-30"
-          style={{ backgroundImage: `url(${event.coverImage})` }}
+          className="absolute inset-0 bg-cover opacity-30"
+          style={{
+            backgroundImage: `url(${cover.src})`,
+            backgroundPosition: cover.objectPosition,
+          }}
         />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent" />
@@ -143,15 +148,17 @@ export function EventListCard({ event }: { event: PublicEvent }) {
   const ctaUrl = event.ticketUrl || event.sourceUrl;
   const dateLabel = formatDate(event.startsAt);
   const expired = isEventExpired(event);
+  const cover = parseCoverImage(event.coverImage);
 
   return (
     <article className={`group flex h-full flex-col overflow-hidden rounded-2xl border bg-card transition-all hover:border-primary/50 hover:shadow-md ${expired ? "opacity-90 border-border/70" : ""}`}>
       {/* Cover Image or Cultural Logo Fallback */}
       <Link href={`/etkinlik/${event.slug}`} className="relative block aspect-[16/9] w-full overflow-hidden bg-muted">
-        {event.coverImage ? (
+        {cover.src ? (
           <img
-            src={event.coverImage}
+            src={cover.src}
             alt={event.title}
+            style={{ objectPosition: cover.objectPosition }}
             className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${expired ? "grayscale-[25%]" : ""}`}
             loading="lazy"
           />

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MapPin, ArrowRight, Building2 } from "lucide-react";
 import type { CityData } from "@/lib/data/cities";
+import { parseCoverImage } from "@/lib/media/cover-position";
 
 type Props = {
   cities: CityData[];
@@ -25,7 +26,9 @@ export function PopularCitiesSection({ cities }: Props) {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
-        {cities.map((city) => (
+        {cities.map((city) => {
+          const cover = parseCoverImage(city.coverImage);
+          return (
           <Link
             key={city.slug}
             href={`/sehir/${city.slug}`}
@@ -33,10 +36,11 @@ export function PopularCitiesSection({ cities }: Props) {
           >
             {/* Background image & gradient */}
             <div className="absolute inset-0 bg-muted">
-              {city.coverImage ? (
+              {cover.src ? (
                 <img
-                  src={city.coverImage}
+                  src={cover.src}
                   alt={city.name}
+                  style={{ objectPosition: cover.objectPosition }}
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                   loading="lazy"
                 />
@@ -58,7 +62,8 @@ export function PopularCitiesSection({ cities }: Props) {
               </p>
             </div>
           </Link>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

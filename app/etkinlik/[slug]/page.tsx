@@ -9,6 +9,7 @@ import { getEventBySlug, getPublishedEventSlugs, isEventExpired } from "@/lib/da
 import { buildBreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import { EventVenueMap } from "@/components/maps/event-venue-map";
 import { CulturalCoverPlaceholder } from "@/components/ui/cultural-cover-placeholder";
+import { parseCoverImage } from "@/lib/media/cover-position";
 import {
   ArrowLeft,
   Calendar,
@@ -56,6 +57,7 @@ export async function generateMetadata({
 
   const title = event.metaTitle || event.title;
   const description = event.metaDescription || event.summary;
+  const cover = parseCoverImage(event.coverImage);
 
   return {
     title,
@@ -67,7 +69,7 @@ export async function generateMetadata({
       title,
       description,
       type: "article",
-      images: event.coverImage ? [{ url: event.coverImage, width: 1200 }] : [],
+      images: cover.src ? [{ url: cover.src, width: 1200 }] : [],
     },
   };
 }
@@ -84,6 +86,7 @@ export default async function EventDetailPage({
 
   const dateLabel = formatDate(event.startsAt);
   const ctaUrl = event.ticketUrl || event.sourceUrl;
+  const cover = parseCoverImage(event.coverImage);
 
   const eventJsonLd = [
     {
@@ -91,7 +94,7 @@ export default async function EventDetailPage({
       "@type": "Event",
       name: event.title,
       description: event.metaDescription || event.summary,
-      image: event.coverImage || undefined,
+      image: cover.src || undefined,
       startDate: event.startsAt || undefined,
       endDate: event.endsAt || undefined,
       eventStatus: isEventExpired(event)
@@ -126,11 +129,12 @@ export default async function EventDetailPage({
 
       {/* Cover Image or Cultural Logo Fallback Header */}
       <div className="mb-6 overflow-hidden rounded-2xl border">
-        {event.coverImage ? (
+        {cover.src ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
-            src={event.coverImage}
+            src={cover.src}
             alt={event.title}
+            style={{ objectPosition: cover.objectPosition }}
             className="h-auto max-h-[440px] w-full object-cover"
             referrerPolicy="no-referrer"
             loading="eager"

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BookOpen, Compass, PenLine, Quote } from "lucide-react";
 import type { ArticleData } from "@/lib/data/articles";
+import { parseCoverImage } from "@/lib/media/cover-position";
 
 type Props = {
   articles: ArticleData[];
@@ -18,6 +19,7 @@ function formatDate(value: string | null) {
 
 export function BlogHero({ articles, totalCount }: Props) {
   const featured = articles[0];
+  const featuredCover = parseCoverImage(featured?.coverImage);
   const stack = articles.slice(1, 3);
 
   return (
@@ -64,11 +66,12 @@ export function BlogHero({ articles, totalCount }: Props) {
                 href={`/blog/${featured.slug}`}
                 className="group relative block overflow-hidden rounded-2xl border border-border/70 bg-card shadow-lg transition-transform hover:-translate-y-0.5"
               >
-                {featured.coverImage ? (
+                {featuredCover.src ? (
                   <div className="relative h-44 overflow-hidden sm:h-52">
                     <img
-                      src={featured.coverImage}
+                      src={featuredCover.src}
                       alt=""
+                      style={{ objectPosition: featuredCover.objectPosition }}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       referrerPolicy="no-referrer"
                     />

@@ -27,6 +27,7 @@ import { buildBreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import { CityQuickNav } from "@/components/cities/city-quick-nav";
 import { CityCultureSection } from "@/components/cities/city-culture-section";
 import { turkeyCities } from "@/data/turkey-cities";
+import { parseCoverImage } from "@/lib/media/cover-position";
 
 // 24 hours ISR caching with on-demand revalidation on news/events import
 export const revalidate = 86400;
@@ -104,6 +105,7 @@ export default async function CityPage({
 
   const hasGuide = Boolean(cityArticle || cityGuidePage);
   const cultureData = getCityCultureData(slug, city.name);
+  const cityCover = parseCoverImage(city.coverImage);
 
   const displayEvents = cityEvents.length > 0 ? cityEvents : regionalEvents;
   const isRegionalEvents = cityEvents.length === 0 && regionalEvents.length > 0;
@@ -117,7 +119,7 @@ export default async function CityPage({
       "@type": "City",
       name: city.name,
       description: city.description,
-      image: city.coverImage || undefined,
+      image: cityCover.src || undefined,
       geo: {
         "@type": "GeoCoordinates",
         latitude: city.lat,
@@ -141,11 +143,12 @@ export default async function CityPage({
 
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-hero-gradient py-12 sm:py-16 md:py-20">
-        {city.coverImage ? (
+        {cityCover.src ? (
           <>
             <img
-              src={city.coverImage}
+              src={cityCover.src}
               alt={city.name}
+              style={{ objectPosition: cityCover.objectPosition }}
               className="absolute inset-0 h-full w-full object-cover"
               loading="eager"
               fetchPriority="high"

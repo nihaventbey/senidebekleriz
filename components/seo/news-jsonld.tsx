@@ -1,6 +1,7 @@
 import { serializeJsonLd } from "@/lib/security/html";
 import type { PublicNewsArticle } from "@/lib/data/news";
 import { getSiteUrl } from "@/lib/agents/site";
+import { parseCoverImage } from "@/lib/media/cover-position";
 
 export function NewsArticleJsonLd({
   news,
@@ -10,16 +11,17 @@ export function NewsArticleJsonLd({
   baseUrl?: string;
 }) {
   const effectiveBaseUrl = baseUrl || getSiteUrl();
+  const cover = parseCoverImage(news.coverImage);
   const schema = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
     headline: news.title,
     description: news.summary || news.title,
-    image: news.coverImage
+    image: cover.src
       ? [
           {
             "@type": "ImageObject",
-            url: news.coverImage,
+            url: cover.src,
             caption: news.title,
             representativeOfPage: true,
           },

@@ -104,7 +104,11 @@ export async function rejectDiscovery(id: string) {
   revalidateDiscoveryPaths();
 }
 
-export async function importDiscoveryAsEvent(id: string) {
+export async function importDiscoveryAsEvent(
+  id: string,
+  options?: { publish?: boolean }
+) {
+  const publish = options?.publish ?? false;
   const item = await getDiscoveredContentById(id);
   if (!item) throw new Error("Keşif kaydı bulunamadı");
 
@@ -217,7 +221,8 @@ export async function importDiscoveryAsEvent(id: string) {
       summary: (imported.summary || item.snippet || safeTitle).trim(),
       description: imported.description || item.snippet || null,
       event_type: safeEventType,
-      status: "pending_review",
+      status: publish ? "published" : "pending_review",
+      published_at: publish ? new Date().toISOString() : null,
       source_name: item.source_name,
       source_url: publisherUrl,
       ticket_url: imported.ticket_url || null,
@@ -254,7 +259,11 @@ export async function importDiscoveryAsEvent(id: string) {
   return { slug: data.slug };
 }
 
-export async function importDiscoveryAsArticle(id: string) {
+export async function importDiscoveryAsArticle(
+  id: string,
+  options?: { publish?: boolean }
+) {
+  const publish = options?.publish ?? false;
   const item = await getDiscoveredContentById(id);
   if (!item) throw new Error("Keşif kaydı bulunamadı");
 
@@ -311,7 +320,8 @@ export async function importDiscoveryAsArticle(id: string) {
       cover_image: storedCoverImage,
       city_slug: normalizeCitySlug(item.city_slug),
       meta_description: draft.meta_description,
-      is_published: false,
+      is_published: publish,
+      published_at: publish ? new Date().toISOString() : null,
       updated_at: new Date().toISOString(),
     })
     .select("id, slug")
@@ -324,7 +334,11 @@ export async function importDiscoveryAsArticle(id: string) {
   return { slug: data.slug };
 }
 
-export async function importDiscoveryAsNews(id: string) {
+export async function importDiscoveryAsNews(
+  id: string,
+  options?: { publish?: boolean }
+) {
+  const publish = options?.publish ?? false;
   const item = await getDiscoveredContentById(id);
   if (!item) throw new Error("Keşif kaydı bulunamadı");
 
@@ -418,7 +432,8 @@ export async function importDiscoveryAsNews(id: string) {
       city_slug: normalizeCitySlug(item.city_slug || draft.city_slug),
       source_name: item.source_name,
       source_url: publisherUrl,
-      is_published: false,
+      is_published: publish,
+      published_at: publish ? new Date().toISOString() : undefined,
       updated_at: new Date().toISOString(),
     })
     .select("id, slug")
@@ -441,9 +456,13 @@ export async function importDiscoveryAsNews(id: string) {
   return { slug: data.slug };
 }
 
-export async function bulkImportDiscovery(ids: string[]) {
+export async function bulkImportDiscovery(
+  ids: string[],
+  options?: { publish?: boolean }
+) {
   if (!ids || ids.length === 0) return { success: true, count: 0, errors: [] };
 
+  const publish = options?.publish ?? false;
   let importedCount = 0;
   const errors: string[] = [];
 
@@ -453,13 +472,13 @@ export async function bulkImportDiscovery(ids: string[]) {
       if (!item || item.status !== "pending_review") continue;
 
       if (item.content_type === "event") {
-        await importDiscoveryAsEvent(id);
+        await importDiscoveryAsEvent(id, { publish });
         importedCount++;
       } else if (item.content_type === "article") {
-        await importDiscoveryAsArticle(id);
+        await importDiscoveryAsArticle(id, { publish });
         importedCount++;
       } else {
-        await importDiscoveryAsNews(id);
+        await importDiscoveryAsNews(id, { publish });
         importedCount++;
       }
     } catch (err: any) {
@@ -469,7 +488,7 @@ export async function bulkImportDiscovery(ids: string[]) {
   }
 
   revalidateDiscoveryPaths();
-  return { success: true, count: importedCount, errors };
+  return { success: true, count: importedCount, published: publish, errors };
 }
 
 export async function bulkRejectDiscovery(ids: string[]) {

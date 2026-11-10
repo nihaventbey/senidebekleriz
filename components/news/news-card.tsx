@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, MapPin, ExternalLink, ArrowRight, Newspaper } from "lucide-react";
 import type { PublicNewsArticle, NewsCategory } from "@/lib/data/news";
 import { CulturalCoverPlaceholder } from "@/components/ui/cultural-cover-placeholder";
+import { parseCoverImage } from "@/lib/media/cover-position";
 
 export const NEWS_CATEGORY_LABELS: Record<NewsCategory, string> = {
   arkeoloji: "🏛️ Arkeoloji & Kazı",
@@ -43,15 +44,17 @@ export function NewsCard({ news }: { news: PublicNewsArticle }) {
   const categoryColor = NEWS_CATEGORY_COLORS[news.category] || "bg-primary text-white";
   const dateStr = formatNewsDate(news.publishedAt);
   const readingTime = estimateReadingTime(news.content);
+  const cover = parseCoverImage(news.coverImage);
 
   return (
     <article className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-border/60 bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg">
       {/* Cover Image Header */}
       <div className="relative aspect-video w-full overflow-hidden bg-muted">
-        {news.coverImage ? (
+        {cover.src ? (
           <img
-            src={news.coverImage}
+            src={cover.src}
             alt={news.title}
+            style={{ objectPosition: cover.objectPosition }}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
           />
@@ -124,16 +127,18 @@ export function NewsCard({ news }: { news: PublicNewsArticle }) {
 export function FeaturedNewsHero({ newsList }: { newsList: PublicNewsArticle[] }) {
   if (!newsList || newsList.length === 0) return null;
   const main = newsList[0];
+  const mainCover = parseCoverImage(main.coverImage);
   const side = newsList.slice(1, 4);
 
   return (
     <div className="grid gap-6 lg:grid-cols-12">
       {/* Main Big Headline */}
       <div className="relative group overflow-hidden rounded-3xl border border-border/60 bg-card lg:col-span-8 shadow-sm flex flex-col justify-end min-h-[380px] sm:min-h-[460px]">
-        {main.coverImage && (
+        {mainCover.src && (
           <img
-            src={main.coverImage}
+            src={mainCover.src}
             alt={main.title}
+            style={{ objectPosition: mainCover.objectPosition }}
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
         )}
@@ -174,16 +179,19 @@ export function FeaturedNewsHero({ newsList }: { newsList: PublicNewsArticle[] }
 
       {/* Side Headlines */}
       <div className="flex flex-col gap-4 lg:col-span-4 justify-between">
-        {side.map((item) => (
+        {side.map((item) => {
+          const itemCover = parseCoverImage(item.coverImage);
+          return (
           <article
             key={item.id}
             className="group flex gap-4 overflow-hidden rounded-2xl border border-border/60 bg-card p-3.5 transition-all hover:border-primary/40 hover:shadow-md flex-1 items-center"
           >
-            {item.coverImage && (
+            {itemCover.src && (
               <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-muted">
                 <img
-                  src={item.coverImage}
+                  src={itemCover.src}
                   alt={item.title}
+                  style={{ objectPosition: itemCover.objectPosition }}
                   className="h-full w-full object-cover transition-transform group-hover:scale-105"
                 />
               </div>
@@ -202,7 +210,8 @@ export function FeaturedNewsHero({ newsList }: { newsList: PublicNewsArticle[] }
               </p>
             </div>
           </article>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

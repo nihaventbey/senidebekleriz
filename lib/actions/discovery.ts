@@ -28,9 +28,12 @@ export async function importDiscoveryAsNews(id: string) {
   return discovery.importDiscoveryAsNews(id);
 }
 
-export async function bulkImportDiscovery(ids: string[]) {
+export async function bulkImportDiscovery(
+  ids: string[],
+  options?: { publish?: boolean }
+) {
   await requireAdmin();
-  return discovery.bulkImportDiscovery(ids);
+  return discovery.bulkImportDiscovery(ids, options);
 }
 
 export async function bulkRejectDiscovery(ids: string[]) {

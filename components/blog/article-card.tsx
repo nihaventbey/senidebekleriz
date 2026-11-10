@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import type { ArticleData } from "@/lib/data/articles";
 import { getCityName } from "@/lib/cities/lookup";
 import { ArrowRight, Calendar, MapPinned, BookOpen } from "lucide-react";
+import { parseCoverImage } from "@/lib/media/cover-position";
 
 function formatDate(value: string | null) {
   if (!value) return "";
@@ -17,16 +18,18 @@ function formatDate(value: string | null) {
 export function ArticleCard({ article }: { article: ArticleData }) {
   const isCityGuide = Boolean(article.citySlug);
   const cityName = article.citySlug ? getCityName(article.citySlug) || article.citySlug : null;
+  const cover = parseCoverImage(article.coverImage);
 
   return (
     <Link href={`/blog/${article.slug}`}>
       <Card className="card-hover h-full overflow-hidden border-border/60 flex flex-col justify-between">
         <div>
-          {article.coverImage && (
+          {cover.src && (
             <div className="relative h-48 w-full bg-muted overflow-hidden">
               <img
-                src={article.coverImage}
+                src={cover.src}
                 alt={article.title}
+                style={{ objectPosition: cover.objectPosition }}
                 className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
                 loading="lazy"
                 referrerPolicy="no-referrer"

@@ -39,10 +39,8 @@ import {
   Camera,
   Bot,
   Layers,
+  ChevronDown,
 } from "lucide-react";
-import { AiImageModal } from "@/components/admin/ai-image-modal";
-import { UniversalUrlImportModal } from "@/components/admin/universal-url-import-modal";
-import { SocialMediaStudioModal } from "@/components/admin/social-media-studio-modal";
 import { DiscoverySyncButton } from "@/components/admin/discovery-sync-button";
 import { AdSenseReadiness } from "@/components/admin/adsense-readiness";
 import type { AdminDashboardStats, ContentReadinessStats } from "@/lib/data/admin-stats";
@@ -145,10 +143,9 @@ export function DashboardCockpit({
   pendingDiscoveries,
 }: CockpitProps) {
   const router = useRouter();
-  const [isAiImageModalOpen, setIsAiImageModalOpen] = useState(false);
-  const [isUniversalImportModalOpen, setIsUniversalImportModalOpen] = useState(false);
-  const [isSocialModalOpen, setIsSocialModalOpen] = useState(false);
   const [quickAiUrl, setQuickAiUrl] = useState("");
+  const [quickTargetType, setQuickTargetType] = useState<"auto" | "news" | "event" | "article">("auto");
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Discovery triage state
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -244,7 +241,7 @@ export function DashboardCockpit({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             url: quickAiUrl.trim(),
-            targetType: "auto",
+            targetType: quickTargetType,
           }),
         });
 
@@ -353,17 +350,83 @@ export function DashboardCockpit({
           </div>
         </div>
 
-        {/* Bağlantıdan Otomatik Taslak Oluşturucu */}
-        <div className="mt-4 pt-4 border-t border-border/60">
-          <form onSubmit={handleQuickAiSubmit} className="flex flex-col sm:flex-row items-center gap-2.5">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground/80 shrink-0">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              <span>Bağlantıdan İçerik Üret:</span>
+        {/* 3 Adımlı Editoryal Akış Rehberi (Netleştirilmiş İş Akışı) */}
+        <div className="mt-4 pt-4 border-t border-border/60 grid gap-2.5 sm:grid-cols-3 text-xs">
+          <div className="flex items-start gap-2.5 rounded-2xl border border-border/60 bg-muted/20 p-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-black text-[11px]">
+              1
+            </span>
+            <div className="min-w-0">
+              <p className="font-bold text-foreground">Kaynakları Tara</p>
+              <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                &quot;Şimdi Tara &amp; Keşfet&quot; ile 81 ilin kültür bültenlerini Keşif Kuyruğuna çekin.
+              </p>
             </div>
+          </div>
+
+          <div className="flex items-start gap-2.5 rounded-2xl border border-border/60 bg-muted/20 p-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-600 text-white font-black text-[11px]">
+              2
+            </span>
+            <div className="min-w-0">
+              <p className="font-bold text-foreground">
+                Taslağa Dönüştür ({stats.pendingDiscoveries} bekleyen)
+              </p>
+              <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                Kuyruktaki maddeleri <strong>Haber</strong>, <strong>Etkinlik</strong> veya <strong>Bülten</strong> olarak açın.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2.5 rounded-2xl border border-border/60 bg-muted/20 p-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white font-black text-[11px]">
+              3
+            </span>
+            <div className="min-w-0">
+              <p className="font-bold text-foreground">Kontrol Et &amp; Yayına Al</p>
+              <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                Düzenleme ekranında <strong>&quot;🚀 Kaydet ve Yayına Al&quot;</strong> butonuna basarak sitede yayınlayın.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bağlantıdan Otomatik Taslak Oluşturucu */}
+        <div className="mt-4 pt-4 border-t border-border/60 space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground/90">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <span>Tekil Bağlantıdan (URL) İçerik Üret:</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1">
+              {[
+                { id: "auto", label: "🪄 Otomatik Algıla" },
+                { id: "news", label: "📰 Haber Yap" },
+                { id: "event", label: "🎭 Etkinlik Yap" },
+                { id: "article", label: "🗺️ Rehber Yap" },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setQuickTargetType(opt.id as any)}
+                  className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                    quickTargetType === opt.id
+                      ? "bg-primary text-primary-foreground shadow-2xs"
+                      : "bg-muted/60 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <form onSubmit={handleQuickAiSubmit} className="flex flex-col sm:flex-row items-center gap-2.5">
             <div className="relative flex-1 w-full">
               <Input
                 type="url"
-                placeholder="Kültür Bakanlığı, haber sitesi, belediye bülteni veya etkinlik bağlantısı yapıştırın (https://...)"
+                placeholder="Kültür Bakanlığı, haber sitesi, belediye bülteni veya Biletinial/Biletix bağlantısı yapıştırın (https://...)"
                 value={quickAiUrl}
                 onChange={(e) => setQuickAiUrl(e.target.value)}
                 className="h-9 text-xs pl-3 pr-8 bg-background/80"
@@ -390,7 +453,7 @@ export function DashboardCockpit({
               ) : (
                 <Send className="h-3 w-3" />
               )}
-              <span>{isQuickImportPending ? "Hazırlanıyor..." : "Taslak Oluştur"}</span>
+              <span>{isQuickImportPending ? "Hazırlanıyor..." : "İçeriği Çek & Düzenle"}</span>
             </Button>
           </form>
         </div>
@@ -495,7 +558,7 @@ export function DashboardCockpit({
             {stats.cities.toLocaleString("tr-TR")}
           </div>
           <p className="mt-1 text-[11px] text-emerald-600 font-semibold truncate">
-            81 il aktif · {stats.places.toLocaleString("tr-TR")} mekan
+            81 il kültür ajandası aktif
           </p>
         </Link>
 
@@ -599,102 +662,180 @@ export function DashboardCockpit({
                     </a>
                   </div>
 
-                    {/* Quick Action Buttons */}
-                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center pt-2 sm:pt-0">
-                      {item.content_type === "event" ? (
-                        <Button
-                          size="sm"
-                          disabled={busy}
-                          onClick={() =>
-                            runDiscoveryAction(item.id, "event", () =>
-                              importDiscoveryAsEvent(item.id)
-                            )
-                          }
-                          className="h-8 px-3 text-xs font-bold gap-1 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
-                          title="Etkinlik Olarak Aktar"
-                        >
-                          {busy && pendingAction === "event" ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <CalendarDays className="h-3.5 w-3.5" />
-                          )}
-                          <span>Etkinlik Yap</span>
-                        </Button>
-                      ) : item.content_type === "article" ? (
-                        <Button
-                          size="sm"
-                          disabled={busy}
-                          onClick={() =>
-                            runDiscoveryAction(item.id, "article", () =>
-                              importDiscoveryAsArticle(item.id)
-                            )
-                          }
-                          className="h-8 px-3 text-xs font-semibold gap-1 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
-                          title="Gezi Rehberi Olarak Aktar"
-                        >
-                          {busy && pendingAction === "article" ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <BookOpen className="h-3.5 w-3.5" />
-                          )}
-                          <span>Rehber Yap</span>
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          disabled={busy}
-                          onClick={() =>
-                            runDiscoveryAction(item.id, "news", () =>
-                              importDiscoveryAsNews(item.id)
-                            )
-                          }
-                          className="h-8 px-3 text-xs font-bold gap-1 bg-amber-600 hover:bg-amber-700 text-white shadow-xs"
-                          title="Kültür Haberi Yap"
-                        >
-                          {busy && pendingAction === "news" ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Newspaper className="h-3.5 w-3.5" />
-                          )}
-                          <span>Haber Yap</span>
-                        </Button>
-                      )}
+                    {/* Quick Action Buttons (Consistent with /yonetim/kesif) */}
+                    {(() => {
+                      const isEvent = item.content_type === "event";
+                      const isArticle = item.content_type === "article";
+                      const isBulletin = (item.content_type as string) === "bulletin";
 
-                      {/* Alternatif Olarak Ekle */}
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        disabled={busy}
-                        onClick={() =>
-                          item.content_type === "event"
-                            ? runDiscoveryAction(item.id, "news", () =>
-                                importDiscoveryAsNews(item.id)
-                              )
-                            : runDiscoveryAction(item.id, "event", () =>
+                      const primaryConfig = isEvent
+                        ? {
+                            key: "event" as const,
+                            label: "Etkinlik Yap",
+                            icon: CalendarDays,
+                            className: "bg-blue-600 hover:bg-blue-700 text-white",
+                            fn: () =>
+                              runDiscoveryAction(item.id, "event", () =>
                                 importDiscoveryAsEvent(item.id)
-                              )
-                        }
-                        className="h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
-                        title={item.content_type === "event" ? "Haber Yap" : "Etkinlik Yap"}
-                      >
-                        {item.content_type === "event" ? "Haber Yap" : "Etkinlik Yap"}
-                      </Button>
+                              ),
+                          }
+                        : isArticle
+                        ? {
+                            key: "article" as const,
+                            label: "Rehber Yap",
+                            icon: BookOpen,
+                            className: "bg-emerald-600 hover:bg-emerald-700 text-white",
+                            fn: () =>
+                              runDiscoveryAction(item.id, "article", () =>
+                                importDiscoveryAsArticle(item.id)
+                              ),
+                          }
+                        : isBulletin
+                        ? {
+                            key: "multi" as const,
+                            label: "Bülteni Ayrıştır",
+                            icon: Layers,
+                            className: "bg-purple-600 hover:bg-purple-700 text-white",
+                            fn: () =>
+                              runDiscoveryAction(item.id, "multi", () =>
+                                disaggregateDiscoveryBulletin(item.id)
+                              ),
+                          }
+                        : {
+                            key: "news" as const,
+                            label: "Haber Yap",
+                            icon: Newspaper,
+                            className: "bg-amber-600 hover:bg-amber-700 text-white",
+                            fn: () =>
+                              runDiscoveryAction(item.id, "news", () =>
+                                importDiscoveryAsNews(item.id)
+                              ),
+                          };
 
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={busy}
-                        onClick={() =>
-                          runDiscoveryAction(item.id, "reject", () =>
-                            rejectDiscovery(item.id)
-                          )
-                        }
-                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
-                        title="Reddet / Listeden Kaldır"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
+                      const PrimaryIcon = primaryConfig.icon;
+                      const isMenuOpen = openMenuId === item.id;
+
+                      return (
+                        <div className="relative flex items-center gap-1.5 shrink-0 self-end sm:self-center pt-2 sm:pt-0">
+                          <Button
+                            size="sm"
+                            disabled={busy}
+                            onClick={primaryConfig.fn}
+                            className={`h-8 px-3 text-xs font-bold gap-1.5 shadow-xs ${primaryConfig.className}`}
+                            title={`Önerilen: ${primaryConfig.label}`}
+                          >
+                            {busy && pendingAction === primaryConfig.key ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <PrimaryIcon className="h-3.5 w-3.5" />
+                            )}
+                            <span>{primaryConfig.label}</span>
+                          </Button>
+
+                          <div className="relative">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={busy}
+                              onClick={() => setOpenMenuId(isMenuOpen ? null : item.id)}
+                              className="h-8 w-7 p-0 text-muted-foreground hover:text-foreground"
+                              title="Farklı türe dönüştür"
+                            >
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            </Button>
+
+                            {isMenuOpen && (
+                              <>
+                                <div
+                                  className="fixed inset-0 z-40"
+                                  onClick={() => setOpenMenuId(null)}
+                                />
+                                <div className="absolute right-0 top-full mt-1 z-50 w-44 rounded-xl border border-border/80 bg-card p-1 shadow-lg text-left animate-in fade-in zoom-in-95">
+                                  <p className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                    Farklı Türde Aktar:
+                                  </p>
+                                  {primaryConfig.key !== "news" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOpenMenuId(null);
+                                        runDiscoveryAction(item.id, "news", () =>
+                                          importDiscoveryAsNews(item.id)
+                                        );
+                                      }}
+                                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-foreground hover:bg-muted font-medium"
+                                    >
+                                      <Newspaper className="h-3.5 w-3.5 text-amber-600" />
+                                      <span>Haber Yap</span>
+                                    </button>
+                                  )}
+                                  {primaryConfig.key !== "event" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOpenMenuId(null);
+                                        runDiscoveryAction(item.id, "event", () =>
+                                          importDiscoveryAsEvent(item.id)
+                                        );
+                                      }}
+                                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-foreground hover:bg-muted font-medium"
+                                    >
+                                      <CalendarDays className="h-3.5 w-3.5 text-blue-600" />
+                                      <span>Etkinlik Yap</span>
+                                    </button>
+                                  )}
+                                  {primaryConfig.key !== "article" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOpenMenuId(null);
+                                        runDiscoveryAction(item.id, "article", () =>
+                                          importDiscoveryAsArticle(item.id)
+                                        );
+                                      }}
+                                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-foreground hover:bg-muted font-medium"
+                                    >
+                                      <BookOpen className="h-3.5 w-3.5 text-emerald-600" />
+                                      <span>Rehber Yap</span>
+                                    </button>
+                                  )}
+                                  {primaryConfig.key !== "multi" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOpenMenuId(null);
+                                        runDiscoveryAction(item.id, "multi", () =>
+                                          disaggregateDiscoveryBulletin(item.id)
+                                        );
+                                      }}
+                                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-foreground hover:bg-muted font-medium"
+                                    >
+                                      <Layers className="h-3.5 w-3.5 text-purple-600" />
+                                      <span>Bülteni Ayrıştır</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={busy}
+                            onClick={() =>
+                              runDiscoveryAction(item.id, "reject", () =>
+                                rejectDiscovery(item.id)
+                              )
+                            }
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                            title="Reddet / Listeden Kaldır"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      );
+                    })()}
                 </div>
               );
             })}
@@ -853,7 +994,9 @@ export function DashboardCockpit({
                 </p>
               </div>
             </div>
-            <DiscoverySyncButton />
+            <Button variant="outline" size="sm" asChild className="h-8 text-xs font-semibold">
+              <Link href="/yonetim/sehirler">81 İl Yönetimi →</Link>
+            </Button>
           </CardHeader>
           <CardContent className="pt-4 space-y-4 text-sm">
             <div className="grid grid-cols-2 gap-3">
@@ -885,14 +1028,14 @@ export function DashboardCockpit({
                 </p>
               </Link>
               <Link
-                href="/yonetim/mekanlar"
+                href="/yonetim/haberler"
                 className="rounded-2xl border p-3.5 transition-colors hover:bg-muted/50 bg-muted/10"
               >
                 <p className="text-2xl font-extrabold text-foreground">
-                  {stats.places.toLocaleString("tr-TR")}
+                  {stats.newsPublished.toLocaleString("tr-TR")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Müze ve antik mekan
+                  Yayındaki kültür haberi
                 </p>
               </Link>
             </div>
@@ -917,31 +1060,6 @@ export function DashboardCockpit({
           </CardContent>
         </Card>
       </div>
-
-      {/* Global AI Image Modal */}
-      <AiImageModal
-        isOpen={isAiImageModalOpen}
-        onClose={() => setIsAiImageModalOpen(false)}
-        onSelectImage={(url) => {
-          navigator.clipboard.writeText(url).then(() => {
-            toast.success("Görsel URL bağlantısı panoya kopyalandı! İstediğiniz içerikte kullanabilirsiniz. 📋");
-          });
-        }}
-      />
-
-      {/* Universal URL Importer */}
-      <UniversalUrlImportModal
-        isOpen={isUniversalImportModalOpen}
-        onClose={() => setIsUniversalImportModalOpen(false)}
-        defaultTarget="auto"
-        title="Kokpit Hızlı URL Çekici"
-      />
-
-      {/* Social Media & Instagram Studio Modal */}
-      <SocialMediaStudioModal
-        isOpen={isSocialModalOpen}
-        onClose={() => setIsSocialModalOpen(false)}
-      />
     </div>
   );
 }

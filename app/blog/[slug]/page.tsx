@@ -10,6 +10,7 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { ArticleHero } from "@/components/blog/article-hero";
 import { AdBanner } from "@/components/ads/ad-banner";
 import { resolveArticleCoverImage } from "@/lib/articles/cover-from-content";
+import { parseCoverImage } from "@/lib/media/cover-position";
 
 import { ReadingProgressBar } from "@/components/blog/reading-progress-bar";
 import { getSiteUrl } from "@/lib/agents/site";
@@ -30,6 +31,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const article = await getArticleBySlug(slug);
   if (!article) return {};
+  const cover = parseCoverImage(article.coverImage);
 
   return {
     title: article.metaTitle,
@@ -41,7 +43,7 @@ export async function generateMetadata({
       title: article.metaTitle,
       description: article.metaDescription,
       type: "article",
-      images: article.coverImage ? [{ url: article.coverImage }] : [],
+      images: cover.src ? [{ url: cover.src }] : [],
     },
   };
 }
@@ -61,6 +63,7 @@ export default async function BlogArticlePage({
     article.coverImage,
     article.content
   );
+  const cover = parseCoverImage(coverUrl);
   const html = renderMarkdown(article.content);
 
   const jsonLd = [
@@ -71,7 +74,7 @@ export default async function BlogArticlePage({
       description: article.excerpt,
       datePublished: article.publishedAt,
       dateModified: article.updatedAt,
-      image: coverUrl || undefined,
+      image: cover.src || undefined,
       author: {
         "@type": "Organization",
         name: "Seni de Bekleriz Kültür & Sanat Masası",
@@ -119,11 +122,12 @@ export default async function BlogArticlePage({
             />
           </div>
 
-          {coverUrl && (
+          {cover.src && (
             <div className="mb-8 overflow-hidden rounded-2xl border border-border/60 shadow-sm">
               <img
-                src={coverUrl}
+                src={cover.src}
                 alt={article.title}
+                style={{ objectPosition: cover.objectPosition }}
                 className="h-auto w-full object-cover"
                 referrerPolicy="no-referrer"
               />
