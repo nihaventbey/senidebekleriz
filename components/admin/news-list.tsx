@@ -250,7 +250,7 @@ export function AdminNewsList({ newsList }: Props) {
             },
             {
               key: "featured",
-              label: `🔥 Manşetler (${newsList.filter((n) => n.is_featured).length})`,
+              label: `🔥 Vitrin (${newsList.filter((n) => n.is_featured).length})`,
             },
           ].map((tab) => (
             <button
@@ -461,7 +461,7 @@ export function AdminNewsList({ newsList }: Props) {
                         </Badge>
                         {item.is_featured && (
                           <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-300">
-                            🔥 Manşet
+                            🔥 Vitrin
                           </Badge>
                         )}
                       </div>

@@ -28,11 +28,14 @@ import {
   CheckSquare,
   Square,
   Trash2,
+  Star,
 } from "lucide-react";
 import {
   approveEvent,
   rejectEvent,
   unpublishEvent,
+  toggleFeaturedEvent,
+  bulkFeaturedEvents,
   bulkUpdateEventsStatus,
   bulkDeleteEvents,
 } from "@/lib/actions/events";
@@ -160,6 +163,50 @@ export function EventsList({ events, filter }: Props) {
         );
       } finally {
         setPendingId(null);
+      }
+    });
+  }
+
+  function handleToggleFeatured(id: string, current: boolean) {
+    setPendingId(id);
+    startTransition(async () => {
+      try {
+        await toggleFeaturedEvent(id, !current);
+        toast.success(
+          !current
+            ? "Etkinlik Vitrin slider'ına eklendi 🔥"
+            : "Etkinlik Vitrinden çıkarıldı"
+        );
+        router.refresh();
+      } catch (error) {
+        toast.error(
+          "Vitrin durumu güncellenemedi",
+          error instanceof Error ? error.message : undefined
+        );
+      } finally {
+        setPendingId(null);
+      }
+    });
+  }
+
+  function handleBulkFeatured(featured: boolean) {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    startTransition(async () => {
+      try {
+        await bulkFeaturedEvents(ids, featured);
+        toast.success(
+          featured
+            ? `${ids.length} etkinlik Vitrin slider'ına eklendi 🔥`
+            : `${ids.length} etkinlik Vitrinden çıkarıldı`
+        );
+        setSelectedIds(new Set());
+        router.refresh();
+      } catch (error) {
+        toast.error(
+          "Toplu vitrin işlemi başarısız",
+          error instanceof Error ? error.message : undefined
+        );
       }
     });
   }
@@ -293,6 +340,17 @@ export function EventsList({ events, filter }: Props) {
               size="sm"
               variant="outline"
               disabled={isPending}
+              onClick={() => handleBulkFeatured(true)}
+              className="h-7 text-xs gap-1 text-amber-600 border-amber-300"
+            >
+              <Star className="h-3.5 w-3.5 fill-current" />
+              Vitrine Ekle (Slider)
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={isPending}
               onClick={() => handleBulkStatus("rejected")}
               className="h-7 text-xs gap-1 text-destructive border-destructive/30"
             >
@@ -400,16 +458,24 @@ export function EventsList({ events, filter }: Props) {
 
                     {/* Title & Source */}
                     <TableCell className="font-medium">
-                      <div className="truncate max-w-[320px]" title={event.title}>
+                      <div className="flex items-center gap-1.5 max-w-[320px]" title={event.title}>
                         <Link
                           href={`/etkinlik/${event.slug}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="hover:underline hover:text-primary flex items-center gap-1.5"
+                          className="hover:underline hover:text-primary flex items-center gap-1.5 min-w-0"
                         >
                           <span className="truncate">{event.title}</span>
                           <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
                         </Link>
+                        {event.is_featured && (
+                          <Badge
+                            variant="outline"
+                            className="shrink-0 text-[10px] bg-amber-500/10 text-amber-600 border-amber-300"
+                          >
+                            🔥 Vitrin
+                          </Badge>
+                        )}
                       </div>
                       {event.source_name && (
                         <p className="mt-0.5 text-[11px] text-muted-foreground truncate max-w-[280px]">
@@ -446,7 +512,21 @@ export function EventsList({ events, filter }: Props) {
 
                     {/* Actions */}
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
+                      <div className="flex justify-end items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={busy}
+                          onClick={() => handleToggleFeatured(event.id, event.is_featured)}
+                          title={event.is_featured ? "Vitrinden çıkar" : "Vitrin slider'ına ekle"}
+                          className={`h-7 w-7 p-0 ${
+                            event.is_featured
+                              ? "text-amber-500"
+                              : "text-muted-foreground hover:text-amber-500"
+                          }`}
+                        >
+                          <Star className="h-3.5 w-3.5 fill-current" />
+                        </Button>
                         {event.status === "pending_review" && (
                           <>
                             <Button

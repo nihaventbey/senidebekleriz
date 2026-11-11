@@ -129,13 +129,18 @@ export function HomeAgendaSection({ events }: { events: PublicEvent[] }) {
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredEvents.slice(0, 8).map((event) => {
             const cover = parseCoverImage(event.coverImage);
+            const eventHref = `/etkinlik/${event.slug}`;
             return (
             <article
               key={event.id}
               className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs transition-all duration-300 hover:shadow-lg hover:border-primary/40"
             >
               {/* Media Region with aspect ratio and object fit cover */}
-              <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
+              <Link
+                href={eventHref}
+                className="relative aspect-[16/10] w-full overflow-hidden bg-muted block"
+                aria-label={event.title}
+              >
                 {cover.src ? (
                   <img
                     src={cover.src}
@@ -160,14 +165,7 @@ export function HomeAgendaSection({ events }: { events: PublicEvent[] }) {
                     {event.eventType.toUpperCase()}
                   </Badge>
                 </div>
-              </div>
-
-              {/* Primary Link Overlay for accessible card click */}
-              <Link
-                href={`/etkinlik/${event.slug}`}
-                className="card-link absolute inset-0 z-10"
-                aria-label={event.title}
-              />
+              </Link>
 
               {/* Card Body */}
               <div className="flex flex-1 flex-col p-4 space-y-2.5">
@@ -188,7 +186,9 @@ export function HomeAgendaSection({ events }: { events: PublicEvent[] }) {
 
                 {/* Title */}
                 <h3 className="line-clamp-2 text-base font-bold tracking-tight text-foreground group-hover:text-primary transition-colors leading-snug">
-                  {event.title}
+                  <Link href={eventHref} className="hover:underline block">
+                    {event.title}
+                  </Link>
                 </h3>
 
                 {/* Venue name if available */}
@@ -200,14 +200,19 @@ export function HomeAgendaSection({ events }: { events: PublicEvent[] }) {
 
                 {/* Summary */}
                 <p className="line-clamp-2 text-xs text-muted-foreground leading-relaxed mt-auto">
-                  {event.summary || event.title}
+                  <Link href={eventHref} className="hover:text-foreground block">
+                    {event.summary || event.title}
+                  </Link>
                 </p>
 
                 {/* Footer action */}
-                <div className="pt-2 border-t border-border/40 flex items-center justify-between text-xs font-bold text-primary">
+                <Link
+                  href={eventHref}
+                  className="pt-2 border-t border-border/40 flex items-center justify-between text-xs font-bold text-primary hover:underline"
+                >
                   <span>Detayları İncele</span>
                   <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
-                </div>
+                </Link>
               </div>
             </article>
             );

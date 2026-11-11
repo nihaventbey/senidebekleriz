@@ -33,13 +33,18 @@ export function CultureGuidesSection({ articles }: Props) {
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {articles.slice(0, 6).map((article) => {
             const cover = parseCoverImage(article.coverImage);
+            const articleHref = `/blog/${article.slug}`;
             return (
             <article
               key={article.id}
               className="group flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-xs transition-all duration-300 hover:shadow-xl hover:border-indigo-500/40"
             >
               {/* Cover Image Container */}
-              <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
+              <Link
+                href={articleHref}
+                className="relative aspect-[16/10] w-full overflow-hidden bg-muted block"
+                aria-label={article.title}
+              >
                 {cover.src ? (
                   <img
                     src={cover.src}
@@ -62,15 +67,18 @@ export function CultureGuidesSection({ articles }: Props) {
                     <span className="capitalize">{article.citySlug}</span>
                   </span>
                 )}
-              </div>
+              </Link>
 
               {/* Content Body */}
               <div className="flex flex-1 flex-col justify-between p-5 sm:p-6 space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-                    <span className="text-indigo-600 dark:text-indigo-400 font-bold uppercase text-[11px] tracking-wider">
+                    <Link
+                      href={articleHref}
+                      className="text-indigo-600 dark:text-indigo-400 font-bold uppercase text-[11px] tracking-wider hover:underline"
+                    >
                       Gezi Rehberi
-                    </span>
+                    </Link>
                     <span>·</span>
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
@@ -79,13 +87,15 @@ export function CultureGuidesSection({ articles }: Props) {
                   </div>
 
                   <h3 className="text-base sm:text-lg font-extrabold tracking-tight text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2 leading-snug">
-                    <Link href={`/blog/${article.slug}`}>
+                    <Link href={articleHref} className="hover:underline block">
                       {article.title}
                     </Link>
                   </h3>
 
                   <p className="line-clamp-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                    {article.excerpt}
+                    <Link href={articleHref} className="hover:text-foreground block">
+                      {article.excerpt}
+                    </Link>
                   </p>
                 </div>
 
@@ -93,7 +103,7 @@ export function CultureGuidesSection({ articles }: Props) {
                 <div className="flex items-center justify-between border-t border-border/50 pt-3 text-xs text-muted-foreground">
                   <span className="font-semibold text-foreground/80">Seni de Bekleriz Editörü</span>
                   <Link
-                    href={`/blog/${article.slug}`}
+                    href={articleHref}
                     className="font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1 group-hover:underline"
                   >
                     <span>Yazıyı Oku</span>

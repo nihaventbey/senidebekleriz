@@ -198,13 +198,18 @@ function CategoryRail({
         >
           {items.map((item) => {
             const itemCover = parseCoverImage(item.coverImage);
+            const itemHref = `/haber/${item.slug}`;
             return (
             <article
               key={item.id}
               className={`group/card relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs transition-all duration-300 hover:shadow-md ${config.accentBorder} w-[270px] sm:w-[310px] md:w-[330px] shrink-0 snap-start`}
             >
               {/* Media Container with 16:9 Aspect Ratio */}
-              <div className="relative aspect-video w-full overflow-hidden bg-muted">
+              <Link
+                href={itemHref}
+                className="relative aspect-video w-full overflow-hidden bg-muted block"
+                aria-label={item.title}
+              >
                 {itemCover.src ? (
                   <img
                     src={itemCover.src}
@@ -226,38 +231,41 @@ function CategoryRail({
                     {item.cityName}
                   </span>
                 )}
-
-                {/* Stretched clickable overlay for accessibility */}
-                <Link
-                  href={`/haber/${item.slug}`}
-                  className="card-link absolute inset-0 z-10"
-                  aria-label={item.title}
-                />
-              </div>
+              </Link>
 
               {/* Content Details */}
               <div className="p-3.5 space-y-2 flex-1 flex flex-col justify-between">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-[11px] text-muted-foreground font-medium">
-                    <span className="font-semibold text-primary">
+                    <Link
+                      href={itemHref}
+                      className="font-semibold text-primary hover:underline"
+                    >
                       {config.title.split("&")[0].trim()}
-                    </span>
+                    </Link>
                     <span>{formatDate(item.publishedAt)}</span>
                   </div>
 
                   <h4 className="line-clamp-2 text-sm font-bold tracking-tight text-foreground group-hover/card:text-primary transition-colors leading-snug">
-                    {item.title}
+                    <Link href={itemHref} className="hover:underline block">
+                      {item.title}
+                    </Link>
                   </h4>
 
                   <p className="line-clamp-2 text-xs text-muted-foreground leading-relaxed">
-                    {item.summary}
+                    <Link href={itemHref} className="hover:text-foreground block">
+                      {item.summary}
+                    </Link>
                   </p>
                 </div>
 
-                <div className="pt-2 border-t border-border/40 flex items-center justify-between text-[11px] font-semibold text-primary">
+                <Link
+                  href={itemHref}
+                  className="pt-2 border-t border-border/40 flex items-center justify-between text-[11px] font-semibold text-primary hover:underline"
+                >
                   <span>Haberi Oku</span>
                   <ArrowRight className="h-3 w-3 transition-transform group-hover/card:translate-x-0.5" />
-                </div>
+                </Link>
               </div>
             </article>
             );

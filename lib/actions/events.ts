@@ -264,6 +264,35 @@ export async function deleteEvent(id: string) {
   redirect("/yonetim/etkinlikler");
 }
 
+export async function toggleFeaturedEvent(id: string, isFeatured: boolean) {
+  await requireAdmin();
+  const { error } = await supabaseAdmin
+    .from("cultural_events")
+    .update({
+      is_featured: isFeatured,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidateEventPaths();
+}
+
+export async function bulkFeaturedEvents(ids: string[], isFeatured: boolean) {
+  await requireAdmin();
+  if (!ids || ids.length === 0) return;
+  const { error } = await supabaseAdmin
+    .from("cultural_events")
+    .update({
+      is_featured: isFeatured,
+      updated_at: new Date().toISOString(),
+    })
+    .in("id", ids);
+
+  if (error) throw new Error(error.message);
+  revalidateEventPaths();
+}
+
 export async function bulkUpdateEventsStatus(
   ids: string[],
   status: "published" | "pending_review" | "rejected"

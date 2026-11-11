@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { PublicEvent } from "@/lib/data/events";
+import { parseCoverImage } from "@/lib/media/cover-position";
 
 type City = { id: string; name: string; slug: string };
 
@@ -447,18 +448,25 @@ export function EventsExplorer({
             const typeColor = TYPE_COLORS[event.eventType] || TYPE_COLORS.diger;
             const typeLabel = TYPE_LABELS[event.eventType] || "Kültür";
             const ctaUrl = event.ticketUrl || event.sourceUrl;
+            const cover = parseCoverImage(event.coverImage);
+            const eventHref = `/etkinlik/${event.slug}`;
 
             return (
               <Card
                 key={event.id}
                 className="group flex flex-col justify-between overflow-hidden border-border/60 bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg"
               >
-                {/* Event Poster / Image Header */}
-                <div className="relative aspect-video w-full overflow-hidden bg-muted">
-                  {event.coverImage ? (
+                {/* Event Poster / Image Header (Clickable) */}
+                <Link
+                  href={eventHref}
+                  className="relative aspect-video w-full overflow-hidden bg-muted block"
+                  aria-label={event.title}
+                >
+                  {cover.src ? (
                     <img
-                      src={event.coverImage}
+                      src={cover.src}
                       alt={event.title}
+                      style={{ objectPosition: cover.objectPosition }}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       loading="lazy"
                       referrerPolicy="no-referrer"
@@ -504,7 +512,7 @@ export function EventsExplorer({
                       <span>{dateInfo.time}</span>
                     </div>
                   )}
-                </div>
+                </Link>
 
                 {/* Event Details */}
                 <CardContent className="flex flex-1 flex-col justify-between p-5">
@@ -521,7 +529,7 @@ export function EventsExplorer({
 
                     {/* Title */}
                     <h3 className="text-base font-bold leading-snug tracking-tight line-clamp-2 group-hover:text-primary transition-colors">
-                      <Link href={`/etkinlik/${event.slug}`} className="hover:underline">
+                      <Link href={eventHref} className="hover:underline block">
                         {event.title}
                       </Link>
                     </h3>
@@ -529,7 +537,9 @@ export function EventsExplorer({
                     {/* Summary */}
                     {event.summary && (
                       <p className="text-xs leading-relaxed text-muted-foreground line-clamp-2">
-                        {event.summary}
+                        <Link href={eventHref} className="hover:text-foreground block">
+                          {event.summary}
+                        </Link>
                       </p>
                     )}
                   </div>

@@ -464,7 +464,7 @@ export function EventForm({
               onChange={(e) => setIsFeaturedState(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-primary"
             />
-            <span>🔥 Manşette Öne Çıkar</span>
+            <span>🔥 Vitrin Slider&apos;ında Göster (Anasayfa büyük slider alanında yer alır)</span>
           </label>
 
           <div className="flex flex-wrap items-center justify-end gap-2">

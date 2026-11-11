@@ -1,5 +1,5 @@
 import { getFeaturedNews, getPublishedNews, getNewsGroupedByCategory } from "@/lib/data/news";
-import { getPublishedEvents } from "@/lib/data/events";
+import { getFeaturedEvents, getPublishedEvents } from "@/lib/data/events";
 import { getPublishedArticles } from "@/lib/data/articles";
 import { getPopularCities } from "@/lib/data/cities";
 import { EditorialHero } from "@/components/home/editorial-hero";
@@ -14,19 +14,27 @@ import { getSiteUrl } from "@/lib/agents/site";
 export const revalidate = 7200; // 2 hours Edge CDN caching (revalidated on-demand on content publish)
 
 export default async function HomePage() {
-  const [featuredNews, allLatestNews, upcomingEvents, publishedArticles, popularCities, groupedNews] =
-    await Promise.all([
-      getFeaturedNews(4),
-      getPublishedNews({ limit: 12 }),
-      getPublishedEvents({ limit: 16 }),
-      getPublishedArticles(6),
-      getPopularCities(6),
-      getNewsGroupedByCategory(8),
-    ]);
+  const [
+    featuredNews,
+    featuredEvents,
+    allLatestNews,
+    upcomingEvents,
+    publishedArticles,
+    popularCities,
+    groupedNews,
+  ] = await Promise.all([
+    getFeaturedNews(8),
+    getFeaturedEvents(8),
+    getPublishedNews({ limit: 16 }),
+    getPublishedEvents({ limit: 16 }),
+    getPublishedArticles(6),
+    getPopularCities(6),
+    getNewsGroupedByCategory(8),
+  ]);
 
-  const featuredIds = new Set(featuredNews.map((n) => n.id));
-  const remainingNews = allLatestNews.filter((n) => !featuredIds.has(n.id));
-  const headlineNews = remainingNews.slice(0, 4);
+  const featuredNewsIds = new Set(featuredNews.map((n) => n.id));
+  const remainingNews = allLatestNews.filter((n) => !featuredNewsIds.has(n.id));
+  const mansetNews = remainingNews.length > 0 ? remainingNews.slice(0, 8) : allLatestNews.slice(0, 8);
 
   const siteUrl = getSiteUrl();
 
@@ -60,10 +68,11 @@ export default async function HomePage() {
     <div className="flex flex-col min-h-screen">
       <JsonLd data={websiteJsonLd} />
 
-      {/* 1. Günün Manşetleri ve Kültür Gündemi Hızlı Bakış */}
+      {/* 1. Vitrin Slider (Büyük Alan: Haber + Etkinlik) & Manşetler (Küçük Görselli Kartlar) */}
       <EditorialHero
-        featuredNews={featuredNews.length > 0 ? featuredNews : allLatestNews}
-        headlineNews={headlineNews}
+        featuredNews={featuredNews.length > 0 ? featuredNews : allLatestNews.slice(0, 4)}
+        featuredEvents={featuredEvents}
+        headlineNews={mansetNews}
         latestEvents={upcomingEvents}
       />
 

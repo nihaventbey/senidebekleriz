@@ -810,7 +810,7 @@ export function NewsForm({
                 onChange={(e) => setIsFeatured(e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300 text-primary"
               />
-              <span>🔥 Manşette Öne Çıkar</span>
+              <span>🔥 Vitrin Slider&apos;ında Göster (İşaretlenmezse küçük görselli Manşetlerde yer alır)</span>
             </label>
           </div>
 

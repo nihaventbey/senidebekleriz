@@ -46,10 +46,16 @@ export function NewsCard({ news }: { news: PublicNewsArticle }) {
   const readingTime = estimateReadingTime(news.content);
   const cover = parseCoverImage(news.coverImage);
 
+  const newsHref = `/haber/${news.slug}`;
+
   return (
     <article className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-border/60 bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg">
-      {/* Cover Image Header */}
-      <div className="relative aspect-video w-full overflow-hidden bg-muted">
+      {/* Cover Image Header (Clickable) */}
+      <Link
+        href={newsHref}
+        className="relative aspect-video w-full overflow-hidden bg-muted block"
+        aria-label={news.title}
+      >
         {cover.src ? (
           <img
             src={cover.src}
@@ -88,19 +94,21 @@ export function NewsCard({ news }: { news: PublicNewsArticle }) {
           <Calendar className="h-3 w-3" />
           <span>{dateStr}</span>
         </div>
-      </div>
+      </Link>
 
       {/* Content */}
       <div className="flex flex-1 flex-col justify-between p-5">
         <div className="space-y-2.5">
           <h2 className="text-base font-bold leading-snug tracking-tight line-clamp-2 group-hover:text-primary transition-colors">
-            <Link href={`/haber/${news.slug}`} className="hover:underline">
+            <Link href={newsHref} className="hover:underline block">
               {news.title}
             </Link>
           </h2>
 
           <p className="text-xs leading-relaxed text-muted-foreground line-clamp-3">
-            {news.summary}
+            <Link href={newsHref} className="hover:text-foreground block">
+              {news.summary}
+            </Link>
           </p>
         </div>
 
@@ -112,7 +120,7 @@ export function NewsCard({ news }: { news: PublicNewsArticle }) {
           </span>
 
           <Link
-            href={`/haber/${news.slug}`}
+            href={newsHref}
             className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
           >
             Haberi Oku
@@ -128,26 +136,40 @@ export function FeaturedNewsHero({ newsList }: { newsList: PublicNewsArticle[] }
   if (!newsList || newsList.length === 0) return null;
   const main = newsList[0];
   const mainCover = parseCoverImage(main.coverImage);
+  const mainHref = `/haber/${main.slug}`;
   const side = newsList.slice(1, 4);
 
   return (
     <div className="grid gap-6 lg:grid-cols-12">
       {/* Main Big Headline */}
       <div className="relative group overflow-hidden rounded-3xl border border-border/60 bg-card lg:col-span-8 shadow-sm flex flex-col justify-end min-h-[380px] sm:min-h-[460px]">
-        {mainCover.src && (
-          <img
-            src={mainCover.src}
-            alt={main.title}
-            style={{ objectPosition: mainCover.objectPosition }}
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/10" />
+        <Link
+          href={mainHref}
+          className="absolute inset-0 z-10 block overflow-hidden"
+          aria-label={main.title}
+        >
+          {mainCover.src ? (
+            <img
+              src={mainCover.src}
+              alt={main.title}
+              style={{ objectPosition: mainCover.objectPosition }}
+              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+          ) : (
+            <CulturalCoverPlaceholder
+              title={main.title}
+              category={NEWS_CATEGORY_LABELS[main.category] || "Kültür"}
+              cityName={main.cityName || undefined}
+              iconSize="lg"
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/10" />
+        </Link>
 
-        <div className="relative z-10 p-6 sm:p-8 md:p-10 space-y-3 text-white">
+        <div className="relative z-20 p-6 sm:p-8 md:p-10 space-y-3 text-white pointer-events-none">
           <div className="flex flex-wrap items-center gap-2">
             <Badge className="bg-primary text-primary-foreground font-semibold text-xs px-3 py-1">
-              🔥 Öne Çıkan Manşet
+              🔥 Öne Çıkan Vitrin
             </Badge>
             <Badge className={`${NEWS_CATEGORY_COLORS[main.category] || "bg-black/60"} text-white text-xs`}>
               {NEWS_CATEGORY_LABELS[main.category]}
@@ -160,13 +182,15 @@ export function FeaturedNewsHero({ newsList }: { newsList: PublicNewsArticle[] }
           </div>
 
           <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black leading-tight tracking-tight">
-            <Link href={`/haber/${main.slug}`} className="hover:underline">
+            <Link href={mainHref} className="pointer-events-auto hover:underline block">
               {main.title}
             </Link>
           </h1>
 
           <p className="text-xs sm:text-sm md:text-base text-white/85 line-clamp-2 max-w-2xl leading-relaxed">
-            {main.summary}
+            <Link href={mainHref} className="pointer-events-auto hover:text-white block">
+              {main.summary}
+            </Link>
           </p>
 
           <div className="flex items-center gap-4 text-xs text-white/70 pt-2">
@@ -181,27 +205,42 @@ export function FeaturedNewsHero({ newsList }: { newsList: PublicNewsArticle[] }
       <div className="flex flex-col gap-4 lg:col-span-4 justify-between">
         {side.map((item) => {
           const itemCover = parseCoverImage(item.coverImage);
+          const itemHref = `/haber/${item.slug}`;
           return (
           <article
             key={item.id}
             className="group flex gap-4 overflow-hidden rounded-2xl border border-border/60 bg-card p-3.5 transition-all hover:border-primary/40 hover:shadow-md flex-1 items-center"
           >
-            {itemCover.src && (
-              <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-muted">
+            <Link
+              href={itemHref}
+              className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-muted block"
+              aria-label={item.title}
+            >
+              {itemCover.src ? (
                 <img
                   src={itemCover.src}
                   alt={item.title}
                   style={{ objectPosition: itemCover.objectPosition }}
                   className="h-full w-full object-cover transition-transform group-hover:scale-105"
                 />
-              </div>
-            )}
+              ) : (
+                <CulturalCoverPlaceholder
+                  title={item.title}
+                  category={NEWS_CATEGORY_LABELS[item.category] || "Haber"}
+                  cityName={item.cityName || undefined}
+                  iconSize="sm"
+                />
+              )}
+            </Link>
             <div className="flex flex-1 flex-col justify-between min-w-0 space-y-1">
-              <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
+              <Link
+                href={itemHref}
+                className="text-[10px] font-semibold text-primary uppercase tracking-wider hover:underline"
+              >
                 {NEWS_CATEGORY_LABELS[item.category] || "Haber"}
-              </span>
+              </Link>
               <h3 className="text-xs sm:text-sm font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-                <Link href={`/haber/${item.slug}`} className="hover:underline">
+                <Link href={itemHref} className="hover:underline block">
                   {item.title}
                 </Link>
               </h3>
