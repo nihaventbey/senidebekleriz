@@ -2,7 +2,7 @@
 
 import { requireAdmin } from "@/lib/auth/admin";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import {
   MEDIA_BUCKET,
@@ -15,6 +15,13 @@ import {
   getBrandSettings,
   normalizeBrandSettings,
 } from "@/lib/data/site-settings";
+
+const ALLOWED_HERO_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+]);
 
 const ALLOWED_LOGO_MIME_TYPES = new Set([
   "image/jpeg",
@@ -46,6 +53,20 @@ function extensionForMime(mime: string): string {
   return "jpg";
 }
 
+/** Strip active script vectors from uploaded SVG logos/favicons before storing publicly. */
+function sanitizeSvgBytes(rawBytes: Buffer): Buffer {
+  const raw = rawBytes.toString("utf8");
+  if (!/<svg[\s>]/i.test(raw)) {
+    throw new Error("Geçersiz SVG dosyası.");
+  }
+  const cleaned = raw
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<foreignObject\b[^>]*>[\s\S]*?<\/foreignObject>/gi, "")
+    .replace(/\son[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/(?:href|xlink:href)\s*=\s*(?:"\s*(?:javascript|data):[^"]*"|'\s*(?:javascript|data):[^']*')/gi, "");
+  return Buffer.from(cleaned, "utf8");
+}
+
 async function uploadBrandAsset(
   file: File,
   kind: "logo" | "favicon" | "apple-touch" | "og",
@@ -58,7 +79,9 @@ async function uploadBrandAsset(
     throw new Error("Dosya 5MB'den büyük olamaz.");
   }
 
-  const bytes = Buffer.from(await file.arrayBuffer());
+  const rawBytes = Buffer.from(await file.arrayBuffer());
+  const bytes =
+    file.type === "image/svg+xml" ? sanitizeSvgBytes(rawBytes) : rawBytes;
   const path = `branding/${kind}-${Date.now()}.${extensionForMime(file.type)}`;
 
   const { error } = await supabaseAdmin.storage
@@ -75,7 +98,7 @@ async function uploadBrandAsset(
 }
 
 async function uploadHeroImage(file: File): Promise<string> {
-  if (!ALLOWED_LOGO_MIME_TYPES.has(file.type)) {
+  if (!ALLOWED_HERO_MIME_TYPES.has(file.type)) {
     throw new Error("Sadece JPEG, PNG veya WebP yükleyebilirsiniz.");
   }
   if (file.size > MAX_IMAGE_BYTES) {
@@ -177,6 +200,7 @@ export async function updateBrandSettings(
       return { error: `Marka ayarları kaydedilemedi: ${result.error}` };
     }
 
+    updateTag("site-settings");
     revalidatePath("/");
     revalidatePath("/yonetim/gorunum");
 
@@ -220,6 +244,7 @@ export async function updateHeroSettings(
       return { error: `Ayarlar kaydedilemedi: ${result.error}` };
     }
 
+    updateTag("site-settings");
     revalidatePath("/");
     revalidatePath("/yonetim/gorunum");
 

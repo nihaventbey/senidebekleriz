@@ -138,7 +138,8 @@ export async function uploadImageBuffer(
     return null;
   }
 
-  return getMediaPublicUrl(finalPath);
+  const publicUrl = getMediaPublicUrl(finalPath);
+  return `${publicUrl}?v=${Date.now()}`;
 }
 
 export async function uploadImageFromUrl(
@@ -300,7 +301,7 @@ export async function ensureStoredCoverImage(
   // Skip only if already stored in our Supabase storage as a clean .webp named after this slug
   const urlWithoutQuery = trimmed.split("?")[0];
   if (isStoredCleanWebpUrl(trimmed) && urlWithoutQuery.endsWith(expectedSuffix)) {
-    return reapplyPosition(urlWithoutQuery);
+    return reapplyPosition(trimmed);
   }
 
   // Download external (or differently-named) URL, strip EXIF, convert to WebP, and save as <folder>/<slug>.webp

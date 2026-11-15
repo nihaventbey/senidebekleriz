@@ -1,5 +1,33 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
+/** Batch-check which URLs already exist in discovered_content or cultural_events. */
+export async function getExistingSourceUrlsBatch(
+  urls: string[]
+): Promise<Set<string>> {
+  const unique = Array.from(new Set(urls.filter(Boolean)));
+  if (unique.length === 0) return new Set();
+
+  const [discRes, eventRes] = await Promise.all([
+    supabaseAdmin
+      .from("discovered_content")
+      .select("source_url")
+      .in("source_url", unique),
+    supabaseAdmin
+      .from("cultural_events")
+      .select("source_url")
+      .in("source_url", unique),
+  ]);
+
+  const existing = new Set<string>();
+  for (const row of discRes.data || []) {
+    if (row.source_url) existing.add(row.source_url);
+  }
+  for (const row of eventRes.data || []) {
+    if (row.source_url) existing.add(row.source_url);
+  }
+  return existing;
+}
+
 export async function discoverySourceUrlExists(sourceUrl: string): Promise<boolean> {
   const { data, error } = await supabaseAdmin
     .from("discovered_content")

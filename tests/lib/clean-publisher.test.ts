@@ -96,6 +96,30 @@ describe("cleanPublisherText", () => {
       cleanPublisherText("İzmir Kültürpark'ta Yeni Heykel [AA]")
     ).toBe("İzmir Kültürpark'ta Yeni Heykel");
   });
+
+  it("strips HTML tags and decodes entities in titles and summaries", () => {
+    expect(
+      cleanPublisherText("<p>Topkapı &amp; Ayasofya&nbsp;<strong>Sergisi</strong>&#39;nde Açılış</p>")
+    ).toBe("Topkapı & Ayasofya Sergisi'nde Açılış");
+
+    expect(
+      cleanPublisherText("&lt;div&gt;Efes&amp;nbsp;Kazıları&lt;/div&gt;")
+    ).toBe("Efes Kazıları");
+  });
+
+  it("normalizes ALL-CAPS words anywhere in titles while preserving acronyms and Roman numerals", () => {
+    expect(
+      cleanPublisherText("İSTANBUL'DA MÜZE VE SANAT HAFTASI")
+    ).toBe("İstanbul'da Müze ve Sanat Haftası");
+
+    expect(
+      cleanPublisherText("AKM'DE DEV KONSER: II. MEHMED")
+    ).toBe("AKM'de Dev Konser: II. Mehmed");
+
+    expect(
+      cleanPublisherText("UNESCO Dünya Mirası Listesinde YENİ ADAYLAR")
+    ).toBe("UNESCO Dünya Mirası Listesinde Yeni Adaylar");
+  });
 });
 
 describe("cleanAgencySlug", () => {

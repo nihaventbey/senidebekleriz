@@ -319,6 +319,10 @@ async function callGeminiRaw(
   const defaultThinking: ThinkingLevel = tier === "fast" ? "minimal" : "low";
   const schemaInstruction =
     mode === "json" ? formatSchemaInstruction(req.responseSchema) : "";
+  const nativeResponseSchema =
+    mode === "json" && req.responseSchema
+      ? toGeminiResponseSchema(req.responseSchema)
+      : undefined;
 
   let lastError: Error | null = null;
   let attempts = 0;
@@ -326,6 +330,7 @@ async function callGeminiRaw(
 
   for (const model of getCandidateModels(tier)) {
     let useThinking = true;
+    let useResponseSchema = Boolean(nativeResponseSchema);
     let transientRetries = 0;
 
     // Bir model içinde: geçici hata ve yapılandırma uyumsuzluğu yeniden denemeleri
@@ -349,6 +354,9 @@ async function callGeminiRaw(
         temperature: req.temperature ?? (mode === "json" ? 0.4 : 0.6),
         maxOutputTokens: req.maxOutputTokens ?? 8192,
         ...(mode === "json" ? { responseMimeType: "application/json" } : {}),
+        ...(useResponseSchema && nativeResponseSchema
+          ? { responseSchema: nativeResponseSchema }
+          : {}),
         ...(thinkingConfig ? { thinkingConfig } : {}),
       };
 
@@ -389,6 +397,10 @@ async function callGeminiRaw(
         // Model bu yapılandırmayı desteklemiyorsa sadeleştirip aynı modelde tekrar dene
         if (response.status === 400 && useThinking && /thinking/i.test(body)) {
           useThinking = false;
+          continue;
+        }
+        if (response.status === 400 && useResponseSchema && /schema/i.test(body)) {
+          useResponseSchema = false;
           continue;
         }
 

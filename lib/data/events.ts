@@ -26,8 +26,23 @@ export type PublicEvent = {
   publishedAt: string | null;
 };
 
+const EVENT_PUBLIC_FIELDS =
+  "id, title, slug, summary, description, event_type, status, source_name, source_url, ticket_url, city_slug, venue_name, starts_at, ends_at, cover_image, meta_title, meta_description, is_featured, is_free, sort_order, published_at, expires_at, created_at, updated_at";
+
+const TURKEY_OFFSET_MS = 3 * 60 * 60 * 1000;
+
+/** Returns UTC epoch ms for 00:00:00 in Turkey (UTC+3) for the given Date. */
+function getTurkeyDayStartMs(refDate = new Date()): number {
+  const trWall = new Date(refDate.getTime() + TURKEY_OFFSET_MS);
+  return (
+    Date.UTC(trWall.getUTCFullYear(), trWall.getUTCMonth(), trWall.getUTCDate()) -
+    TURKEY_OFFSET_MS
+  );
+}
+
 function mapEvent(row: CulturalEventRow): PublicEvent {
   const isFree =
+    row.is_free === true ||
     row.raw_payload?.is_free === true ||
     row.raw_payload?.price_type === "free" ||
     /\b(ücretsiz|halka açık|katılım serbest|bilet gerekmez|ücretsizdir)\b/i.test(
@@ -59,9 +74,7 @@ function mapEvent(row: CulturalEventRow): PublicEvent {
 }
 
 export function sortEventsByClosestUpcoming(events: PublicEvent[]): PublicEvent[] {
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const todayStartMs = todayStart.getTime();
+  const todayStartMs = getTurkeyDayStartMs();
 
   return [...events].sort((a, b) => {
     const timeA = a.startsAt ? new Date(a.startsAt).getTime() : null;
@@ -121,7 +134,7 @@ function publishedFilter() {
   const now = new Date().toISOString();
   return supabaseAdmin
     .from("cultural_events")
-    .select("*")
+    .select(EVENT_PUBLIC_FIELDS)
     .eq("status", "published")
     .or(`expires_at.is.null,expires_at.gt.${now}`);
 }
@@ -172,6 +185,10 @@ export async function getPublishedEvents(options?: {
 
   if (options?.eventType) {
     query = query.eq("event_type", options.eventType);
+  }
+
+  if (options?.isFree) {
+    query = query.eq("is_free", true);
   }
 
   if (options?.limit) {

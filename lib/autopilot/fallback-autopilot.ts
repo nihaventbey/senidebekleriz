@@ -32,11 +32,13 @@ export async function getAutopilotStatus(): Promise<AutopilotStatus> {
     supabaseAdmin
       .from("cultural_events")
       .select("id", { count: "exact", head: true })
-      .gte("created_at", oneDayAgo),
+      .eq("status", "published")
+      .gte("published_at", oneDayAgo),
     supabaseAdmin
       .from("cultural_news")
       .select("id", { count: "exact", head: true })
-      .gte("created_at", oneDayAgo),
+      .eq("is_published", true)
+      .gte("published_at", oneDayAgo),
   ]);
 
   const eventsInLast24h = eventsCount || 0;

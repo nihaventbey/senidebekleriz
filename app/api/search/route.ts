@@ -5,11 +5,13 @@ export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const q = searchParams.get("q")?.trim();
+  const rawQuery = searchParams.get("q")?.trim();
 
-  if (!q || q.length < 2) {
+  if (!rawQuery || rawQuery.length < 2) {
     return NextResponse.json({ results: [] });
   }
+
+  const q = rawQuery.slice(0, 80);
 
   const pattern = `%${q}%`;
 

@@ -194,7 +194,30 @@ export function resolveTargetLength(
 /** Model çıktısındaki biçim kusurlarını deterministik olarak düzeltir. */
 export function polishMarkdown(md: string, title?: string): string {
   if (!md) return "";
-  let out = md.replace(/\r\n/g, "\n");
+  let out = md
+    .replace(/\r\n/g, "\n")
+    // Convert block/break HTML tags into Markdown newlines before stripping remaining HTML
+    .replace(/<script\b[\s\S]*?<\/script>/gi, "")
+    .replace(/<style\b[\s\S]*?<\/style>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(?:p|div|section|article|li|h[1-6]|blockquote)>/gi, "\n\n")
+    .replace(/<a\b[^>]*>([\s\S]*?)<\/a>/gi, "$1")
+    .replace(/<\/?[a-z][a-z0-9-]*(?:\s+[^>]*)?>/gi, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&ndash;/gi, "–")
+    .replace(/&mdash;/gi, "—")
+    .replace(/&rsquo;/gi, "’")
+    .replace(/&lsquo;/gi, "‘")
+    .replace(/&rdquo;/gi, "”")
+    .replace(/&ldquo;/gi, "“")
+    .replace(/&hellip;/gi, "…")
+    .replace(/&#(\d+);/g, (_, code) => {
+      const n = parseInt(code, 10);
+      return Number.isFinite(n) && n > 0 ? String.fromCodePoint(n) : "";
+    });
 
   // Başlığın içerikte H1 / ilk satır olarak tekrarlanması
   out = out.replace(/^\s*#\s+[^\n]+\n+/, (m) => {

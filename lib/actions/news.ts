@@ -191,6 +191,9 @@ export async function updateNews(
     return { success: false, error: error.message };
   }
 
+  if (data.slug !== originalSlug) {
+    revalidateNewsPaths(originalSlug);
+  }
   revalidateNewsPaths(data.slug);
   return { success: true, slug: data.slug };
 }

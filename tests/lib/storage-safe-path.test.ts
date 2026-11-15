@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { safePathSegment } from "@/lib/storage/upload-image-from-url";
+import {
+  safePathSegment,
+  ensureStoredCoverImage,
+} from "@/lib/storage/upload-image-from-url";
 
 describe("safePathSegment", () => {
   it("strips agency tokens and datelines from image path slugs", () => {
@@ -29,5 +32,13 @@ describe("safePathSegment", () => {
     expect(safePathSegment("Anadolu Ajansı")).toBe("gorsel");
     expect(safePathSegment("AA")).toBe("gorsel");
     expect(safePathSegment("")).toBe("gorsel");
+  });
+
+  it("preserves cache-busting ?v= query parameter on already-stored cover images", async () => {
+    const stored =
+      "https://example.supabase.co/storage/v1/object/public/media/news/efes-kazilari.webp?v=1763216789#pos=50,25";
+    await expect(
+      ensureStoredCoverImage(stored, "news", "efes-kazilari")
+    ).resolves.toBe(stored);
   });
 });

@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import {
   DEFAULT_HERO_SETTINGS,
@@ -39,20 +40,24 @@ async function ensureSettingsBucket(): Promise<void> {
   });
 }
 
-export async function getHeroSettings(): Promise<HeroSettings> {
-  try {
-    const { data, error } = await supabaseAdmin.storage
-      .from(SETTINGS_BUCKET)
-      .download(HERO_SETTINGS_PATH);
+export const getHeroSettings = unstable_cache(
+  async (): Promise<HeroSettings> => {
+    try {
+      const { data, error } = await supabaseAdmin.storage
+        .from(SETTINGS_BUCKET)
+        .download(HERO_SETTINGS_PATH);
 
-    if (error || !data) return DEFAULT_HERO_SETTINGS;
+      if (error || !data) return DEFAULT_HERO_SETTINGS;
 
-    const text = await data.text();
-    return normalizeHeroSettings(JSON.parse(text));
-  } catch {
-    return DEFAULT_HERO_SETTINGS;
-  }
-}
+      const text = await data.text();
+      return normalizeHeroSettings(JSON.parse(text));
+    } catch {
+      return DEFAULT_HERO_SETTINGS;
+    }
+  },
+  ["site-settings-hero"],
+  { revalidate: 3600, tags: ["site-settings"] }
+);
 
 export async function saveHeroSettings(
   settings: HeroSettings
@@ -73,20 +78,24 @@ export async function saveHeroSettings(
   return {};
 }
 
-export async function getBrandSettings(): Promise<BrandSettings> {
-  try {
-    const { data, error } = await supabaseAdmin.storage
-      .from(SETTINGS_BUCKET)
-      .download(BRAND_SETTINGS_PATH);
+export const getBrandSettings = unstable_cache(
+  async (): Promise<BrandSettings> => {
+    try {
+      const { data, error } = await supabaseAdmin.storage
+        .from(SETTINGS_BUCKET)
+        .download(BRAND_SETTINGS_PATH);
 
-    if (error || !data) return DEFAULT_BRAND_SETTINGS;
+      if (error || !data) return DEFAULT_BRAND_SETTINGS;
 
-    const text = await data.text();
-    return normalizeBrandSettings(JSON.parse(text));
-  } catch {
-    return DEFAULT_BRAND_SETTINGS;
-  }
-}
+      const text = await data.text();
+      return normalizeBrandSettings(JSON.parse(text));
+    } catch {
+      return DEFAULT_BRAND_SETTINGS;
+    }
+  },
+  ["site-settings-branding"],
+  { revalidate: 3600, tags: ["site-settings"] }
+);
 
 export async function saveBrandSettings(
   settings: BrandSettings

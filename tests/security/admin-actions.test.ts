@@ -6,7 +6,11 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({ auth: { getUser } }),
 }));
 vi.mock("@/lib/supabase/admin", () => ({ supabaseAdmin: { from } }));
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+  updateTag: vi.fn(),
+  unstable_cache: (fn: unknown) => fn,
+}));
 
 import { getAdminUser, requireAdmin } from "@/lib/auth/admin";
 import * as admin from "@/lib/actions/admin";

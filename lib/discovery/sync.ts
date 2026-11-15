@@ -12,6 +12,7 @@ import {
 } from "@/lib/discovery/classify-content";
 import {
   discoverySourceUrlExists,
+  getExistingSourceUrlsBatch,
   rejectedDiscoveryUrlExists,
   isTitleAlreadyDiscovered,
 } from "@/lib/discovery/dedupe";
@@ -211,6 +212,9 @@ export async function discoverContent(): Promise<DiscoverContentResult> {
         publisherName?: string;
       };
 
+      const rawUrls = rawItems.map((it) => it.link.trim()).filter(Boolean);
+      const existingRawUrls = await getExistingSourceUrlsBatch(rawUrls);
+
       const candidates: PreparedCandidate[] = [];
 
       for (const item of rawItems) {
@@ -249,8 +253,8 @@ export async function discoverContent(): Promise<DiscoverContentResult> {
           continue;
         }
 
-        // Quick check before resolving
-        if (await isDuplicateUrl(rawUrl)) {
+        // Fast batch check before resolving Google News URL
+        if (existingRawUrls.has(rawUrl)) {
           result.itemsSkipped += 1;
           continue;
         }
@@ -382,6 +386,17 @@ export async function discoverContent(): Promise<DiscoverContentResult> {
         }`
       );
     }
+  }
+
+  try {
+    await supabaseAdmin.from("sync_logs").insert({
+      source: "discovery",
+      entity_type: "discovered_content",
+      status: result.errors.length > 0 && result.itemsInserted === 0 ? "error" : "success",
+      message: `sources=${result.sourcesProcessed}, fetched=${result.itemsFetched}, inserted=${result.itemsInserted}, skipped=${result.itemsSkipped}`,
+    });
+  } catch (logErr) {
+    console.warn("sync_logs insert skipped:", logErr);
   }
 
   return result;

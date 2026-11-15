@@ -153,33 +153,105 @@ const KNOWN_ACRONYMS = new Set([
   "THY",
   "TCDD",
   "PTT",
+  "EU",
+  "UN",
+  "UK",
+  "US",
+  "TV",
+  "DJ",
+  "LP",
+  "CD",
 ]);
+
+const ROMAN_NUMERAL_REGEX = /^(?:I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XX)$/;
+const LOWERCASE_CONNECTORS = new Set(["ve", "ile", "için", "de", "da", "ki", "mi", "mı", "mu", "mü"]);
+
+/** Decodes HTML entities (including double-encoded) and strips any HTML tags. */
+export function stripHtmlAndDecode(input: string): string {
+  if (!input) return "";
+  const decodeOnce = (s: string) =>
+    s
+      .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
+      .replace(/&amp;/gi, "&")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;|&apos;/gi, "'")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&ndash;/gi, "–")
+      .replace(/&mdash;/gi, "—")
+      .replace(/&rsquo;/gi, "’")
+      .replace(/&lsquo;/gi, "‘")
+      .replace(/&rdquo;/gi, "”")
+      .replace(/&ldquo;/gi, "“")
+      .replace(/&hellip;/gi, "…")
+      .replace(/&ccedil;/g, "ç")
+      .replace(/&Ccedil;/g, "Ç")
+      .replace(/&ouml;/g, "ö")
+      .replace(/&Ouml;/g, "Ö")
+      .replace(/&uuml;/g, "ü")
+      .replace(/&Uuml;/g, "Ü")
+      .replace(/&#(\d+);/g, (_, code) => {
+        const n = parseInt(code, 10);
+        return Number.isFinite(n) && n > 0 ? String.fromCodePoint(n) : "";
+      })
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, code) => {
+        const n = parseInt(code, 16);
+        return Number.isFinite(n) && n > 0 ? String.fromCodePoint(n) : "";
+      });
+
+  const stripTagsPreservingInline = (s: string) =>
+    s
+      .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style\b[\s\S]*?<\/style>/gi, " ")
+      .replace(/<\/?(?:p|div|section|article|header|footer|aside|li|ul|ol|h[1-6]|blockquote|tr|td|th|br)\b[^>]*>/gi, " ")
+      .replace(/<[^>]+>/g, "");
+
+  let text = stripTagsPreservingInline(decodeOnce(input));
+
+  if (/&(?:amp|lt|gt|quot|nbsp|rsquo|lsquo|rdquo|ldquo|#\d+|#x[0-9a-f]+);/i.test(text)) {
+    text = stripTagsPreservingInline(decodeOnce(text));
+  }
+
+  return text.replace(/\s+/g, " ").trim();
+}
 
 /**
  * Converts DHA/İHA style screaming ALL-CAPS leading word (e.g. "KÜLTÜR ve Turizm...",
  * "ANTALYA'da düzenlenen...") into normal Turkish title case ("Kültür ve Turizm...",
  * "Antalya'da düzenlenen...") while keeping genuine acronyms ("AKM'de", "UNESCO", "İBB") intact.
  */
-export function normalizeScreamingLeadWord(text: string): string {
+/**
+ * Converts ALL-CAPS words anywhere in a title/sentence (e.g. "İSTANBUL'DA MÜZE HAFTASI",
+ * "ANTALYA'da düzenlenen...") into normal Turkish title case ("İstanbul'da Müze Haftası",
+ * "Antalya'da düzenlenen...") while keeping genuine acronyms ("AKM'de", "UNESCO", "İBB")
+ * and Roman numerals ("II.", "IV") intact.
+ */
+export function normalizeAllCapsWords(text: string): string {
   if (!text) return "";
   return text.replace(
-    /^([A-ZÇĞİÖŞÜ]{4,25})((?:['’][a-zçğıöşüA-ZÇĞİÖŞÜ]{1,6})?)(?=\s+[a-zçğıöşü])/,
-    (full, root: string, suffix: string) => {
-      if (KNOWN_ACRONYMS.has(root)) {
-        const cleanSuffix = suffix
-          ? suffix[0] + suffix.slice(1).toLocaleLowerCase("tr-TR")
-          : "";
-        return `${root}${cleanSuffix}`;
-      }
-      const lowerRoot = root.toLocaleLowerCase("tr-TR");
-      const titledRoot =
-        lowerRoot[0].toLocaleUpperCase("tr-TR") + lowerRoot.slice(1);
+    /(^|[\s"“‘(\[-])([A-ZÇĞİÖŞÜ]{2,25})((?:['’][a-zçğıöşüA-ZÇĞİÖŞÜ]{1,6})?)(?=$|[\s.,;:!?)"”’\]/-])/g,
+    (full, prefix: string, root: string, suffix: string, offset: number) => {
       const cleanSuffix = suffix
         ? suffix[0] + suffix.slice(1).toLocaleLowerCase("tr-TR")
         : "";
-      return `${titledRoot}${cleanSuffix}`;
+      if (KNOWN_ACRONYMS.has(root) || ROMAN_NUMERAL_REGEX.test(root)) {
+        return `${prefix}${root}${cleanSuffix}`;
+      }
+      const lowerRoot = root.toLocaleLowerCase("tr-TR");
+      const isStart = offset === 0 && prefix === "";
+      if (!isStart && !suffix && LOWERCASE_CONNECTORS.has(lowerRoot)) {
+        return `${prefix}${lowerRoot}`;
+      }
+      const titledRoot =
+        lowerRoot[0].toLocaleUpperCase("tr-TR") + lowerRoot.slice(1);
+      return `${prefix}${titledRoot}${cleanSuffix}`;
     }
   );
+}
+
+export function normalizeScreamingLeadWord(text: string): string {
+  return normalizeAllCapsWords(text);
 }
 
 /**
@@ -188,7 +260,7 @@ export function normalizeScreamingLeadWord(text: string): string {
  */
 export function cleanPublisherText(text: string): string {
   if (!text) return "";
-  let res = text.trim();
+  let res = stripHtmlAndDecode(text);
 
   // 1. Strip Datelines at start: e.g. "İSTANBUL (AA) -", "ANTALYA, (DHA) -", "ANKARA/ÇANKAYA (İHA) --", "İZMİR (DHA):"
   res = res.replace(
@@ -230,7 +302,7 @@ export function cleanPublisherText(text: string): string {
     ""
   );
 
-  res = normalizeScreamingLeadWord(res);
+  res = normalizeAllCapsWords(res);
 
   return res.replace(/\s{2,}/g, " ").trim();
 }

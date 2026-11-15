@@ -582,12 +582,12 @@ export function extractJsonLdText(html: string): {
     if (typeof record.articleBody === "string" && record.articleBody.trim()) {
       bodies.push(
         stripDatelineFromParagraph(
-          decodeHtmlEntities(record.articleBody.replace(/\s+/g, " ").trim())
+          stripHtml(record.articleBody)
         )
       );
     }
     if (typeof record.description === "string" && record.description.trim()) {
-      const desc = decodeHtmlEntities(record.description.replace(/\s+/g, " ").trim());
+      const desc = stripHtml(record.description);
       if (!isBoilerplateParagraph(desc)) {
         descriptions.push(desc);
       }
@@ -673,13 +673,13 @@ export function extractJsonLdText(html: string): {
       if (bodyMatch?.[1]) {
         bodies.push(
           stripDatelineFromParagraph(
-            decodeHtmlEntities(bodyMatch[1].replace(/\s+/g, " ").trim())
+            stripHtml(bodyMatch[1])
           )
         );
       }
       const descMatch = rawJson.match(/"description"\s*:\s*"([^"]*)"/);
       if (descMatch?.[1]) {
-        const desc = decodeHtmlEntities(descMatch[1].replace(/\s+/g, " ").trim());
+        const desc = stripHtml(descMatch[1]);
         if (!isBoilerplateParagraph(desc)) {
           descriptions.push(desc);
         }

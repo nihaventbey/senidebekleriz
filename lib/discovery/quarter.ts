@@ -115,11 +115,17 @@ export function hasPastDateInText(text: string, refDate = new Date()): boolean {
 
   while ((match = regex.exec(text)) !== null) {
     const day = parseInt(match[1], 10);
-    const monthKey = match[2].toLowerCase();
-    const explicitYear = match[3] ? parseInt(match[3], 10) : currentYear;
+    const monthKey = match[2].toLocaleLowerCase("tr-TR");
     const monthIndex = TURKISH_MONTHS[monthKey];
 
     if (monthIndex === undefined || day < 1 || day > 31) continue;
+
+    // Handle year-end wrap when year is omitted (e.g. "15 Ocak" mentioned in Nov/Dec refers to next year)
+    const explicitYear = match[3]
+      ? parseInt(match[3], 10)
+      : refDate.getMonth() >= 9 && monthIndex <= 2
+        ? currentYear + 1
+        : currentYear;
 
     const eventDate = new Date(explicitYear, monthIndex, day);
     eventDate.setHours(23, 59, 59, 999);
@@ -189,28 +195,31 @@ export function isDateInActiveQuarter(dateStr?: string | null, refDate = new Dat
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return true;
 
+  // Enforce strict freshness (within 10 days), which naturally handles quarter/year boundaries
+  if (!isDiscoveryDateFresh(dateStr, refDate, 10)) {
+    return false;
+  }
+
   const q = getCurrentQuarterInfo(refDate);
+  const daysIntoQuarter =
+    (refDate.getTime() - q.startDateTime.getTime()) / (24 * 60 * 60 * 1000);
 
-  // Must be in active year
-  if (d.getUTCFullYear() < q.year) {
-    return false;
+  // After the first 10 days of the quarter, enforce quarter/year boundaries strictly
+  if (daysIntoQuarter >= 10) {
+    if (d.getUTCFullYear() < q.year) return false;
+    if (d < q.startDateTime) return false;
   }
 
-  // Must be on or after quarter start date
-  if (d < q.startDateTime) {
-    return false;
-  }
-
-  // Also enforce strict freshness (e.g. within 10 days for active discovery)
-  return isDiscoveryDateFresh(dateStr, refDate, 10);
+  return true;
 }
 
 /**
- * Checks if a title explicitly references a past year (e.g. 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025).
+ * Checks if a title explicitly references a past year (e.g. 2018..2025 when currentYear is 2026).
  */
 export function hasPastYearInTitle(title: string, currentYear = new Date().getFullYear()): boolean {
-  const match = title.match(/\b(201\d|202[0-5])\b/);
-  if (!match) return false;
-  const matchedYear = parseInt(match[1], 10);
-  return matchedYear < currentYear && !title.includes(String(currentYear));
+  const matches = title.match(/\b(20[1-9]\d)\b/g);
+  if (!matches) return false;
+  const hasCurrentOrFuture = matches.some((y) => parseInt(y, 10) >= currentYear);
+  if (hasCurrentOrFuture) return false;
+  return matches.some((y) => parseInt(y, 10) < currentYear);
 }

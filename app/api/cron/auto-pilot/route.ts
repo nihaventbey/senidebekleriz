@@ -1,22 +1,12 @@
 import { NextResponse } from "next/server";
+import { authorizeCronRequest } from "@/lib/auth/cron";
 import { runAutopilotFallback, getAutopilotStatus } from "@/lib/autopilot/fallback-autopilot";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-function authorize(request: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-
-  const authHeader = request.headers.get("authorization");
-  if (authHeader === `Bearer ${secret}`) return true;
-
-  const cronHeader = request.headers.get("x-cron-secret");
-  return cronHeader === secret;
-}
-
 export async function GET(request: Request) {
-  if (!authorize(request)) {
+  if (!authorizeCronRequest(request)) {
     return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
   }
 

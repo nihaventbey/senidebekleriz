@@ -64,6 +64,7 @@ export type CulturalEventRow = {
   meta_title: string | null;
   meta_description: string | null;
   is_featured: boolean;
+  is_free?: boolean;
   sort_order: number;
   raw_payload: Record<string, unknown> | null;
   published_at: string | null;
