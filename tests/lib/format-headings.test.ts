@@ -52,4 +52,18 @@ describe("formatHeadingsWithHeuristics", () => {
     expect(result).not.toContain("Aksiyon.com.TR");
     expect(result).not.toContain("günde Detayları");
   });
+
+  it("never injects canned template headings into plain multi-paragraph articles or converts finite-verb sentences", () => {
+    const content = [
+      "Murat Boz, Adana Merkez Park'ta düzenlenen final gecesinde sahne aldı.",
+      "Dokuz gün boyunca süren etkinlikler kapsamında 26 şehirden gelen sanatseverler buluştu.",
+      "Oyunun epizotlardan oluşacağını anlatan Yılmaz, şöyle devam etti:",
+      "Festival kapsamındaki konserler ve tiyatro gösterimleri kentin farklı sahnelerinde izleyiciyle buluştu.",
+    ].join("\n\n");
+
+    const result = formatHeadingsWithHeuristics(content, "Adana Festivali Finali");
+    expect(result).not.toContain("## Program Akışı ve Sanatsal Etkinlikler");
+    expect(result).not.toContain("## Kültürel Bağlam ve Öne Çıkan Başlıklar");
+    expect(result).not.toContain("## Oyunun epizotlardan");
+  });
 });

@@ -195,10 +195,11 @@ Kurallar:
 5. Kurumsal Metin ve SEO Alanları:
    - title: Etkinliğin resmi, temiz adı ("Müjde", "Biletler Satışta", "| Biletix" gibi ekleri temizle).
    - summary: 110 - 155 karakter arası, tam cümleyle ve noktayla biten kurumsal Türkçe özet (asla "..." ile yarım bırakma).
-   - description: Kaynaktaki somut bilgilere dayanan, 180 - 380 kelimelik kurumsal Markdown etkinlik rehberi.
+   - description: Kaynaktaki somut bilgilere dayanan, 200 - 340 kelime (1.400 - 2.400 karakter) uzunluğunda kurumsal Markdown etkinlik rehberi.
      * Giriş paragrafı ("summary" alanını kelimesi kelimesine kopyalama!)
-     * Ardından içeriğe özgü 2 adet "## [Konuya Özgü Alt Başlık]" altında program/eser/sanatçı bilgisi ve mekân/katılım bilgisi.
-     * Kaynakta olmayan ulaşım/otobüs hattı veya uydurma bilgi EKLEME; şablon başlıklar ("## Detaylar", "## Etkinlik ve Sahne Detayları") yerine etkinliğe özgü başlıklar kullan.
+     * Ardından içeriğe özgü 2 adet "## [Etkinliğe Özgü Alt Başlık]" altında sanatçı/eser/repertuvar içeriği ve sahne/katılım bilgisi (her başlık altında 1-2 doyurucu paragraf).
+     * Kaynakta olmayan ulaşım/otobüs hattı veya uydurma bilgi EKLEME.
+     * Şablon başlıklar ("## Detaylar", "## Program ve Katılım Bilgileri", "## Etkinlik ve Sahne Detayları") ve metin sonunda kaynak/yayıncı/bilet sitesi imzası ("Kaynak:", "Biletix | Resmi Biletix Sitesi") KESİNLİKLE kullanma.
    - meta_title: SEO başlığı (max 60 karakter).
    - meta_description: Arama motoru açıklaması (max 155 karakter).`;
 }
@@ -478,22 +479,31 @@ function buildCleanEventDescription(
   cleanSummary: string,
   venueName: string | null
 ): string {
-  const source = (rawDescription || rawPageText || "").trim();
+  const rawSource = (rawDescription || rawPageText || "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .trim();
   const sumNorm = cleanSummary
     .toLocaleLowerCase("tr-TR")
     .replace(/[^a-z0-9çğıöşü]/g, "");
 
-  const cleanedBlocks = source
+  const cleanedBlocks = rawSource
     .split(/\n{2,}/)
     .map((b) => stripDatelineFromParagraph(b.trim()))
     .filter((b) => {
       if (!b || b.length < 20) return false;
-      // Drop structured metadata dump lines from the prose body
-      if (/^(Başlangıç Tarihi \(ISO\)|Bitiş Tarihi \(ISO\)|Bilet Bağlantısı):/i.test(b)) {
+      // Drop structured metadata dump and ticketing SEO boilerplate lines from prose body
+      if (
+        /^(Başlangıç Tarihi \(ISO\)|Bitiş Tarihi \(ISO\)|Bilet Bağlantısı|Etkinlik Adı|Mekân \/ Sahne|Şehir \/ Konum):/i.test(
+          b
+        ) ||
+        /(?:Resmi Biletix Sitesi|Ticketmaster Türkiye|Aradığın tüm maç biletleri)/i.test(
+          b
+        )
+      ) {
         return false;
       }
       // Drop truncated ellipsis snippets if there are other paragraphs
-      if (/[…]$|\.{3}$/.test(b) && source.length > b.length + 60) {
+      if (/[…]$|\.{3}$/.test(b) && rawSource.length > b.length + 60) {
         return false;
       }
       return true;
@@ -513,13 +523,8 @@ function buildCleanEventDescription(
 
   if (body.length < 180) {
     const venueClause = venueName ? ` ${venueName} ev sahipliğinde` : "";
-    body = [
-      body || cleanSummary,
-      `## Program ve Katılım Bilgileri`,
-      `${cleanTitle},${venueClause} sanatseverlerle buluşuyor. Etkinliğin seans saatleri, salon düzeni ve güncel katılım koşulları resmi etkinlik sayfası üzerinden takip edilebilir.`,
-    ]
-      .filter(Boolean)
-      .join("\n\n");
+    const fallbackLead = `${cleanTitle},${venueClause} sanatseverlerle buluşuyor.`;
+    body = body ? `${body}\n\n${fallbackLead}` : cleanSummary || fallbackLead;
   }
 
   return polishMarkdown(body, cleanTitle);

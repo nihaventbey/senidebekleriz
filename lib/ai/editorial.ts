@@ -7,6 +7,12 @@
  * zorunlu tutulması) oluşmaz.
  */
 
+import {
+  cleanPublisherText,
+  normalizeAllCapsWords,
+  stripTrailingSourceAttribution,
+} from "@/lib/ai/clean-publisher";
+
 const TR_TIMEZONE = "Europe/Istanbul";
 
 const TR_MONTH_NAMES = [
@@ -103,11 +109,21 @@ export const CORPORATE_STYLE_GUIDE = `KURUMSAL YAZIM REHBERİ (Seni de Bekleriz 
 export const TEMPLATE_HEADING_PATTERNS: RegExp[] = [
   /^(detaylar|gelişmeler|sonuç|özet|tarihçe|giriş|açıklamalar|önemli bilgiler|genel bilgiler)$/i,
   /^kaynak(lar|ça)?( ve (açıklamalar|detaylar))?$/i,
+  /^kaynak ve detaylar$/i,
   /^program ve katılım/i,
+  /^program akışı ve sanatsal etkinlikler$/i,
+  /^kültürel bağlam ve öne çıkan başlıklar$/i,
+  /^sergi seçkisi ve ziyaret bilgileri$/i,
+  /^arkeolojik bulgular ve bilimsel inceleme$/i,
+  /^restorasyon süreci ve mimari koruma$/i,
   /^etkinlik ve sahne detayları$/i,
   /^sanatçılar ve kadro$/i,
   /^mekân? ve katılım rehberi$/i,
   /^editör notu/i,
+  /^(?:[a-zçğıöşü\s]{0,30}\s+)?hakkında merak edilenler$/i,
+  /^(?:adayların\s+)?merak ettiği sorular$/i,
+  /^merak edilenler$/i,
+  /^(?:sergi\s+|bienal\s+)?(?:ziyaretçiler|katılımcılar) için pratik bilgiler$/i,
   /detayları$/i,
   /^gelişmeler ve /i,
 ];
@@ -169,33 +185,56 @@ export function measureCopyRatio(content: string, source: string, n = 6): number
 }
 
 /**
- * Kaynak metnin zenginliğine göre gerçekçi hedef uzunluk.
- * 80 kelimelik bir RSS özetinden 800 kelimelik haber istemek modeli uydurmaya iter.
+ * Kaynak metnin zenginliğine göre Google SEO ve Türk okuru için hedef uzunluk.
+ * Kaynak kısa olsa bile taban hedef en az 360 kelime (~2.600 karakter) tutulur.
  */
 export function resolveTargetLength(
   requested: { min: number; max: number },
   sourceWordCount: number
 ): { min: number; max: number; thinSource: boolean } {
-  if (sourceWordCount < 120) {
-    return { min: Math.min(160, requested.min), max: Math.min(320, requested.max), thinSource: true };
+  const safeFloorMin = requested.min < 300 ? requested.min : 360;
+  if (sourceWordCount < 150) {
+    return {
+      min: Math.max(safeFloorMin, Math.min(380, requested.min)),
+      max: Math.max(520, Math.min(560, requested.max)),
+      thinSource: true,
+    };
   }
   if (sourceWordCount < 300) {
-    return { min: Math.min(250, requested.min), max: Math.min(450, requested.max), thinSource: true };
+    return {
+      min: Math.max(safeFloorMin, Math.min(420, requested.min)),
+      max: Math.max(560, Math.min(620, requested.max)),
+      thinSource: true,
+    };
   }
-  // Kaynağın ~1.6 katından uzun metin bilgi değil dolgu üretir
-  const cap = Math.max(450, Math.round(sourceWordCount * 1.6));
+  const cap = Math.max(550, Math.round(sourceWordCount * 1.5));
   return {
-    min: Math.min(requested.min, Math.round(cap * 0.7)),
-    max: Math.min(requested.max, cap),
+    min: Math.max(safeFloorMin, Math.min(requested.min, Math.round(cap * 0.75))),
+    max: Math.min(requested.max, Math.max(600, cap)),
     thinSource: false,
   };
 }
 
+const NARRATIVE_HEADING_VERB_REGEX =
+  /\b(dedi|belirtti|söyledi|devam\s+etti|gösterdi|ediyoruz|hedefliyoruz|şöyle\s+konuştu|bulundu|açıkladı|katıldı|sona\s+erdi|başladı|açıldı|yapıldı|planlıyoruz)\b/i;
+
+function normalizeTitleComparisonKey(text: string): string {
+  return (text || "")
+    .toLocaleLowerCase("tr-TR")
+    .replace(/[^a-z0-9çğıöşü]/g, "");
+}
+
 /** Model çıktısındaki biçim kusurlarını deterministik olarak düzeltir. */
-export function polishMarkdown(md: string, title?: string): string {
+export function polishMarkdown(
+  md: string,
+  title?: string,
+  sourceName?: string
+): string {
   if (!md) return "";
   let out = md
     .replace(/\r\n/g, "\n")
+    // Strip WordPress / HTML comments
+    .replace(/<!--[\s\S]*?-->/g, "")
     // Convert block/break HTML tags into Markdown newlines before stripping remaining HTML
     .replace(/<script\b[\s\S]*?<\/script>/gi, "")
     .replace(/<style\b[\s\S]*?<\/style>/gi, "")
@@ -230,26 +269,76 @@ export function polishMarkdown(md: string, title?: string): string {
   out = out.replace(/^\*\*([^*\n]{6,90})\*\*[ \t]*$/gm, "## $1");
   // Başlık içindeki kalın işaretleri ve sondaki iki noktayı temizle (satır sonu \n korunmalı!)
   out = out.replace(/^(#{2,3})[ \t]+\**([^*\n:]+?):?\**:?[ \t]*$/gm, "$1 $2");
-  // Modelin eklediği "Kaynak: ..." / "Editör Notu" kuyruklarını sil (kaynak arayüzde ayrıca gösterilir)
-  out = out.replace(/\n+(##\s*)?(Kaynak(ça)?|Editör Notu)\s*:?[^\n]*(\n(?!##)[^\n]+)*\s*$/i, "");
   // Ajans dateline'ı ile başlayan paragraflar
   out = out.replace(
     /^[A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜa-zçğıöşü\s]{1,24}\s*\((AA|İHA|IHA|DHA|ANKA)\)\s*[-–—:]+\s*/gm,
     ""
   );
-  // Ardışık aynı paragrafları tekilleştir
+
+  // First demote narrative-sentence headings so they are not treated as orphan headings
+  const normTitle = title ? normalizeTitleComparisonKey(cleanPublisherText(title)) : "";
   const blocks = out.split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
   const seen = new Set<string>();
   const unique: string[] = [];
+
   for (const b of blocks) {
+    const hMatch = b.match(/^(#{2,3})\s+(.+)$/);
+    if (hMatch) {
+      const level = hMatch[1];
+      const rawH = hMatch[2].replace(/\*\*/g, "").replace(/:+\s*$/, "").trim();
+      const cleanedH = normalizeAllCapsWords(cleanPublisherText(rawH));
+      const normH = normalizeTitleComparisonKey(cleanedH);
+
+      // Drop template headings, tiny stubs, or headings repeating the article title
+      if (
+        !cleanedH ||
+        cleanedH.length < 8 ||
+        TEMPLATE_HEADING_PATTERNS.some((p) => p.test(cleanedH)) ||
+        (normTitle.length >= 16 && (normH === normTitle || normH.includes(normTitle)))
+      ) {
+        continue;
+      }
+
+      // If an HTML heading tag captured a narrative sentence or quote, demote it to a normal paragraph
+      if (
+        /[.…?!]$/.test(cleanedH) ||
+        /^["“‘(\[]/.test(cleanedH) ||
+        NARRATIVE_HEADING_VERB_REGEX.test(cleanedH) ||
+        cleanedH.length > 95
+      ) {
+        const key = cleanedH.toLocaleLowerCase("tr-TR").replace(/\s+/g, " ").slice(0, 160);
+        if (!seen.has(key)) {
+          seen.add(key);
+          unique.push(cleanedH);
+        }
+        continue;
+      }
+
+      // Never place a heading before the introductory lead paragraph
+      if (unique.length === 0) {
+        continue;
+      }
+
+      // Collapse consecutive headings by keeping the more specific latest heading
+      if (/^#{2,3}\s/.test(unique[unique.length - 1])) {
+        unique.pop();
+      }
+
+      unique.push(`${level} ${cleanedH}`);
+      continue;
+    }
+
     const key = b.toLocaleLowerCase("tr-TR").replace(/\s+/g, " ").slice(0, 160);
-    if (!b.startsWith("#") && seen.has(key)) continue;
+    if (seen.has(key)) continue;
     seen.add(key);
     unique.push(b);
   }
+
   // Sonda başlık kalmışsa (altı boş) at
   while (unique.length > 0 && /^#{2,3}\s/.test(unique[unique.length - 1])) unique.pop();
-  return unique.join("\n\n").replace(/[ \t]+\n/g, "\n").trim();
+
+  const joined = unique.join("\n\n").replace(/[ \t]+\n/g, "\n").trim();
+  return stripTrailingSourceAttribution(joined, title, sourceName);
 }
 
 export type QualityIssue = {
@@ -301,7 +390,7 @@ function commonTextIssues(content: string, sourceText: string | undefined): {
   if (templateHeadings.length > 0) {
     issues.push({
       code: "template_headings",
-      severity: "minor",
+      severity: "critical",
       message: `Şablon alt başlık: ${templateHeadings.map((h) => `"${h}"`).join(", ")}`,
     });
   }
@@ -370,12 +459,19 @@ export function assessNewsDraft(
   } else if (wordCount < opts.minWords) {
     issues.push({ code: "short", severity: "minor", message: `Metin ${wordCount} kelime (hedef en az ${opts.minWords})` });
   }
+  if (opts.minWords >= 250 && content.length < 2200) {
+    issues.push({
+      code: "chars_too_short",
+      severity: content.length < 1600 ? "critical" : "minor",
+      message: `Metin ${content.length} karakter (hedef 2.600-4.200 karakter)`,
+    });
+  }
   const headings = headingTexts(content);
   if (wordCount >= 320 && headings.length < 2) {
     issues.push({ code: "few_headings", severity: "minor", message: `Yalnızca ${headings.length} alt başlık var` });
   }
   if (/^#{1,3}\s/.test(content.trim())) {
-    issues.push({ code: "no_lead", severity: "minor", message: "Metin giriş paragrafı yerine başlıkla başlıyor" });
+    issues.push({ code: "no_lead", severity: "critical", message: "Metin giriş paragrafı yerine başlıkla başlıyor" });
   }
   if (summary && content.includes(summary.slice(0, 120)) && summary.length > 80) {
     issues.push({ code: "lead_equals_summary", severity: "minor", message: "Giriş paragrafı spotun birebir kopyası" });

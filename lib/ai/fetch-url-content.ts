@@ -4,8 +4,10 @@ import {
   BROWSER_USER_AGENT,
 } from "@/lib/ai/extract-page-images";
 import {
+  KNOWN_ACRONYMS,
   stripDatelineFromParagraph,
   cleanPublisherText,
+  normalizeAllCapsWords,
 } from "@/lib/ai/clean-publisher";
 import {
   isGoogleNewsArticleUrl,
@@ -262,6 +264,23 @@ function isBoilerplateParagraph(text: string): boolean {
   ) {
     return true;
   }
+
+  // Promotional website / Instagram redirect footers & markdown source attribution lines
+  if (
+    /(?:detaylı\s+bilgilere|detaylı\s+bilgi\s+ve|etkinlik\s+takvimi\s+ve\s+detaylı\s+bilgi)[\s\S]{0,220}(?:resmi\s+internet\s+sitesi|resmi\s+web|instagram\s+hesabı|üzerinden\s+ulaşabilirsiniz)/i.test(
+      t
+    ) ||
+    /^\*{0,2}(?:kaynak(?:ça)?|kaynak\s+metin(?:\s*bilgisi)?|haber\s+kaynağı|editör\s+notu)\s*:\*{0,2}/i.test(
+      t
+    ) ||
+    (!/[.!?…]$/.test(t) &&
+      t.length < 220 &&
+      /\s+(?:Küçük\s+Saat(?:\s*\|\s*Adana\s+Haberleri)?|İhlas\s+Haber\s+Ajansı|Anadolu\s+Ajansı|Demirören\s+Haber\s+Ajansı|TRT\s+Haber|NTV\s+Haber)\s*$/i.test(
+        t
+      ))
+  ) {
+    return true;
+  }
   return false;
 }
 
@@ -283,8 +302,23 @@ const TURKISH_LOWER_CONJUNCTIONS = new Set([
   "üzere",
 ]);
 
+const NARRATIVE_VERB_OR_QUOTE_REGEX =
+  /\b(dedi|belirtti|söyledi|ifadelerini\s+kullandı|açıkladı|bildirdi|kaydetti|vurguladı|devam\s+etti|gösterdi|bulundu|ediyoruz|hedefliyoruz|katıldı|sona\s+erdi|açıldı|başladı|konuştu|oldu|yapıldı|planlıyoruz|sürdürüyoruz)\b/i;
+
+function isNarrativeHeadingSentence(rawText: string): boolean {
+  const t = rawText.trim();
+  if (!t) return true;
+  if (/[.…?!]$/.test(t)) return true;
+  if (/^["“‘(\[]/.test(t)) return true;
+  if (/["“”«»]/.test(t)) return true;
+  if (NARRATIVE_VERB_OR_QUOTE_REGEX.test(t)) return true;
+  const words = t.split(/\s+/).filter(Boolean);
+  if (words.length > 12) return true;
+  return false;
+}
+
 function normalizeHeadingBlockText(raw: string): string {
-  const cleaned = cleanPublisherText(raw.replace(/:+\s*$/, "").trim());
+  const cleaned = normalizeAllCapsWords(cleanPublisherText(raw.replace(/:+\s*$/, "").trim()));
   if (!cleaned) return "";
   const words = cleaned.split(/\s+/);
   return words
@@ -293,7 +327,17 @@ function normalizeHeadingBlockText(raw: string): string {
       if (idx > 0 && TURKISH_LOWER_CONJUNCTIONS.has(lower)) {
         return lower;
       }
-      if (/^[A-ZÇĞİÖŞÜ0-9]{2,}/.test(word) && word === word.toLocaleUpperCase("tr-TR") && word.length <= 6) {
+      const apoMatch = word.match(/^([A-ZÇĞİÖŞÜ0-9]+)(['’][a-zçğıöşüA-ZÇĞİÖŞÜ]+)$/);
+      if (apoMatch) {
+        const root = apoMatch[1];
+        const suffix = apoMatch[2][0] + apoMatch[2].slice(1).toLocaleLowerCase("tr-TR");
+        if (KNOWN_ACRONYMS.has(root)) {
+          return `${root}${suffix}`;
+        }
+        const lowerRoot = root.toLocaleLowerCase("tr-TR");
+        return (lowerRoot[0]?.toLocaleUpperCase("tr-TR") || "") + lowerRoot.slice(1) + suffix;
+      }
+      if (KNOWN_ACRONYMS.has(word) || /^(?:I|II|III|IV|V|VI|VII|VIII|IX|X)\.?$/.test(word)) {
         return word;
       }
       const first = lower[0]?.toLocaleUpperCase("tr-TR") || "";
@@ -359,6 +403,13 @@ function extractBlocksFromHtml(html: string): string[] {
     if (isBoilerplateParagraph(rawText)) continue;
 
     if (tag.startsWith("h")) {
+      if (isNarrativeHeadingSentence(rawText)) {
+        const para = stripDatelineFromParagraph(rawText);
+        if (para.length >= 28 && !isBoilerplateParagraph(para)) {
+          paragraphs.push(para);
+        }
+        continue;
+      }
       const heading = normalizeHeadingBlockText(rawText);
       if (heading.length >= 10 && heading.length <= 95 && !/[?!]$/.test(heading)) {
         paragraphs.push(`## ${heading}`);
@@ -966,9 +1017,14 @@ export async function fetchUrlContent(
   const jsonLd = extractJsonLdText(html);
   const publishedAt = extractPublishedAt(html, jsonLd.publishedAt);
   const maxLength = options?.maxTextLength ?? 12000;
-  const pageText = mergeTextParts(
-    extractPageTextFromHtml(html, maxLength),
-    options?.fallbackText
+  const extractedHtmlText = extractPageTextFromHtml(html, maxLength);
+  const cleanFallback = options?.fallbackText
+    ? stripDatelineFromParagraph(cleanPublisherText(options.fallbackText))
+    : undefined;
+  const pageText = (
+    extractedHtmlText.length >= 200
+      ? extractedHtmlText
+      : mergeTextParts(extractedHtmlText, cleanFallback)
   ).slice(0, maxLength);
 
   const minLength = options?.minTextLength ?? 80;

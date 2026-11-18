@@ -8,6 +8,7 @@ import { slugify } from "@/lib/slugify";
 import { normalizeCitySlug } from "@/lib/cities/lookup";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
 import { cleanPublisherText, cleanNewsSlug } from "@/lib/ai/clean-publisher";
+import { polishMarkdown } from "@/lib/ai/editorial";
 
 export type NewsActionResult = {
   success: boolean;
@@ -47,6 +48,10 @@ export async function createNews(formData: FormData): Promise<NewsActionResult> 
   }
 
   const cleanTitle = cleanPublisherText(title);
+  const cleanContent = polishMarkdown(content, cleanTitle || title, sourceName || undefined);
+  if (!cleanContent) {
+    return { success: false, error: "Haber metni zorunludur." };
+  }
   const baseSlug = cleanNewsSlug(rawSlug || cleanTitle);
   let slug = baseSlug.slice(0, 100);
   let counter = 2;
@@ -70,7 +75,7 @@ export async function createNews(formData: FormData): Promise<NewsActionResult> 
       title: cleanTitle || title,
       slug,
       summary: cleanPublisherText(summary) || cleanTitle || title,
-      content,
+      content: cleanContent,
       category,
       city_slug: citySlug,
       cover_image: coverImage,
@@ -126,6 +131,10 @@ export async function updateNews(
   }
 
   const cleanTitle = cleanPublisherText(title);
+  const cleanContent = polishMarkdown(content, cleanTitle || title, sourceName || undefined);
+  if (!cleanContent) {
+    return { success: false, error: "Haber metni zorunludur." };
+  }
   const baseSlug = cleanNewsSlug(rawSlug || cleanTitle || originalSlug);
   let slug = baseSlug.slice(0, 100);
   if (slug !== originalSlug) {
@@ -166,7 +175,7 @@ export async function updateNews(
       title: cleanTitle || title,
       slug,
       summary: cleanPublisherText(summary) || cleanTitle || title,
-      content,
+      content: cleanContent,
       category,
       city_slug: citySlug,
       cover_image: coverImage,

@@ -180,9 +180,9 @@ function toTurkishTitleCase(str: string): string {
 }
 
 const DEPTH_WORD_RANGES: Record<NewsDepth, { min: number; max: number }> = {
-  standard: { min: 350, max: 550 },
-  deep: { min: 550, max: 850 },
-  comprehensive: { min: 850, max: 1300 },
+  standard: { min: 380, max: 550 },
+  deep: { min: 550, max: 750 },
+  comprehensive: { min: 750, max: 1050 },
 };
 
 function buildSystemPrompt(
@@ -190,9 +190,16 @@ function buildSystemPrompt(
   targetRange: { min: number; max: number; thinSource: boolean },
   dateContext: string
 ): string {
+  const targetCharNote =
+    depth === "standard"
+      ? "2.600 - 4.200 karakter"
+      : depth === "deep"
+      ? "4.000 - 5.500 karakter"
+      : "5.500 - 7.500 karakter";
+
   const lengthInstruction = targetRange.thinSource
-    ? `HEDEF UZUNLUK: ${targetRange.min} - ${targetRange.max} kelime. Kaynak metin kısa bir bülten/özet olduğu için; kaynaktaki somut verileri eksiksiz koruyarak ve yalnızca adı geçen kurumun, müzenin veya antik kentin doğrulanmış kurumsal/tarihsel arka planını ekleyerek odaklı, yoğun ve kurumsal bir haber metni oluştur. Kaynakta bulunmayan alıntı, sayı, saat veya uydurma detay KESİNLİKLE ekleme.`
-    : `HEDEF UZUNLUK: ${targetRange.min} - ${targetRange.max} kelime (${depth} derinlik). Kaynaktaki tüm somut verileri, uzman ve yetkili açıklamalarını, sayısal bilgileri ve kültürel/tarihsel bağlamı eksiksiz, akıcı ve kurumsal bir dille aktaran kapsamlı kültür-sanat haberi hazırla.`;
+    ? `HEDEF UZUNLUK: ${targetRange.min} - ${targetRange.max} kelime (${targetCharNote}). Kaynak bülten kısa olduğu için; kaynaktaki tüm somut verileri (kişi, kurum, eser, şehir, tarih) eksiksiz koruyarak ve uydurma saat, bilet fiyatı veya sahte alıntı EKLEMEDEN, haberde adı geçen antik kentin, müzenin, tarihi yapının, festivalin veya kültür kurumunun doğrulanmış tarihsel/kültürel arka planını ve Türkiye kültür-sanat hayatındaki önemini işleyerek metni ${targetCharNote} bandında doyurucu biçimde kurgula.`
+    : `HEDEF UZUNLUK: ${targetRange.min} - ${targetRange.max} kelime (${targetCharNote}, ${depth} derinlik). Ne yüzeysellikten sığ ne de okuru yoracak yapay soru-cevap dolgularıyla şişirilmiş; Google Discover ve Türk okuru için dengeli, bilgi yoğunluğu yüksek ve akıcı bir kültür-sanat haberi hazırla.`;
 
   return `Sen Türkiye'nin kültür, sanat, tarih ve arkeoloji yayını "Seni de Bekleriz"in (senidebekleriz.com) kıdemli baş editörü ve kültür gazetecisisin.
 Görevin: Verilen kaynak içerikten hareketle, ajans kopyacılığından uzak, edebi ciddiyet, yüksek editoryal kalite ve kurumsal gazetecilik standartlarında özgün bir Türkçe haber hazırlamaktır.
@@ -208,14 +215,14 @@ HABER MİMARİSİ VE ALAN KURALLARI
 ═══════════════════════════════════════════════════════════════════
 
 1. BAĞLAM ANALİZİ VE GÜRÜLTÜYÜ TEMİZLEME:
-   - Kaynak metin web sitelerinden kazınmış olabilir; içindeki arayüz kalıntılarını, başka şehirlere ait yan haberleri, reklamları, siyasi polemikleri veya magazin detaylarını tamamen ayıkla.
+   - Kaynak metin web sitelerinden kazınmış olabilir; içindeki arayüz kalıntılarını, başka şehirlere ait yan haberleri, reklamları, sosyal medya/web sitesi yönlendirme cümlelerini ("detaylı bilgi için ... sitesine/Instagram hesabına...") ve metin sonundaki gazete/ajans imzalarını tamamen ayıkla.
    - SADECE haberin ana kültür, sanat, arkeoloji, restorasyon, müze, sinema veya festival konusunu işle.
-   - Kaynak metindeki somut verileri (yer adları, tarihler, kişi isimleri, kazı başkanı, müze adı, eser ismi, kullanılan teknikler, katılım koşulları) EKSİKSİZ koru; kaynakta olmayan bilgi veya alıntı uydurma.
+   - Kaynak metindeki somut verileri (yer adları, tarihler, kişi isimleri, kazı başkanı, müze adı, eser ismi, kullanılan teknikler, katılım koşulları) EKSİKSİZ koru; kaynakta olmayan alıntı veya sayısal veri uydurma.
    - Kaynaktaki cümleleri kelimesi kelimesine kopyalama; tüm paragrafları bağımsız kültür yayını üslubuyla yeniden kurgula.
 
 2. BAŞLIK (title):
    - 55 - 90 karakter arası, doğrudan, bilgilendirici, kurumsal ve SEO uyumlu Türkçe başlık.
-   - ASLA ajans/gazete adı ("AA", "İHA", "DHA", "ANKA", "TRT", "NTV Haber", "Hürriyet"), ünlem işareti veya klik tuzağı soru cümlesi ("Açıldı mı?", "Şok gelişme!") içermez.
+   - ASLA ajans/gazete adı ("AA", "İHA", "DHA", "ANKA", "TRT", "Küçük Saat", "NTV Haber", "Hürriyet"), ünlem işareti veya klik tuzağı soru cümlesi ("Açıldı mı?", "Şok gelişme!") içermez.
    - Haberin somut kültürel değerini etken çatıyla verir (Örn: "Stratonikeia Antik Kenti'nde 1800 Yıllık Roma Mozaiği Gün Yüzüne Çıkarıldı").
 
 3. 5N1K HABER SPOTU (summary):
@@ -224,9 +231,11 @@ HABER MİMARİSİ VE ALAN KURALLARI
 
 4. HABER METNİ VE ALT BAŞLIKLAR (content):
    - GİRİŞ PARAGRAFI: Habere bağlamı kuran güçlü bir giriş paragrafıyla başla. Giriş paragrafının üstüne başlık KOYMA ve "summary" alanını kelimesi kelimesine tekrarlama.
-   - TEMATİK ALT BAŞLIKLAR: Girişten sonra haberin farklı boyutlarını, teknik detaylarını, yetkili/uzman açıklamalarını ve kültürel önemini ele alan 2 ila 4 adet "## [Konuya Özgü Alt Başlık]" kullan.
-   - Her alt başlığın altında en az 2 doyurucu paragraf yer almalıdır.
-   - ASLA kalıp başlıklar ("## Detaylar", "## Gelişmeler", "## Sonuç", "## Tarihçe") veya ana haber başlığının tekrarını kullanma. Başlıklar o bölümün somut konusunu yansıtmalıdır.`;
+   - TEMATİK ALT BAŞLIKLAR: Girişten sonra haberin farklı boyutlarını, sanatsal/tarihsel derinliğini ve yetkili açıklamalarını ele alan 2 veya 3 adet "## [Konuya Özgü Alt Başlık]" kullan.
+   - Her alt başlığın altında 2 doyurucu paragraf yer almalıdır.
+   - KESİN YASAKLAR:
+     * Metnin sonuna "Kaynak:", "**Kaynak:**", "## Kaynak ve Detaylar", gazete/ajans adı, site linki veya "@instagram" yönlendirmesi EKLEME (kaynak kutusu arayüzde ayrı gösterilir).
+     * Yapay SSS ("## Merak Edilenler", "## ... Hakkında Merak Edilenler") veya kalıp şablon başlıklar ("## Detaylar", "## Gelişmeler", "## Sonuç", "## Program Akışı ve Sanatsal Etkinlikler", "## Kültürel Bağlam ve Öne Çıkan Başlıklar") KESİNLİKLE KULLANMA.`;
 }
 
 function sanitizeGeneratedNewsFields(
@@ -239,6 +248,8 @@ function sanitizeGeneratedNewsFields(
   const cleanTitle = cleanPublisherText(raw.title || fallbackTopic)
     .replace(/!+$/g, "")
     .trim();
+
+  const resolvedSourceName = raw.source_name?.trim() || detectedSiteName || null;
 
   // Clean each paragraph of datelines, publisher suffixes, and raw HTML
   const cleanedLines = stripRawHtmlFromMarkdown(raw.content || "")
@@ -253,8 +264,19 @@ function sanitizeGeneratedNewsFields(
     })
     .filter(Boolean);
 
-  let cleanContent = polishMarkdown(cleanedLines.join("\n\n"), cleanTitle);
-  cleanContent = formatHeadingsWithHeuristics(cleanContent, cleanTitle);
+  let cleanContent = polishMarkdown(
+    cleanedLines.join("\n\n"),
+    cleanTitle,
+    resolvedSourceName || undefined
+  );
+  if (!/^#{2,3}\s+/m.test(cleanContent)) {
+    cleanContent = formatHeadingsWithHeuristics(cleanContent, cleanTitle);
+    cleanContent = polishMarkdown(
+      cleanContent,
+      cleanTitle,
+      resolvedSourceName || undefined
+    );
+  }
 
   let cleanSummary = formatSeoSummary(
     stripDatelineFromParagraph(cleanPublisherText(raw.summary || cleanTitle)),
@@ -275,7 +297,11 @@ function sanitizeGeneratedNewsFields(
       .toLocaleLowerCase("tr-TR")
       .replace(/[^a-z0-9çğıöşü]/g, "");
     if (firstNorm && sumNorm && firstNorm === sumNorm) {
-      cleanContent = polishMarkdown(contentBlocks.slice(1).join("\n\n"), cleanTitle);
+      cleanContent = polishMarkdown(
+        contentBlocks.slice(1).join("\n\n"),
+        cleanTitle,
+        resolvedSourceName || undefined
+      );
     }
   }
 
@@ -288,16 +314,13 @@ function sanitizeGeneratedNewsFields(
     normalizeCitySlug(inputCityName) ||
     normalizeCitySlug(detectTurkishCityInText(`${cleanTitle} ${cleanSummary} ${rawPageText}`));
 
-  const sourceName =
-    raw.source_name?.trim() || detectedSiteName || null;
-
   return {
     cleanTitle,
     cleanSummary,
     cleanContent,
     category,
     resolvedCitySlug,
-    sourceName,
+    sourceName: resolvedSourceName,
   };
 }
 
@@ -410,19 +433,23 @@ export async function generateNewsDraft(
       }
     );
 
-    // Self-healing revision pass ONLY on genuine editorial defects (copying, dateline leak, truncation, or < 140 words)
+    // Self-healing revision pass on editorial defects, missing lead, template headings, or short length (< 280 words / < 2200 chars)
     const needsRevision =
-      !report.passed &&
-      (report.wordCount < 140 ||
-        report.issues.some((i) => i.code !== "content_too_short"));
+      !report.passed ||
+      report.wordCount < 280 ||
+      sanitized.cleanContent.length < 2200;
 
     if (needsRevision && isGeminiConfigured()) {
       try {
         const revisionPrompt = [
           userPrompt,
-          `ÖNCEKİ TASLAKTA TESPİT EDİLEN EDİTÖRYAL SORUNLAR:\n${formatIssuesForRevision(report)}`,
+          `ÖNCEKİ TASLAKTA TESPİT EDİLEN EDİTÖRYAL SORUNLAR:\n${
+            report.issues.length > 0
+              ? formatIssuesForRevision(report)
+              : `- Metin şu an ${sanitized.cleanContent.length} karakter (${report.wordCount} kelime); hedef 2.600 - 4.200 karakter (${targetRange.min} - ${targetRange.max} kelime) bandına dengeli biçimde ulaştırılmalıdır.`
+          }`,
           `Önceki Başlık: ${sanitized.cleanTitle}\nÖnceki Spot: ${sanitized.cleanSummary}\nÖnceki Metin:\n${sanitized.cleanContent}`,
-          `GÖREV: Yukarıdaki sorunları gidererek haberi kurumsal yayın ilkelerine uygun, kaynaktaki somut verilere sadık ve özgün cümlelerle yeniden üret.`,
+          `GÖREV: Yukarıdaki sorunları gidererek haberi 2.600 - 4.200 karakter bandında, giriş paragrafıyla başlayan, 2-3 konuya özgü "## Alt Başlık" içeren, sonunda kaynak/yayıncı adı bulunmayan özgün bir kültür haberi olarak yeniden yaz.`,
         ].join("\n\n");
 
         const revised = await callGeminiJson<GeneratedNewsDraft>({
@@ -430,7 +457,7 @@ export async function generateNewsDraft(
           userPrompt: revisionPrompt,
           temperature: 0.3,
           maxOutputTokens: 8192,
-          thinking: "minimal",
+          thinking: "low",
           timeoutMs: 18000,
           responseSchema: NEWS_RESPONSE_SCHEMA,
         });
@@ -442,7 +469,18 @@ export async function generateNewsDraft(
           input.cityName,
           detectedSiteName
         );
-        if (countWords(revisedSanitized.cleanContent) >= countWords(sanitized.cleanContent)) {
+        const revisedReport = assessNewsDraft(
+          {
+            title: revisedSanitized.cleanTitle,
+            summary: revisedSanitized.cleanSummary,
+            content: revisedSanitized.cleanContent,
+          },
+          { sourceText: rawPageText, minWords: targetRange.min }
+        );
+        if (
+          revisedReport.score > report.score ||
+          countWords(revisedSanitized.cleanContent) >= countWords(sanitized.cleanContent)
+        ) {
           sanitized = revisedSanitized;
         }
       } catch (revErr) {
@@ -588,7 +626,8 @@ export async function generateNewsDraft(
 
     const fallbackContent = polishMarkdown(
       formatHeadingsWithHeuristics(rawFallbackContent, cleanFallbackTitle),
-      cleanFallbackTitle
+      cleanFallbackTitle,
+      detectedSiteName
     );
 
     return {

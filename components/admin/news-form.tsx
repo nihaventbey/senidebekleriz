@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo, useEffect } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -14,22 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Loader2,
-  Sparkles,
-  ArrowLeft,
-  Trash2,
-  Check,
-  Eye,
-  Pencil,
-  Upload,
-} from "lucide-react";
-import { renderMarkdown } from "@/lib/markdown";
+import { Loader2, Sparkles, Check, RotateCw } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { slugify } from "@/lib/slugify";
-import { MarkdownContent } from "@/components/markdown/markdown-content";
+import { cleanPublisherText } from "@/lib/ai/clean-publisher";
 import { AiImageModal } from "@/components/admin/ai-image-modal";
 import { CoverImageInput } from "@/components/admin/cover-image-input";
+import { EditorialActionBar } from "@/components/admin/editorial-action-bar";
+import { EditorialMarkdownEditor } from "@/components/admin/editorial-markdown-editor";
 import type { NewsActionResult } from "@/lib/actions/news";
 
 type CityOption = { slug: string; name: string };
@@ -74,6 +66,8 @@ export function NewsForm({
   defaultValues = {},
 }: NewsFormProps) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
+
   const [title, setTitle] = useState(defaultValues.title || "");
   const [slug, setSlug] = useState(defaultValues.slug || "");
   const [summary, setSummary] = useState(defaultValues.summary || "");
@@ -86,75 +80,15 @@ export function NewsForm({
   const [isPublished, setIsPublished] = useState(defaultValues.is_published ?? true);
   const [isFeatured, setIsFeatured] = useState(defaultValues.is_featured ?? false);
 
-  const [preview, setPreview] = useState(false);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
   const [isAiImageModalOpen, setIsAiImageModalOpen] = useState(false);
-  const [uploadingInlineImage, setUploadingInlineImage] = useState(false);
   const [aiPending, startAiTransition] = useTransition();
-  const [formattingPending, startFormattingTransition] = useTransition();
   const [savePending, startSaveTransition] = useTransition();
   const [deletePending, startDeleteTransition] = useTransition();
   const [aiSourceUrl, setAiSourceUrl] = useState(initialSourceUrl || defaultValues.source_url || "");
   const [aiTopic, setAiTopic] = useState("");
   const [aiDepth, setAiDepth] = useState<"standard" | "deep" | "comprehensive">("standard");
-
-  function handleFormatHeadings() {
-    if (!content.trim()) {
-      toast.error("Önce haber metnini girin veya üretin");
-      return;
-    }
-
-    startFormattingTransition(async () => {
-      try {
-        const res = await fetch("/api/admin/format-news-headings", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: title.trim(),
-            content: content.trim(),
-          }),
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Başlıklandırma işlemi başarısız oldu");
-
-        if (data.content) {
-          setContent(data.content);
-          toast.success("Metin bağlamına göre Markdown alt başlıklarıyla düzenlendi! ✨");
-        }
-      } catch (err: any) {
-        toast.error(err.message || "Başlıklandırılamadı");
-      }
-    });
-  }
-
-  function insertMarkdown(prefix: string, suffix = "", defaultPlaceholder = "Başlık") {
-    const textarea = document.getElementById("content-editor") as HTMLTextAreaElement | null;
-    if (!textarea) {
-      setContent((prev) => `${prev.trimEnd()}\n\n${prefix}${defaultPlaceholder}${suffix}\n\n`);
-      return;
-    }
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selected = content.slice(start, end);
-    const textToWrap = selected || defaultPlaceholder;
-    const replacement = `${prefix}${textToWrap}${suffix}`;
-    const nextContent = content.slice(0, start) + replacement + content.slice(end);
-
-    setContent(nextContent);
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(
-        start + prefix.length,
-        start + prefix.length + textToWrap.length
-      );
-    }, 50);
-  }
-
-  const wordCount = useMemo(
-    () => content.trim().split(/\s+/).filter(Boolean).length,
-    [content]
-  );
 
   function handleTitleChange(value: string) {
     setTitle(value);
@@ -172,6 +106,7 @@ export function NewsForm({
 
     startAiTransition(async () => {
       try {
+        setStatusMessage("Yapay zeka haber taslağı hazırlanıyor...");
         const res = await fetch("/api/admin/ai-news-draft", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -203,10 +138,16 @@ export function NewsForm({
           setAiSourceUrl(targetUrl);
         }
 
-        const countMsg = data.word_count ? ` (${data.word_count} kelime)` : "";
+        const charCount = data.content ? data.content.length : 0;
+        const countMsg = data.word_count
+          ? ` (${charCount.toLocaleString("tr-TR")} kr · ${data.word_count} kelime)`
+          : "";
+        setStatusMessage(`Haber taslağı hazırlandı.${countMsg}`);
         toast.success(`Haber taslağı ve kapak görseli hazırlandı! ✨${countMsg}`);
-      } catch (err: any) {
-        toast.error(err.message || "Taslak üretilemedi");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Taslak üretilemedi";
+        setStatusMessage(msg);
+        toast.error(msg);
       }
     });
   }
@@ -215,54 +156,29 @@ export function NewsForm({
     if (initialSourceUrl && !title && !content && !defaultValues.title) {
       generateWithAi(initialSourceUrl);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialSourceUrl]);
 
-  async function handleInlineImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingInlineImage(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("folder", "news");
-      formData.append(
-        "slugHint",
-        `${slug || slugify(title) || "haber"}-detay-${Date.now().toString(36).slice(-4)}`
-      );
-
-      const res = await fetch("/api/admin/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Görsel yüklenemedi");
-
-      const altText = title.trim() || file.name.replace(/\.[^/.]+$/, "");
-      const markdownImg = `\n\n![${altText}](${data.url})\n\n`;
-      setContent((prev) => prev.trimEnd() + markdownImg);
-      toast.success("Görsel WebP formatında yüklendi ve haber metnine eklendi!");
-    } catch (err) {
-      toast.error(
-        "Görsel eklenemedi",
-        err instanceof Error ? err.message : undefined
-      );
-    } finally {
-      setUploadingInlineImage(false);
-      e.target.value = "";
-    }
-  }
-
   async function saveWithStatus(publishState: boolean) {
-    const cleanTitle = title.trim();
+    setAttemptedSubmit(true);
+    const cleanTitle = cleanPublisherText(title.trim()) || title.trim();
     const cleanContent = content.trim();
+
+    if (formRef.current && !formRef.current.checkValidity()) {
+      formRef.current.reportValidity();
+      const firstInvalid = formRef.current.querySelector<HTMLElement>(":invalid");
+      firstInvalid?.focus();
+      return;
+    }
 
     if (!cleanTitle) {
       toast.error("Eksik Alan", "Lütfen haber başlığını girin.");
+      document.getElementById("title")?.focus();
       return;
     }
     if (!cleanContent) {
       toast.error("Eksik Alan", "Lütfen haber metnini girin.");
+      document.getElementById("content-editor")?.focus();
       return;
     }
 
@@ -283,28 +199,39 @@ export function NewsForm({
 
     startSaveTransition(async () => {
       try {
+        setStatusMessage("Haber kaydediliyor...");
         const result = await action(formData);
         if (!result.success) {
+          setStatusMessage(result.error || "Kaydedilemedi");
           toast.error("Kaydedilemedi", result.error);
           return;
         }
 
-        toast.success(
-          publishState
-            ? "Haber yayına alındı! 🚀"
-            : "Haber taslak olarak kaydedildi! 📝"
-        );
+        const msg = publishState
+          ? "Haber yayına alındı! 🚀"
+          : "Haber taslak olarak kaydedildi! 📝";
+        setStatusMessage(msg);
+        toast.success(msg);
         router.push("/yonetim/haberler");
         router.refresh();
-      } catch (err: any) {
-        toast.error("Kaydetme Hatası", err.message);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Bilinmeyen hata";
+        setStatusMessage(msg);
+        toast.error("Kaydetme Hatası", msg);
       }
     });
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    await saveWithStatus(isPublished);
+    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    const targetPublish =
+      submitter?.value === "publish"
+        ? true
+        : submitter?.value === "draft"
+        ? false
+        : isPublished;
+    await saveWithStatus(targetPublish);
   }
 
   function handleDelete() {
@@ -318,115 +245,62 @@ export function NewsForm({
         toast.success("Haber silindi");
         router.push("/yonetim/haberler");
         router.refresh();
-      } catch (err: any) {
-        toast.error("Silinemedi", err.message);
+      } catch (err) {
+        toast.error("Silinemedi", err instanceof Error ? err.message : undefined);
       }
     });
   }
 
+  const titleCharTone =
+    title.trim().length >= 50 && title.trim().length <= 95
+      ? "text-emerald-600 dark:text-emerald-400"
+      : title.trim().length === 0
+      ? "text-muted-foreground"
+      : "text-amber-600 dark:text-amber-400";
+
+  const summaryCharTone =
+    summary.trim().length >= 200 && summary.trim().length <= 340
+      ? "text-emerald-600 dark:text-emerald-400"
+      : summary.trim().length === 0
+      ? "text-muted-foreground"
+      : "text-amber-600 dark:text-amber-400";
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
-      {/* Üst Eylem Çubuğu */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card/80 px-4 py-3 shadow-xs">
-        <div className="flex items-center gap-2.5">
-          <Button variant="outline" size="sm" asChild className="gap-1.5 text-xs">
-            <Link href="/yonetim/haberler">
-              <ArrowLeft className="h-4 w-4" />
-              Haberlere Dön
-            </Link>
-          </Button>
-
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${
-              isPublished
-                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
-                : "bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30"
-            }`}
-          >
-            <span
-              className={`h-2 w-2 rounded-full ${
-                isPublished ? "bg-emerald-500" : "bg-amber-500"
-              }`}
-            />
-            {isPublished ? "Durum: Yayında" : "Durum: Taslak (Sitede Görünmez)"}
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {currentSlug && isPublished && (
-            <Button variant="outline" size="sm" asChild className="gap-1.5 text-xs">
-              <Link href={`/haber/${currentSlug}`} target="_blank">
-                <Eye className="h-3.5 w-3.5" /> Sitede Gör
-              </Link>
-            </Button>
-          )}
-
-          {deleteAction && (
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={deletePending || savePending}
-              onClick={handleDelete}
-              className="gap-1.5 text-xs"
-            >
-              {deletePending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Trash2 className="h-3.5 w-3.5" />
-              )}
-              Sil
-            </Button>
-          )}
-
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            disabled={savePending}
-            onClick={() => saveWithStatus(false)}
-            className="text-xs font-semibold gap-1.5"
-            title="Haberi sitede yayınlamadan sadece taslak olarak kaydeder"
-          >
-            {savePending && !isPublished ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : null}
-            📝 Taslak Kaydet
-          </Button>
-
-          <Button
-            type="button"
-            size="sm"
-            disabled={savePending}
-            onClick={() => saveWithStatus(true)}
-            className="text-xs font-bold gap-1.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
-          >
-            {savePending && isPublished ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Yayınlanıyor...
-              </>
-            ) : (
-              <>
-                <Check className="h-3.5 w-3.5" />
-                {isPublished && currentSlug ? "Güncelle (Yayında)" : "🚀 Kaydet ve Yayına Al"}
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
+    <form
+      ref={formRef}
+      onSubmit={handleSubmit}
+      noValidate
+      className="max-w-5xl space-y-6"
+    >
+      <EditorialActionBar
+        backHref="/yonetim/haberler"
+        backLabel="Haberlere Dön"
+        publicHref={currentSlug ? `/haber/${currentSlug}` : undefined}
+        isPublished={isPublished}
+        isEdit={Boolean(currentSlug)}
+        isFeatured={isFeatured}
+        savePending={savePending}
+        deletePending={deletePending}
+        hasDelete={Boolean(deleteAction)}
+        statusAnnouncement={statusMessage}
+        onSaveDraft={() => saveWithStatus(false)}
+        onSavePublish={() => saveWithStatus(true)}
+        onDelete={handleDelete}
+      />
 
       {/* Yapay Zeka ile Haber Üretim Kutusu */}
-      <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-xs space-y-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-bold text-foreground">
-              Kaynak Bağlantıdan veya Konudan Haber Üret
-            </h2>
-          </div>
+      <section
+        aria-label="Yapay zeka haber üretim aracı"
+        className="space-y-4 rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-xs"
+      >
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-bold text-foreground">
+            Kaynak Bağlantıdan veya Konudan AI ile Haber Üret
+          </h2>
         </div>
         <p className="text-xs text-muted-foreground">
-          Haber sitesi, Kültür Bakanlığı, müze veya ajans bağlantısını yapıştırın. Yapay zeka sayfadaki içeriği okuyup bağlamına uygun haber metnini, 5N1K özetini ve WebP kapak görselini otomatik hazırlar.
+          Haber sitesi, Kültür Bakanlığı, müze veya ajans bağlantısını yapıştırın. Yapay zeka sayfadaki içeriği okuyup kaynak kalıntısız haber metnini (2.600–4.200 kr), 5N1K özetini ve WebP kapak görselini otomatik hazırlar.
         </p>
 
         <div className="space-y-3">
@@ -440,7 +314,10 @@ export function NewsForm({
               value={aiSourceUrl}
               onChange={(e) => setAiSourceUrl(e.target.value)}
               placeholder="https://www.cumhuriyet.com.tr/... veya resmi bülten bağlantısı"
-              className="h-9 text-xs bg-background"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              className="h-9 bg-background text-xs"
             />
           </div>
 
@@ -454,13 +331,13 @@ export function NewsForm({
                 value={aiTopic}
                 onChange={(e) => setAiTopic(e.target.value)}
                 placeholder="Örn: Troya kazılarında yeni keşif"
-                className="h-9 text-xs bg-background"
+                className="h-9 bg-background text-xs"
               />
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="ai-depth" className="text-xs font-medium">
-                Haber Uzunluğu
+                Haber Uzunluğu (SEO Hedefi)
               </Label>
               <Select
                 value={aiDepth}
@@ -470,18 +347,18 @@ export function NewsForm({
                   }
                 }}
               >
-                <SelectTrigger id="ai-depth" className="h-9 text-xs bg-background">
+                <SelectTrigger id="ai-depth" className="h-9 bg-background text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="standard" className="text-xs">
-                    ⚡ Odaklı Haber (~400 Kelime)
+                    ⚡ Odaklı Haber (2.600–4.200 kr)
                   </SelectItem>
                   <SelectItem value="deep" className="text-xs">
-                    📰 Geniş Haber (~650 Kelime)
+                    📰 Geniş Haber (4.000–5.500 kr)
                   </SelectItem>
                   <SelectItem value="comprehensive" className="text-xs">
-                    📚 Kapsamlı Dosya (~1000 Kelime)
+                    📚 Kapsamlı Dosya (5.500–7.500 kr)
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -492,7 +369,7 @@ export function NewsForm({
                 type="button"
                 onClick={() => generateWithAi()}
                 disabled={aiPending || (!aiSourceUrl.trim() && !aiTopic.trim())}
-                className="w-full h-9 text-xs font-semibold gap-1.5"
+                className="h-9 w-full gap-1.5 text-xs font-semibold"
               >
                 {aiPending ? (
                   <>
@@ -507,16 +384,20 @@ export function NewsForm({
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Temel Haber Bilgileri */}
       <div className="space-y-5 rounded-2xl border border-border/60 bg-card p-6 shadow-xs">
         <div className="grid gap-4 sm:grid-cols-3">
-          {/* Haber Başlığı */}
           <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="title" className="text-xs font-semibold">
-              Haber Başlığı *
-            </Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="title" className="text-xs font-semibold">
+                Haber Başlığı <span aria-hidden="true">*</span>
+              </Label>
+              <span className={`text-[11px] font-medium ${titleCharTone}`}>
+                {title.trim().length} / 55–90 kr
+              </span>
+            </div>
             <Input
               id="title"
               name="title"
@@ -525,34 +406,48 @@ export function NewsForm({
               placeholder="Haber başlığını girin..."
               className="h-10 text-sm font-semibold"
               required
+              aria-invalid={attemptedSubmit && !title.trim() ? true : undefined}
             />
           </div>
 
-          {/* Kısa Adres (Slug) */}
           <div className="space-y-2">
-            <Label htmlFor="slug" className="text-xs font-semibold">
-              Kalıcı Bağlantı (Kısa Adres) *
-            </Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="slug" className="text-xs font-semibold">
+                Kalıcı Bağlantı (Slug) <span aria-hidden="true">*</span>
+              </Label>
+              <button
+                type="button"
+                onClick={() => setSlug(slugify(cleanPublisherText(title) || title))}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+                title="Başlıktan temiz URL kısa adı üret"
+              >
+                <RotateCw className="h-3 w-3" /> Yenile
+              </button>
+            </div>
             <Input
               id="slug"
               name="slug"
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
               placeholder="haber-basligi"
-              className="h-10 text-xs font-mono"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              className="h-10 font-mono text-xs"
               required
+              aria-invalid={attemptedSubmit && !slug.trim() ? true : undefined}
             />
           </div>
         </div>
 
         {/* Haber Özeti (Spot) */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <Label htmlFor="summary" className="text-xs font-semibold">
               Haber Özeti (5N1K Spot Cümlesi)
             </Label>
-            <span className="text-[11px] text-muted-foreground">
-              {summary.length} / 200 karakter
+            <span className={`text-[11px] font-medium ${summaryCharTone}`}>
+              {summary.trim().length} / 220–340 karakter
             </span>
           </div>
           <Textarea
@@ -560,9 +455,10 @@ export function NewsForm({
             name="summary"
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
-            placeholder="Haberin ana fikrini özetleyen 1-2 cümlelik spot metin..."
+            placeholder="Haberin ana fikrini 5N1K çerçevesinde özetleyen 2-3 cümlelik spot metin..."
             rows={2}
-            className="text-xs leading-relaxed"
+            maxLength={400}
+            className="w-full min-h-[3.5lh] max-h-[8lh] text-xs leading-relaxed"
           />
         </div>
 
@@ -570,11 +466,11 @@ export function NewsForm({
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2">
             <Label htmlFor="category" className="text-xs font-semibold">
-              Kategori *
+              Kategori <span aria-hidden="true">*</span>
             </Label>
             <input type="hidden" name="category" value={category} />
             <Select value={category} onValueChange={(v) => v && setCategory(v)}>
-              <SelectTrigger className="h-9 text-xs">
+              <SelectTrigger id="category" className="h-9 text-xs">
                 <SelectValue placeholder="Kategori seçin">
                   {CATEGORY_OPTIONS.find((c) => c.value === category)?.label || "Kategori"}
                 </SelectValue>
@@ -595,7 +491,7 @@ export function NewsForm({
             </Label>
             <input type="hidden" name="city_slug" value={citySlug} />
             <Select value={citySlug} onValueChange={(v) => v && setCitySlug(v)}>
-              <SelectTrigger className="h-9 text-xs">
+              <SelectTrigger id="city_slug" className="h-9 text-xs">
                 <SelectValue placeholder="Şehir seçin">
                   {citySlug === "none"
                     ? "Türkiye Geneli"
@@ -638,13 +534,16 @@ export function NewsForm({
               value={sourceUrl}
               onChange={(e) => setSourceUrl(e.target.value)}
               placeholder="https://..."
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
               className="h-9 text-xs"
             />
           </div>
         </div>
 
         {/* Kapak Görseli */}
-        <div className="pt-1 border-t border-border/50">
+        <div className="border-t border-border/50 pt-4">
           <CoverImageInput
             value={coverImage}
             onChange={setCoverImage}
@@ -666,174 +565,64 @@ export function NewsForm({
         </div>
 
         {/* Haber Metni Düzenleyici */}
-        <div className="space-y-2.5 pt-2 border-t border-border/50">
-          <input type="hidden" name="content" value={content} />
-
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="content-editor" className="text-xs font-semibold">
-                Haber Metni *
-              </Label>
-              <span className="text-[11px] text-muted-foreground">
-                ({wordCount} kelime · ~{Math.max(1, Math.ceil(wordCount / 200))} dk okuma)
-              </span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1.5">
-              {!preview && (
-                <>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    disabled={formattingPending || !content.trim()}
-                    onClick={handleFormatHeadings}
-                    className="h-7 px-2.5 text-xs font-semibold gap-1 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20"
-                    title="Yapay zeka metni analiz edip bağlama uygun '## [Alt Başlık]' markdown başlıkları yerleştirir"
-                  >
-                    {formattingPending ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-3 w-3 text-amber-500" />
-                    )}
-                    <span>{formattingPending ? "Başlıklandırılıyor..." : "✨ Başlıklandır (AI)"}</span>
-                  </Button>
-
-                  <div className="h-4 w-[1px] bg-border mx-0.5 hidden sm:block" />
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => insertMarkdown("\n\n## ", "\n\n", "Alt Başlık")}
-                    className="h-7 px-2 text-xs font-bold"
-                    title="Seçili metni H2 Markdown başlığı yapar (## Başlık)"
-                  >
-                    H2
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => insertMarkdown("\n\n### ", "\n\n", "Ara Başlık")}
-                    className="h-7 px-2 text-xs font-bold"
-                    title="Seçili metni H3 Markdown alt başlığı yapar (### Başlık)"
-                  >
-                    H3
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => insertMarkdown("**", "**", "kalın metin")}
-                    className="h-7 px-2 text-xs font-bold"
-                    title="Metni kalın yapar (**metin**)"
-                  >
-                    B
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => insertMarkdown("\n\n> ", "\n\n", "Önemli açıklama veya sanatçı alıntısı...")}
-                    className="h-7 px-2 text-xs"
-                    title="Alıntı kutusu ekler (> alıntı)"
-                  >
-                    &ldquo; &rdquo;
-                  </Button>
-
-                  <label className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border border-input bg-background px-2.5 text-xs font-medium hover:bg-accent hover:text-accent-foreground">
-                    {uploadingInlineImage ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Upload className="h-3.5 w-3.5" />
-                    )}
-                    <span className="hidden sm:inline">Metne Görsel Ekle</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      disabled={uploadingInlineImage}
-                      onChange={handleInlineImageUpload}
-                    />
-                  </label>
-                </>
-              )}
-
-              <Button
-                type="button"
-                variant={preview ? "default" : "outline"}
-                size="sm"
-                onClick={() => setPreview(!preview)}
-                className="h-7 gap-1 text-xs"
-              >
-                {preview ? (
-                  <>
-                    <Pencil className="h-3 w-3" /> Düzenlemeye Dön
-                  </>
-                ) : (
-                  <>
-                    <Eye className="h-3 w-3" /> Önizleme
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {preview ? (
-            <div className="rounded-xl border border-border/60 bg-muted/20 p-5 min-h-[340px]">
-              <MarkdownContent html={renderMarkdown(content)} />
-            </div>
-          ) : (
-            <Textarea
-              id="content-editor"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Haber metnini buraya yazın. Alt başlıklar için satır başında ## kullanabilirsiniz..."
-              rows={16}
-              className="text-sm leading-relaxed"
-              required
-            />
-          )}
-        </div>
+        <input type="hidden" name="content" value={content} />
+        <EditorialMarkdownEditor
+          id="content-editor"
+          label="Haber Metni"
+          value={content}
+          onChange={setContent}
+          title={title}
+          sourceName={sourceName}
+          onCleanTitle={setTitle}
+          uploadFolder="news"
+          slugHint={slug || title || "haber"}
+          targetMinChars={2600}
+          targetMaxChars={4200}
+          required
+          invalid={attemptedSubmit && !content.trim()}
+          placeholder="Giriş paragrafı ile başlayın. Ardından 2-3 adet konuya özgü ## Alt Başlık ekleyin..."
+        />
 
         {/* Yayın Durumu ve Alt Kaydet Çubuğu */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-t border-border/60 pt-4">
-          <div className="flex flex-wrap items-center gap-6">
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold">
-              <input
-                type="checkbox"
-                checked={isFeatured}
-                onChange={(e) => setIsFeatured(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-primary"
-              />
-              <span>🔥 Vitrin Slider&apos;ında Göster (İşaretlenmezse küçük görselli Manşetlerde yer alır)</span>
+        <div className="flex flex-col gap-4 border-t border-border/60 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2.5">
+            <input
+              id="news-is-featured"
+              type="checkbox"
+              checked={isFeatured}
+              onChange={(e) => setIsFeatured(e.target.checked)}
+              className="h-4 w-4 rounded border-input accent-primary"
+            />
+            <label
+              htmlFor="news-is-featured"
+              className="cursor-pointer text-xs font-semibold text-foreground"
+            >
+              🔥 Vitrin Slider&apos;ında Göster (İşaretlenmezse küçük görselli Manşetlerde yer alır)
             </label>
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <Button variant="outline" size="sm" asChild className="text-xs">
+            <Button type="button" variant="outline" size="sm" asChild className="text-xs">
               <Link href="/yonetim/haberler">Vazgeç</Link>
             </Button>
             <Button
-              type="button"
+              type="submit"
+              name="saveIntent"
+              value="draft"
               variant="secondary"
               size="sm"
               disabled={savePending}
-              onClick={() => saveWithStatus(false)}
-              className="text-xs font-semibold gap-1.5"
+              className="gap-1.5 text-xs font-semibold"
             >
               📝 Taslak Olarak Kaydet
             </Button>
             <Button
-              type="button"
+              type="submit"
+              name="saveIntent"
+              value="publish"
               size="sm"
               disabled={savePending}
-              onClick={() => saveWithStatus(true)}
-              className="text-xs font-bold gap-1.5 px-5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+              className="gap-1.5 bg-emerald-600 px-5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
             >
               {savePending ? (
                 <>

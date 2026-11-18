@@ -9,6 +9,9 @@ import { getEventBySlug, getPublishedEventSlugs, isEventExpired } from "@/lib/da
 import { buildBreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import { EventVenueMap } from "@/components/maps/event-venue-map";
 import { CulturalCoverPlaceholder } from "@/components/ui/cultural-cover-placeholder";
+import { MarkdownContent } from "@/components/markdown/markdown-content";
+import { renderMarkdown } from "@/lib/markdown";
+import { polishMarkdown } from "@/lib/ai/editorial";
 import { parseCoverImage } from "@/lib/media/cover-position";
 import {
   ArrowLeft,
@@ -197,8 +200,16 @@ export default async function EventDetailPage({
       <p className="mt-6 text-lg leading-relaxed">{event.summary}</p>
 
       {event.description && (
-        <div className="mt-4 whitespace-pre-line leading-relaxed text-muted-foreground">
-          {event.description}
+        <div className="prose prose-neutral dark:prose-invert max-w-none mt-6">
+          <MarkdownContent
+            html={renderMarkdown(
+              polishMarkdown(
+                event.description,
+                event.title,
+                event.sourceName || undefined
+              )
+            )}
+          />
         </div>
       )}
 

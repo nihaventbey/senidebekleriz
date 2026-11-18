@@ -65,13 +65,29 @@ export function isNonEventTitle(title: string): boolean {
     return true;
   }
 
-  // Completed / past-final news headlines (excluding ongoing exhibitions)
+  // Completed / past-final / past-tense news headlines (excluding ongoing exhibitions)
   if (
     (lower.includes("sona erdi") ||
       lower.includes("dolu final") ||
       lower.includes("ödüller sahiplerini buldu") ||
-      lower.includes("tamamlandı")) &&
+      lower.includes("tamamlandı") ||
+      /(?:^|[\s"'“(])(sahne aldı|gösteri yaptı|düzenlendi|hayranlarıyla buluştu|kutladı|gerçekleşti|gerçekleştirildi)(?=$|[\s.,;:!?…"'’”)])/.test(
+        lower
+      )) &&
     !lower.includes("sergi")
+  ) {
+    return true;
+  }
+
+  // Generic ticket search titles, literary essays, infrastructure news, and Q&A columns
+  if (
+    /^.{2,35}\s+biletleri$/i.test(lower) ||
+    /(?:^|\s)üzerine$/i.test(lower) ||
+    /(?:^|\s)yaşında$/i.test(lower) ||
+    /^oyuncular sendikası soruyor(?=$|[\s:])/i.test(lower) ||
+    /(?:^|[\s"'“(])(müze ve sergi alanı oluyor|merkezlerine dönüşecek|notları\s*:)/i.test(
+      lower
+    )
   ) {
     return true;
   }

@@ -1,5 +1,6 @@
 import { turkeyCities } from "@/data/turkey-cities";
 import { callGeminiJson } from "@/lib/ai/gemini-client";
+import { isNonEventTitle } from "@/lib/events/artist-matcher";
 import type { ClassifiedDiscovery } from "@/lib/discovery/types";
 
 const CITY_SLUGS = turkeyCities.map((c) => c.slug).join(", ");
@@ -109,9 +110,12 @@ export function detectTurkishCityInText(rawText: string): string | null {
   return null;
 }
 
+const POSITIVE_CULTURAL_DOMAIN_REGEX =
+  /(arkeoloji|arkeolojik|kazı|antik kent|höyük|mozaik|lahit|tümülüs|nekropol|restorasyon|restore|konservasyon|müze|müzesi|müzecilik|sergi|sergisi|bienal|festival|festivali|kültür yolu|tiyatro|tiyatrosu|devlet tiyatroları|opera|bale|senfoni|filarmoni|orkestra|konser|konseri|resital|sinematek|altın portakal|altın koza|film festivali|kültür merkezi|kültürel miras|tarihi eser|kültür ve turizm bakanlığı|unesco|kültür sanat|gezi rehberi|gezilecek yerler)/i;
+
 /**
  * Checks whether an item is commercial artwork marketplace spam, non-Turkey foreign news,
- * or non-cultural noise.
+ * personal essay/autobiography/review, brand PR, or non-cultural noise.
  */
 export function isRejectedNonTurkishOrCommercialContent(input: {
   title: string;
@@ -123,7 +127,15 @@ export function isRejectedNonTurkishOrCommercialContent(input: {
   const snippet = input.snippet || "";
   const url = (input.sourceUrl || "").toLowerCase();
   const source = (input.sourceName || "").toLowerCase();
-  const combined = `${title} ${snippet}`.toLocaleLowerCase("tr");
+  const titleLower = title
+    .replace(/İ/g, "i")
+    .replace(/I/g, "ı")
+    .toLocaleLowerCase("tr-TR")
+    .trim();
+  const combined = `${title} ${snippet}`
+    .replace(/İ/g, "i")
+    .replace(/I/g, "ı")
+    .toLocaleLowerCase("tr-TR");
 
   // 1. Commercial art marketplaces, painting sales pages, e-commerce catalogs, YouTube video links
   if (
@@ -146,11 +158,11 @@ export function isRejectedNonTurkishOrCommercialContent(input: {
 
   // 2. Generic category index pages, ticketing homepages, or opinion columns without a specific cultural event/news
   if (
-    /^kültür[- ]sanat haberleri/i.test(title.trim()) ||
+    /^kültür[- ]sanat haberleri/i.test(titleLower) ||
     /\/(kultur-sanat|sanat|etkinlikler)\/?$/i.test(url) ||
     /(maç biletleri,\s*konser biletleri|aradığın tüm maç biletleri)/i.test(combined) ||
-    /\|\s*[^|]*köşe yazısı\s*$/i.test(title.trim()) ||
-    /\bliste şov\b/i.test(title)
+    /\|\s*[^|]*köşe yazısı\s*$/i.test(titleLower) ||
+    /\bliste şov\b/i.test(titleLower)
   ) {
     return true;
   }
@@ -164,7 +176,37 @@ export function isRejectedNonTurkishOrCommercialContent(input: {
     return true;
   }
 
-  // 4. Foreign-only news check:
+  // 4. Strict domain guard: Reject autobiographies, memoirs, personal/literary essays,
+  // individual book/album reviews, playlists, death anniversaries, fashion PR, and non-heritage oddities
+  if (
+    /(?:^|[\s"'“(])(otobiyografi|hatırat|anı kitabı|çocukluk,\s*suçluluk ve büyümek üzerine|birbirimizi hiç göremeyecekmişiz|üzerine bir deneme)(?=$|[\s.,;:!?…"'’”)])/i.test(
+      combined
+    ) ||
+    /:\s*[^:]+,\s*[^:]+\s+ve\s+[^:]+\s+üzerine$/i.test(titleLower) ||
+    /(?:^|[\s"'“(])(çocukluk|suçluluk|yalnızlık|büyümek)\s+üzerine$/i.test(
+      titleLower
+    ) ||
+    /(?:^|[\s"'“(])(iki ciltlik roman|yeni roman[iı]|yeni kitab[iı] çıkt[iı]|kitap incelemesi|roman incelemesi|haftanın (?:diğer )?yeni müzikleri|çalma listesi)(?=$|[\s.,;:!?…"'’”)])/i.test(
+      combined
+    ) ||
+    /(?:^|[\s"'“(])(?:yaşa takılanlar|ne dinlesek|ne izlesek)\s*\??:/i.test(
+      combined
+    ) ||
+    /(?:^|[\s"'“(])(vefatının üzerinden \d+ yıl geçti|ölümünün \d+\.?\s*yıl\s*dönümü|aramızdan ayrılışının \d+|kimdir,\s*hayatı ve eserleri)/i.test(
+      combined
+    ) ||
+    /^(ne var ne yok\??|oyuncular sendikası soruyor\s*:)/i.test(titleLower) ||
+    /(?:^|[\s"'“(])(tuvalden podyuma|unutulmaz defileler|moda haftası defilesi|god[iı]va,\s*\d+\.\s*y[iı]l[iı]n[iı])(?=$|[\s.,;:!?…"'’”)])/i.test(
+      combined
+    ) ||
+    /(insan siluetindeki taşlar|belediye başkanı istanbul['’]a hayran kaldı)/i.test(
+      combined
+    )
+  ) {
+    return true;
+  }
+
+  // 5. Foreign-only news check:
   // If it mentions foreign countries/cities (Baku, Azerbaijan, Germany, USA, Ukraine, Syria, Finland, UK/London, Kazakhstan, etc.)
   // AND has NO Turkish city and NO mention of Türkiye / Türk / Anadolu, reject it!
   const detectedCity = detectTurkishCityInText(combined);
@@ -175,7 +217,7 @@ export function isRejectedNonTurkishOrCommercialContent(input: {
     );
 
   const mentionsForeignLocation =
-    /\b(bakü|baku|azerbaycan|almanya|almanya'da|ukrayna|suriye|suriye'de|finlandiya|isveç|norveç|fransa|fransa'da|paris'te|londra'da|frieze london|ingiltere'de|abd'de|amerika'da|new york'ta|rusya'da|moskova'da|iran'da|tahran'da|mısır'da|kahire'de|yunanistan'da|atina'da|italya'da|roma'da|ispanya'da|madrid'de|hollanda'da|amsterdam'da|belçika'da|avusturya'da|viyana'da|체kya|polonya|macaristan|kazakistan|kaljır|özbekistan|kırgızistan|türkmenistan|gürcistan|tiflis|erivan|bağdat|şam|beyrut|gazze|filistin|israil|japonya|tokyo|çin'de|pekin|hindistan|brezilya|arjantin'de|kanada'da|avustralya'da)\b/i.test(
+    /\b(bakü|baku|azerbaycan|almanya|almanya'da|ukrayna|suriye|suriye'de|finlandiya|isveç|norveç|fransa|fransa'da|paris'te|londra'da|frieze london|ingiltere'de|abd'de|amerika'da|new york'ta|rusya'da|moskova'da|iran'da|tahran'da|mısır'da|kahire'de|yunanistan'da|atina'da|italya'da|roma'da|ispanya'da|madrid'de|hollanda'da|amsterdam'da|belçika'da|avusturya'da|viyana'da|çekya|polonya|macaristan|kazakistan|kaljır|özbekistan|kırgızistan|türkmenistan|gürcistan|tiflis|erivan|bağdat|şam|beyrut|gazze|filistin|israil|japonya|tokyo|çin'de|pekin|hindistan|brezilya|arjantin'de|kanada'da|avustralya'da)\b/i.test(
       combined
     );
 
@@ -189,9 +231,10 @@ export function isRejectedNonTurkishOrCommercialContent(input: {
 const SYSTEM_PROMPT = `Sen Türkiye kültür, sanat ve turizm platformu (Seni de Bekleriz) için uzman bir içerik sınıflandırıcısısın.
 Haber başlığı, kaynak ve özetine bakarak içeriği en uygun türe sınıflandır.
 
-ÇOK ÖNEMLİ COĞRAFİ VE İÇERİK FİLTRESİ:
+ÇOK ÖNEMLİ COĞRAFİ VE PROJE BAĞLAMI FİLTRESİ:
 - Platformumuz YALNIZCA TÜRKİYE sınırları içindeki veya doğrudan Türkiye ile bağlantılı kültür, sanat, arkeoloji, müze, sergi, konser, tiyatro, festival ve gezi içeriklerini yayınlar.
 - Bakü, Azerbaycan, ABD, Almanya, İngiltere, Fransa, Finlandiya, Ukrayna, Suriye, Kazakistan vb. yabancı ülkelerdeki yerel etkinlikleri/haberleri (Türkiye ile doğrudan bir bağı yoksa) KESİNLİKLE content_type: "skip" olarak işaretle!
+- Otobiyografi, hatırat, kişisel/felsefi denemeler ("... Üzerine"), tekil kitap/roman/yabancı müzik albüm incelemeleri, çalma listeleri ("Ne dinlesek?"), vefat yıldönümü/biyografi anmaları, soru-cevap söyleşi köşeleri, moda defileleri ve ticari marka PR kutlamalarını KESİNLİKLE content_type: "skip" olarak işaretle!
 - Sanat galerilerinin veya ArtMajeur gibi sitelerin tekil tablo/heykel/ürün satış sayfalarını ("... Tablo ... tarafından") KESİNLİKLE content_type: "skip" olarak işaretle!
 - Siyaset, seçimler, savaş/çatışma, asayiş, spor ve magazin haberlerini KESİNLİKLE content_type: "skip" olarak işaretle!
 
@@ -200,7 +243,7 @@ Kategori Kuralları:
    - Türkiye'deki arkeolojik kazı keşifleri ve buluntuları ("bulundu", "gün yüzüne çıkarıldı", "kazı çalışmaları")
    - Türkiye'deki restorasyon başlama/tamamlanma haberleri ("restore edildi", "açılışı yapıldı")
    - Kültür ve Turizm Bakanlığı açıklamaları, tescil kararları, ödüller, Türkiye'ye tarihi eser iadesi haberleri
-   - Türkiye'deki müze açılışları, kültür merkezi açılışları, edebiyat ve kültür dünyasından gelişmeler
+   - Türkiye'deki müze ve kültür merkezi açılışları, yerel kültür politikası haberleri
 
 2. 🎭 KÜLTÜR ETKİNLİĞİ (content_type: "event"):
    - Türkiye'de belirli bir gelecek/güncel tarih aralığında sahnelenen tiyatro, konser, opera, bale
@@ -212,7 +255,7 @@ Kategori Kuralları:
    - Türkiye'deki şehir, rota, antik kent veya müze tanıtım makaleleri
 
 4. 🚫 ATLA / İLGİSİZ (content_type: "skip"):
-   - Türkiye dışı haberler (Bakü, Avrupa, ABD vb.), tablo/eser satış sayfaları, siyasi/seçim haberleri, asayiş, spor, magazin
+   - Otobiyografi, deneme, kitap/albüm incelemesi, vefat yıldönümü, marka PR, moda defilesi, Türkiye dışı haberler, tablo satış sayfaları, siyaset, asayiş, spor, magazin
 
 - city_slug: Türkiye'nin 81 ilinden biri (örn: 'istanbul', 'adiyaman', 'sanliurfa') veya tespit edilemezse null: ${CITY_SLUGS}
 - confidence: 0.0 ile 1.0 arası güven puanı
@@ -244,6 +287,15 @@ export function heuristicClassify(input: {
     .toLocaleLowerCase("tr-TR");
   const detectedCity = detectTurkishCityInText(text);
 
+  // Require positive Turkish cultural / heritage / arts domain signal
+  if (!POSITIVE_CULTURAL_DOMAIN_REGEX.test(text)) {
+    return {
+      content_type: "skip",
+      city_slug: null,
+      confidence: 0.9,
+    };
+  }
+
   // 1. Evergreen guide / route articles
   const isArticle =
     /(gezilecek yerler|gezi rehberi|gezi rotası|keşif rotası|müzesi rehberi|nasıl gidilir)/.test(
@@ -257,10 +309,9 @@ export function heuristicClassify(input: {
     };
   }
 
-  // 2. Clearly news reports (archaeology, restoration, completed events, minister statements, awards)
-  // Check these BEFORE event so "etkinlik bittikten sonra devrediliyor" or "... dolu final" is NOT misclassified as an event!
+  // 2. Clearly news reports (archaeology, restoration, completed/past-tense events, minister statements, awards)
   const isStrongNews =
-    /(kazı|arkeoloji|arkeolojik|antik kent|höyük|restorasyon|restore edildi|konservasyon|gün yüzüne|iade edildi|tescil|ödüller sahiplerini buldu|sona erdi|dolu final|yönetimine devrediliyor|ziyaretçi rekoru)/.test(
+    /(kazı|arkeoloji|arkeolojik|antik kent|höyük|restorasyon|restore edildi|konservasyon|gün yüzüne|iade edildi|tescil|ödüller sahiplerini buldu|sona erdi|dolu final|yönetimine devrediliyor|ziyaretçi rekoru|müze ve sergi alanı oluyor|merkezlerine dönüşecek|sahne aldı|gösteri yaptı|hayranlarıyla buluştu|kutladı)/.test(
       titleLower
     ) || /^bakan\s+[a-zçğıöşü]+\s*:/.test(titleLower);
 
@@ -272,14 +323,15 @@ export function heuristicClassify(input: {
     };
   }
 
-  // 3. Concrete upcoming/active cultural events or exhibitions
-  const isEvent =
-    /(sergi|sergisi|sergileri|konser|konseri|konserleri|festival|festivali|tiyatro|tiyatrosu|bale|opera|resital|resitali|prömiyer|bilet|etkinlik takvimi|etkinlik programı|etkinlik ajandası|turnesi|şenlik|söyleşi|atölye)/.test(
-      text
+  // 3. Concrete upcoming/active cultural events or exhibitions (must appear in title and pass isNonEventTitle)
+  const isTitleEvent =
+    !isNonEventTitle(input.title) &&
+    /(sergi|sergisi|sergileri|konser|konseri|konserleri|festival|festivali|tiyatro|tiyatrosu|bale|opera|resital|resitali|prömiyer|etkinlik takvimi|etkinlik programı|etkinlik ajandası|turnesi|şenlik)/.test(
+      titleLower
     );
 
   return {
-    content_type: isEvent ? "event" : "news",
+    content_type: isTitleEvent ? "event" : "news",
     city_slug: detectedCity,
     confidence: 0.85,
   };
@@ -296,19 +348,20 @@ function normalizeClassifiedContentType(
     ? (rawType as ClassifiedDiscovery["content_type"])
     : "news";
 
-  // Guard: If AI classified a completed news headline or minister statement as "event", downgrade to "news"
+  // Guard: If AI classified a completed news headline, non-event, or minister statement as "event", downgrade to "news"
   if (contentType === "event") {
     const t = (title || "")
       .replace(/İ/g, "i")
       .replace(/I/g, "ı")
       .toLocaleLowerCase("tr-TR");
     if (
-      (t.includes("sona erdi") ||
+      isNonEventTitle(title) ||
+      ((t.includes("sona erdi") ||
         t.includes("dolu final") ||
         t.includes("ödüller sahiplerini buldu") ||
         t.includes("yönetimine devrediliyor") ||
         /^bakan\s+[a-zçğıöşü]+\s*:/.test(t)) &&
-      !t.includes("sergi")
+        !t.includes("sergi"))
     ) {
       contentType = "news";
     }
@@ -382,6 +435,7 @@ Sana verilen içerik listesini incele ve her bir öğeyi JSON dizisi olarak sın
 
 ÇOK ÖNEMLİ FİLTRE KURALLARI:
 - YALNIZCA TÜRKİYE İLE İLGİLİ içerikleri kabul et! Bakü, Azerbaycan, ABD, Almanya, İngiltere, Fransa, Finlandiya, Ukrayna, Suriye, Kazakistan vb. yabancı ülkelerdeki yerel haber/etkinlikleri (Türkiye ile doğrudan bağı yoksa) KESİNLİKLE content_type: "skip" yap!
+- Otobiyografi, hatırat, kişisel/felsefi denemeler ("... Üzerine"), tekil kitap/roman/yabancı müzik albüm incelemeleri, çalma listeleri ("Ne dinlesek?"), vefat yıldönümü/biyografi anmaları, soru-cevap köşeleri, moda defileleri ve ticari marka PR kutlamalarını KESİNLİKLE content_type: "skip" yap!
 - Sanat galerilerinin veya ArtMajeur gibi sitelerin tablo/heykel/ürün satış sayfalarını ("... Tablo ... tarafından") KESİNLİKLE content_type: "skip" yap!
 - Siyasi seçimler, parti tartışmaları, savaş/çatışma, asayiş, spor ve magazin haberlerini KESİNLİKLE content_type: "skip" yap!
 
@@ -390,11 +444,11 @@ Kategori Kuralları:
    - Türkiye'deki arkeolojik kazı keşifleri ve buluntuları
    - Türkiye'deki restorasyon haberleri, Kültür Bakanlığı kararları, Türkiye'ye tarihi eser iadesi, müze açılışları
 2. 🎭 KÜLTÜR ETKİNLİĞİ (content_type: "event"):
-   - Türkiye'de sahnelenen tiyatro, konser, opera, bale, festival, sergi açılışı, etkinlik takvimi/bülteni
+   - Türkiye'de sahnelenen gelecek/güncel tiyatro, konser, opera, bale, festival, sergi açılışı, etkinlik takvimi/bülteni
 3. 🗺️ GEZİ REHBERİ & DERLEME (content_type: "article"):
    - Türkiye'deki zamansız gezi rehberleri ("... Gezilecek Yerler", "... Gezi Rehberi"), antik kent/müze tanıtımları
 4. 🚫 ATLA / İLGİSİZ (content_type: "skip"):
-   - Türkiye dışı haberler, tablo satış sayfaları, siyaset, asayiş, spor, magazin, yemek reklamı
+   - Otobiyografi, deneme, kitap/albüm incelemesi, vefat yıldönümü, marka PR, Türkiye dışı haberler, tablo satış sayfaları, siyaset, asayiş, spor, magazin, yemek reklamı
 
 Kurallar:
 - city_slug: Türkiye'nin 81 ilinden biri (örn: 'istanbul', 'adiyaman', 'sanliurfa') veya tespit edilemezse null: ${CITY_SLUGS}

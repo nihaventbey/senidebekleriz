@@ -68,6 +68,29 @@ export const KNOWN_PUBLISHER_AGENCIES = [
   "Sanat Atak",
   "Argonotlar",
   "Artful Living",
+  "Küçük Saat(?:\\s*\\|\\s*Adana Haberleri)?",
+  "Adana Haberleri",
+  "İstanbul Ticaret Gazetesi",
+  "Eskişehir Durum",
+  "Türkiye Turizm",
+  "Artcolumn(?:\\s*Sanat Portalı)?",
+  "Artkolik(?:\\s*Sanat Platformu)?",
+  "SanatMat",
+  "Gezelim",
+  "RayHaber",
+  "Esgazete",
+  "Saray Medya",
+  "Bandırma Manşet",
+  "Gazete Oksijen",
+  "theMagger",
+  "İzmir['’]de Son Dakika",
+  "61SAAT",
+  "Tokat Haber",
+  "Mahalli Gündem",
+  "GZT",
+  "hibya\\.com",
+  "haberlerankara\\.com",
+  "ensondakika\\.com\\.tr",
 ] as const;
 
 /**
@@ -100,7 +123,7 @@ export const AGENCY_SLUG_TOKENS = [
   "ntv",
 ] as const;
 
-const KNOWN_ACRONYMS = new Set([
+export const KNOWN_ACRONYMS = new Set([
   "AA",
   "İHA",
   "IHA",
@@ -114,6 +137,7 @@ const KNOWN_ACRONYMS = new Set([
   "İZBB",
   "TBB",
   "TBMM",
+  "BM",
   "UNESCO",
   "UNICEF",
   "NATO",
@@ -124,6 +148,7 @@ const KNOWN_ACRONYMS = new Set([
   "TÜBİTAK",
   "TÜRKSOY",
   "TİKA",
+  "TGA",
   "TDK",
   "TTK",
   "YÖK",
@@ -140,6 +165,8 @@ const KNOWN_ACRONYMS = new Set([
   "ANTDOB",
   "MDOB",
   "SAMDOB",
+  "THM",
+  "TSM",
   "MSGSÜ",
   "ODTÜ",
   "İTÜ",
@@ -230,12 +257,16 @@ export function stripHtmlAndDecode(input: string): string {
 export function normalizeAllCapsWords(text: string): string {
   if (!text) return "";
   return text.replace(
-    /(^|[\s"“‘(\[-])([A-ZÇĞİÖŞÜ]{2,25})((?:['’][a-zçğıöşüA-ZÇĞİÖŞÜ]{1,6})?)(?=$|[\s.,;:!?)"”’\]/-])/g,
+    /(^|[\s"“‘(\[-])([A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜ0-9]{1,24})((?:['’][a-zçğıöşüA-ZÇĞİÖŞÜ]{1,6})?)(?=$|[\s.,;:!?)"”’\]/-])/g,
     (full, prefix: string, root: string, suffix: string, offset: number) => {
       const cleanSuffix = suffix
         ? suffix[0] + suffix.slice(1).toLocaleLowerCase("tr-TR")
         : "";
       if (KNOWN_ACRONYMS.has(root) || ROMAN_NUMERAL_REGEX.test(root)) {
+        return `${prefix}${root}${cleanSuffix}`;
+      }
+      // Keep mixed-digit codes like B2B or M1 unless followed by uppercase Turkish suffix
+      if (/\d/.test(root)) {
         return `${prefix}${root}${cleanSuffix}`;
       }
       const lowerRoot = root.toLocaleLowerCase("tr-TR");
@@ -253,6 +284,29 @@ export function normalizeAllCapsWords(text: string): string {
 export function normalizeScreamingLeadWord(text: string): string {
   return normalizeAllCapsWords(text);
 }
+
+const BARE_PUBLISHER_SUFFIX_PATTERN = [
+  "Anadolu\\s+Ajansı",
+  "İhlas\\s+Haber\\s+Ajansı",
+  "Demirören\\s+Haber\\s+Ajansı",
+  "ANKA\\s+Haber\\s+Ajansı",
+  "Küçük\\s+Saat(?:\\s*\\|\\s*Adana\\s+Haberleri)?",
+  "Adana\\s+Haberleri",
+  "İstanbul\\s+Ticaret\\s+Gazetesi",
+  "Eskişehir\\s+Durum",
+  "Bandırma\\s+Manşet",
+  "Gazete\\s+Oksijen",
+  "Milliyet\\s+Sanat",
+  "Taka\\s+Gazetesi",
+  "Taka\\s+Gazete",
+  "Mahalli\\s+Gündem",
+  "Artkolik\\s+Sanat\\s+Platformu",
+  "Artcolumn\\s+Sanat\\s+Portalı",
+  "NTV\\s+Haber",
+  "TRT\\s+Haber",
+  "CNN\\s+Türk",
+  "[A-Za-z0-9-]+\\.(?:com\\.tr|com|net|org\\.tr|org)",
+].join("|");
 
 /**
  * Strips news agency datelines, prefixes, suffixes, and brackets from news titles or text.
@@ -281,7 +335,7 @@ export function cleanPublisherText(text: string): string {
     ""
   );
 
-  // 4. Strip Agency Suffixes at end: e.g. "- Anadolu Ajansı", "| İHA", "- DHA", "/ TRT Haber"
+  // 4. Strip Agency Suffixes at end with punctuation delimiter first: e.g. "- Anadolu Ajansı", "| İHA", "- DHA", "/ TRT Haber"
   const suffixAgenciesPattern = KNOWN_PUBLISHER_AGENCIES.join("|");
   const suffixRegex = new RegExp(
     `\\s*[-–—|/\\\\:]+\\s*(${suffixAgenciesPattern})(?:\\s*\\([^)]*\\)|\\s*\\[[^\\]]*\\]|\\s*[-–—|/\\\\:]\\s*(?:güncelleme|tarih|haber|son\\s*dakika|özel).*|\\s*)*$`,
@@ -289,12 +343,12 @@ export function cleanPublisherText(text: string): string {
   );
   res = res.replace(suffixRegex, "");
 
-  // 4b. Strip trailing publisher brand even without dash if at the very end of a heading/title: e.g. "... NTV Haber", "... Aksiyon.com.TR"
-  const bareSuffixRegex = new RegExp(
-    `\\s+(?:NTV\\s+Haber|TRT\\s+Haber|CNN\\s+Türk|[A-Za-z0-9-]+\\.(?:com\\.tr|com|net|org\\.tr|org))\\s*$`,
-    "i"
-  );
+  // 4b. Strip trailing publisher brand even without dash if at the very end: e.g. "... Küçük Saat | Adana Haberleri", "... İhlas Haber Ajansı"
+  const bareSuffixRegex = new RegExp(`\\s+(?:${BARE_PUBLISHER_SUFFIX_PATTERN})\\s*$`, "i");
   res = res.replace(bareSuffixRegex, "");
+
+  // 4c. Repeat delimiter pass in case bareSuffix exposed a delimiter like "| ..." or trailing "-"
+  res = res.replace(suffixRegex, "");
 
   // 5. Strip trailing parentheses or brackets with agency name: e.g. "(AA)", "[İHA]", "(DHA)"
   res = res.replace(
@@ -372,4 +426,113 @@ export function stripDatelineFromParagraph(text: string): string {
     .trim();
 
   return normalizeScreamingLeadWord(stripped);
+}
+
+function toAlphaNumKey(s: string): string {
+  return (s || "")
+    .toLocaleLowerCase("tr-TR")
+    .replace(/[^a-z0-9çğıöşü]/g, "");
+}
+
+const SOURCE_ATTRIBUTION_BLOCK_REGEX =
+  /^(?:#{1,4}\s+)?[*_]{0,2}(?:kaynak(?:ça)?(?:\s+ve\s+detaylar)?|kaynak\s+metin(?:\s+bilgisi)?|haber\s+kaynağı|editör\s+notu)\b[*_]{0,2}\s*[:\-–—]?/i;
+
+const TRAILING_BOILERPLATE_BLOCK_REGEX =
+  /^(?:detaylı\s+bilgi(?:\s+ve\s+(?:haber\s+)?kaynağ[ıi])?\s+için|etkinlik\s+takvimi\s+ve\s+detaylı\s+bilgi\s+için|bu\s+(?:dosya\s+)?haber(?:i|imiz)?\s*,?\s*[^.\n]{2,80}\s+(?:verileri|bülteni|haber\s+arşivi|ajanda)|thematic\s+content\s+selection\s+derived\s+from)\b/i;
+
+const OFFICIAL_SITE_SOCIAL_FOOTER_REGEX =
+  /(^|[.!?]\s+|\n)[^\n]{0,120}?(?:detaylı\s+bilgilere|resmi\s+internet\s+sitesi|instagram\s+hesabı)[^\n]{0,260}?üzerinden\s+ulaşabilirsiniz\.?/gi;
+
+/**
+ * Removes trailing source attribution sections ("## Kaynak ve Detaylar", "**Kaynak:** ...",
+ * "*Kaynak: ...*"), website/Instagram redirect footers, and Google News RSS title+publisher
+ * echoes appended to the end of generated or scraped Markdown content.
+ */
+export function stripTrailingSourceAttribution(
+  content: string,
+  title?: string,
+  sourceName?: string
+): string {
+  if (!content) return "";
+
+  let cleaned = content
+    .replace(/\r\n/g, "\n")
+    .replace(OFFICIAL_SITE_SOCIAL_FOOTER_REGEX, (_, prefix: string) =>
+      prefix && /^[.!?]/.test(prefix) ? prefix[0] : prefix || ""
+    )
+    .trim();
+
+  const blocks = cleaned
+    .split(/\n{2,}/)
+    .map((b) => b.trim())
+    .filter(Boolean);
+
+  if (blocks.length === 0) return "";
+
+  const normTitle = title ? toAlphaNumKey(cleanPublisherText(title)) : "";
+  const normSource = sourceName ? toAlphaNumKey(sourceName) : "";
+  const seenParagraphKeys = new Set<string>();
+  const kept: string[] = [];
+
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+
+    // Drop explicit source sections/blocks and any trailing blocks directly beneath a "## Kaynak..." heading
+    if (SOURCE_ATTRIBUTION_BLOCK_REGEX.test(block)) {
+      if (/^#{1,4}\s+/.test(block)) {
+        break;
+      }
+      continue;
+    }
+
+    if (TRAILING_BOILERPLATE_BLOCK_REGEX.test(block)) {
+      continue;
+    }
+
+    const normBlock = toAlphaNumKey(block);
+    const isNearTail = i >= Math.max(1, blocks.length - 2);
+
+    if (isNearTail && normTitle.length >= 20) {
+      const titlePrefix = normTitle.slice(0, Math.min(normTitle.length, 32));
+      if (normBlock === normTitle || normBlock.startsWith(titlePrefix)) {
+        continue;
+      }
+    }
+
+    if (
+      isNearTail &&
+      block.length < 280 &&
+      ((normSource.length >= 4 && normBlock.endsWith(normSource)) ||
+        /\|\s*[A-ZÇĞİÖŞÜa-zçğıöşü0-9\s]{3,40}\s*$/.test(block) ||
+        (!/[.!?…)"”]$/.test(block) && cleanPublisherText(block) !== block))
+    ) {
+      const strippedCheck = cleanPublisherText(block);
+      const normStripped = toAlphaNumKey(strippedCheck);
+      if (
+        !strippedCheck ||
+        !/[.!?…)"”]$/.test(block) ||
+        (normTitle.length >= 16 &&
+          (normStripped === normTitle || normTitle.includes(normStripped)))
+      ) {
+        continue;
+      }
+    }
+
+    if (!block.startsWith("#") && normBlock.length >= 25) {
+      const dupKey = normBlock.slice(0, 140);
+      if (seenParagraphKeys.has(dupKey)) {
+        continue;
+      }
+      seenParagraphKeys.add(dupKey);
+    }
+
+    kept.push(block);
+  }
+
+  // Drop orphan headings at the end if their body blocks were stripped
+  while (kept.length > 0 && /^#{1,4}\s+/.test(kept[kept.length - 1])) {
+    kept.pop();
+  }
+
+  return kept.join("\n\n").trim();
 }

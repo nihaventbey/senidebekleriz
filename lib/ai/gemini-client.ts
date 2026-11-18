@@ -54,18 +54,18 @@ type GeminiPayload = {
 const DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 
 const QUALITY_MODELS = [
-  "gemini-3.5-flash",
   "gemini-3-flash-preview",
   "gemini-3.5-flash-lite",
-  "gemini-3.1-flash-lite-preview",
   "gemini-3.1-flash-lite",
+  "gemini-3.1-flash-lite-preview",
+  "gemini-3.5-flash",
   "gemini-flash-latest",
 ];
 
 const FAST_MODELS = [
   "gemini-3.5-flash-lite",
-  "gemini-3.1-flash-lite-preview",
   "gemini-3.1-flash-lite",
+  "gemini-3.1-flash-lite-preview",
   "gemini-3-flash-preview",
   "gemini-3.5-flash",
 ];
@@ -99,8 +99,9 @@ function supportsThinkingLevel(model: string): boolean {
 function resolvePrimaryModel(envKey: string): string | null {
   const envModel = process.env[envKey]?.trim();
   if (!envModel) return null;
-  // Emekliye ayrılmış 1.x / 2.x modellerini sessizce yok say
+  // Emekliye ayrılmış 1.x / 2.x modellerini ve sık 503 veren gemini-3.5-flash zorlamasını yok say
   if (/^gemini-(1\.|2\.)/i.test(envModel)) return null;
+  if (envModel === "gemini-3.5-flash") return null;
   return envModel;
 }
 
@@ -224,8 +225,6 @@ function extractText(payload: GeminiPayload): string {
     .trim();
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 type CallMode = "json" | "text";
 
 /**
@@ -315,7 +314,7 @@ async function callGeminiRaw(
   const startedAt = Date.now();
   const deadline = startedAt + (req.deadlineMs ?? (tier === "fast" ? 30_000 : 50_000));
   // Vercel 60sn sunucusuz fonksiyon sınırını aşmamak için deneme başına sıkı zaman aşımı
-  const perAttemptTimeout = req.timeoutMs ?? (tier === "fast" ? 12_000 : 18_000);
+  const perAttemptTimeout = req.timeoutMs ?? (tier === "fast" ? 10_000 : 15_000);
   const defaultThinking: ThinkingLevel = tier === "fast" ? "minimal" : "low";
   const schemaInstruction =
     mode === "json" ? formatSchemaInstruction(req.responseSchema) : "";
@@ -331,9 +330,8 @@ async function callGeminiRaw(
   for (const model of getCandidateModels(tier)) {
     let useThinking = true;
     let useResponseSchema = Boolean(nativeResponseSchema);
-    let transientRetries = 0;
 
-    // Bir model içinde: geçici hata ve yapılandırma uyumsuzluğu yeniden denemeleri
+    // Bir model içinde: yapılandırma uyumsuzluğu veya RECITATION yeniden denemeleri
     while (true) {
       const remaining = deadline - Date.now();
       if (remaining < 3_000) {
@@ -405,12 +403,7 @@ async function callGeminiRaw(
         }
 
         if (response.status === 503 || response.status === 500 || response.status === 504) {
-          if (transientRetries < 1 && deadline - Date.now() > 14_000) {
-            transientRetries += 1;
-            await sleep(600 + Math.floor(Math.random() * 300));
-            continue;
-          }
-          markModelCooldown(model, 60 * 1000);
+          markModelCooldown(model, 2 * 60 * 1000);
         } else if (response.status === 429 || response.status === 404) {
           markModelCooldown(model, 5 * 60 * 1000);
         }

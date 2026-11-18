@@ -3,10 +3,11 @@
 import { requireAdmin } from "@/lib/auth/admin";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { importEventFromUrl } from "@/lib/ai/import-event-from-url";
 import { resolveFallbackCulturalImage } from "@/lib/ai/extract-page-images";
 import { sanitizeEventType, sanitizeIsoDate } from "@/lib/ai/normalize-event";
+import { polishMarkdown } from "@/lib/ai/editorial";
+import { cleanPublisherText } from "@/lib/ai/clean-publisher";
 import { getCityName, normalizeCitySlug } from "@/lib/cities/lookup";
 import {
   isGoogleNewsArticleUrl,
@@ -19,11 +20,30 @@ import { getAdminEventBySlug } from "@/lib/data/admin-events";
 import { slugify } from "@/lib/slugify";
 import type { EventType } from "@/lib/events/types";
 
-function revalidateEventPaths() {
+export type EventActionResult = {
+  success: boolean;
+  error?: string;
+  slug?: string;
+};
+
+const VALID_EVENT_TYPES = new Set<EventType>([
+  "tiyatro",
+  "konser",
+  "sergi",
+  "festival",
+  "duyuru",
+  "diger",
+]);
+
+function revalidateEventPaths(slug?: string) {
   try {
     revalidatePath("/");
     revalidatePath("/etkinlikler");
     revalidatePath("/yonetim/etkinlikler");
+    if (slug) {
+      revalidatePath(`/etkinlik/${slug}`);
+      revalidatePath(`/yonetim/etkinlikler/${slug}/duzenle`);
+    }
   } catch (err) {
     console.warn("revalidateEventPaths skipped:", err);
   }
@@ -71,48 +91,65 @@ async function ensureUniqueSourceUrl(
 
 function eventFromForm(formData: FormData) {
   const citySlug = (formData.get("city_slug") as string) || null;
-  const title = ((formData.get("title") as string) || "").trim() || "Etkinlik";
+  const rawTitle = ((formData.get("title") as string) || "").trim() || "Etkinlik";
+  const title = cleanPublisherText(rawTitle) || rawTitle;
   const rawSlug = ((formData.get("slug") as string) || "").trim() || title;
   const startsAt = sanitizeIsoDate((formData.get("starts_at") as string) || null);
   const endsAt = sanitizeIsoDate((formData.get("ends_at") as string) || null);
   const expiresAt = sanitizeIsoDate(
     (formData.get("expires_at") as string) || null
   );
+  const sourceName = ((formData.get("source_name") as string) || "").trim() || null;
+  const rawDescription = ((formData.get("description") as string) || "").trim();
+  const description = rawDescription
+    ? polishMarkdown(rawDescription, title, sourceName || undefined)
+    : null;
+  const rawEventType = String(formData.get("event_type") || "").trim() as EventType;
+  const eventType = VALID_EVENT_TYPES.has(rawEventType)
+    ? rawEventType
+    : sanitizeEventType(rawEventType || "duyuru", title);
 
   return {
     title,
     slug: slugify(rawSlug) || "etkinlik",
-    summary: ((formData.get("summary") as string) || title).trim(),
-    description: (formData.get("description") as string) || null,
-    event_type: sanitizeEventType(
-      (formData.get("event_type") as EventType) || "duyuru",
-      title
-    ),
-    source_name: (formData.get("source_name") as string) || null,
-    source_url: (formData.get("source_url") as string) || null,
-    ticket_url: (formData.get("ticket_url") as string) || null,
+    summary: cleanPublisherText((formData.get("summary") as string) || title) || title,
+    description,
+    event_type: eventType,
+    source_name: sourceName,
+    source_url: ((formData.get("source_url") as string) || "").trim() || null,
+    ticket_url: ((formData.get("ticket_url") as string) || "").trim() || null,
     city_slug: citySlug && citySlug !== "none" ? normalizeCitySlug(citySlug) : null,
-    venue_name: (formData.get("venue_name") as string) || null,
+    venue_name: ((formData.get("venue_name") as string) || "").trim() || null,
     starts_at: startsAt,
     ends_at: endsAt,
-    cover_image: (formData.get("cover_image") as string) || null,
-    meta_title: (formData.get("meta_title") as string) || null,
-    meta_description: (formData.get("meta_description") as string) || null,
+    cover_image: ((formData.get("cover_image") as string) || "").trim() || null,
+    meta_title: ((formData.get("meta_title") as string) || "").trim() || null,
+    meta_description: ((formData.get("meta_description") as string) || "").trim() || null,
     is_featured:
       formData.get("is_featured") === "on" ||
       formData.get("is_featured") === "true",
+    is_free:
+      formData.get("is_free") === "on" ||
+      formData.get("is_free") === "true",
     sort_order: parseInt((formData.get("sort_order") as string) || "0", 10) || 0,
     expires_at: expiresAt,
     updated_at: new Date().toISOString(),
   };
 }
 
-export async function createEvent(formData: FormData) {
+export async function createEvent(formData: FormData): Promise<EventActionResult> {
   await requireAdmin();
+  const rawTitle = String(formData.get("title") || "").trim();
+  if (!rawTitle) {
+    return { success: false, error: "Etkinlik başlığı zorunludur." };
+  }
+
   const data = eventFromForm(formData);
   const publishNow =
     formData.get("publish_now") === "on" ||
-    formData.get("publish_now") === "true";
+    formData.get("publish_now") === "true" ||
+    formData.get("is_published") === "on" ||
+    formData.get("is_published") === "true";
 
   const uniqueSlug = await ensureUniqueEventSlug(data.slug || data.title);
   const uniqueSourceUrl = await ensureUniqueSourceUrl(
@@ -143,14 +180,27 @@ export async function createEvent(formData: FormData) {
     published_at: publishNow ? new Date().toISOString() : null,
   });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.code === "23505") {
+      return { success: false, error: "Bu URL slug veya kaynak adresi zaten kullanımda." };
+    }
+    return { success: false, error: error.message };
+  }
 
-  revalidateEventPaths();
-  redirect("/yonetim/etkinlikler");
+  revalidateEventPaths(uniqueSlug);
+  return { success: true, slug: uniqueSlug };
 }
 
-export async function updateEvent(slug: string, formData: FormData) {
+export async function updateEvent(
+  slug: string,
+  formData: FormData
+): Promise<EventActionResult> {
   await requireAdmin();
+  const rawTitle = String(formData.get("title") || "").trim();
+  if (!rawTitle) {
+    return { success: false, error: "Etkinlik başlığı zorunludur." };
+  }
+
   const data = eventFromForm(formData);
   const existing = await getAdminEventBySlug(slug);
   const wantsPublished =
@@ -199,13 +249,18 @@ export async function updateEvent(slug: string, formData: FormData) {
     })
     .eq("slug", slug);
 
-  if (error) throw new Error(error.message);
-
-  revalidateEventPaths();
-  if (existing?.status === "published" || statusUpdate.status === "published") {
-    revalidatePath(`/etkinlik/${uniqueSlug}`);
+  if (error) {
+    if (error.code === "23505") {
+      return { success: false, error: "Bu URL slug veya kaynak adresi zaten kullanımda." };
+    }
+    return { success: false, error: error.message };
   }
-  redirect("/yonetim/etkinlikler");
+
+  if (uniqueSlug !== slug) {
+    revalidateEventPaths(slug);
+  }
+  revalidateEventPaths(uniqueSlug);
+  return { success: true, slug: uniqueSlug };
 }
 
 export async function approveEvent(id: string) {
@@ -261,7 +316,6 @@ export async function deleteEvent(id: string) {
 
   if (error) throw new Error(error.message);
   revalidateEventPaths();
-  redirect("/yonetim/etkinlikler");
 }
 
 export async function toggleFeaturedEvent(id: string, isFeatured: boolean) {

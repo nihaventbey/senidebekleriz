@@ -249,5 +249,69 @@ describe("Event & News Editorial Engine", () => {
         )
       ).toBe(0);
     });
+
+    it("strips template headings, leading headings, trailing sources, and demotes narrative sentence headings in polishMarkdown", () => {
+      const raw = [
+        "## İlk Paragraftan Önce Gelen Başlık",
+        "Adana Kültür Yolu Festivali kapsamındaki final gecesinde sevilen eserler seslendirildi.",
+        "## Program Akışı ve Sanatsal Etkinlikler",
+        "## Açılan sergiye kent protokolünün yanı sıra vatandaşlar da yoğun ilgi gösterdi.",
+        "Festival programı ve etkinliklere ilişkin detaylı bilgilere, Türkiye Kültür Yolu Festivali resmi internet sitesi ( https://kulturyolufestivali.com/ ) ve Instagram hesabı @turkiye_kulturyolu üzerinden ulaşabilirsiniz.",
+        "## Kaynak ve Detaylar",
+        "Detaylı bilgi için [Küçük Saat](https://example.com) sayfasını ziyaret edin.",
+      ].join("\n\n");
+
+      const cleaned = polishMarkdown(
+        raw,
+        "Türkiye Kültür Yolu Festivali'nin 2026 yolculuğu Adana'da Murat Boz konseriyle sona erdi",
+        "Küçük Saat | Adana Haberleri"
+      );
+
+      expect(cleaned.startsWith("##")).toBe(false);
+      expect(cleaned).not.toContain("İlk Paragraftan Önce Gelen Başlık");
+      expect(cleaned).not.toContain("Program Akışı ve Sanatsal Etkinlikler");
+      expect(cleaned).not.toContain("## Açılan sergiye");
+      expect(cleaned).toContain("Açılan sergiye kent protokolünün yanı sıra vatandaşlar da yoğun ilgi gösterdi.");
+      expect(cleaned).not.toContain("kulturyolufestivali.com");
+      expect(cleaned).not.toContain("Kaynak ve Detaylar");
+      expect(cleaned).not.toContain("Küçük Saat");
+    });
+
+    it("rejects autobiographies, essays, album reviews, death anniversaries, and brand PR from discovery/autopilot", () => {
+      expect(
+        isRejectedNonTurkishOrCommercialContent({
+          title: "Birbirimizi Hiç Göremeyecekmişiz: Çocukluk, Suçluluk ve Büyümek Üzerine",
+          sourceUrl: "https://sanatokur.com/birbirimizi-hic-goremeyecekmisiz/",
+        })
+      ).toBe(true);
+
+      expect(
+        isRejectedNonTurkishOrCommercialContent({
+          title: "Yaşa Takılanlar: Joanna Newsom - Ys",
+          sourceUrl: "https://bantmag.com/yasa-takilanlar-joanna-newsom-ys/",
+        })
+      ).toBe(true);
+
+      expect(
+        isRejectedNonTurkishOrCommercialContent({
+          title: "Unutulmaz besteci Yıldırım Gürses'ın vefatının üzerinden 26 yıl geçti",
+        })
+      ).toBe(true);
+
+      expect(
+        isRejectedNonTurkishOrCommercialContent({
+          title: "GODIVA, 100. yılını İstanbul’da sanatla kutladı!",
+        })
+      ).toBe(true);
+
+      expect(
+        heuristicClassify({
+          title: "Ne dinlesek?: Armand Hammer, Los Bitchos ve haftanın diğer yeni müzikleri",
+        }).content_type
+      ).toBe("skip");
+
+      expect(isNonEventTitle("Simge Sağın Adana Kültür Yolu Festivali'nde sahne aldı")).toBe(true);
+      expect(isNonEventTitle("Sinop'ta Lakerda Festivali'nde Ünlü Şefler Gösteri Yaptı")).toBe(true);
+    });
   });
 });

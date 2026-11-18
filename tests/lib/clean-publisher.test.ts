@@ -4,6 +4,8 @@ import {
   cleanAgencySlug,
   cleanNewsSlug,
   stripDatelineFromParagraph,
+  stripTrailingSourceAttribution,
+  normalizeAllCapsWords,
 } from "@/lib/ai/clean-publisher";
 
 describe("cleanPublisherText", () => {
@@ -206,5 +208,33 @@ describe("stripDatelineFromParagraph", () => {
         "İSTANBUL, (DHA) - AKM'de düzenlenen konser yoğun ilgi gördü."
       )
     ).toBe("AKM'de düzenlenen konser yoğun ilgi gördü.");
+  });
+});
+
+describe("normalizeAllCapsWords & stripTrailingSourceAttribution", () => {
+  it("normalizes uppercase Turkish suffixes on acronyms and words", () => {
+    expect(normalizeAllCapsWords("COP31'DE BM'DEN KHAN’A TEŞEKKÜR")).toBe(
+      "COP31'de BM'den Khan’a Teşekkür"
+    );
+    expect(normalizeAllCapsWords("BİR YARIŞMADAN FAZLASI")).toBe(
+      "Bir Yarışmadan Fazlası"
+    );
+  });
+
+  it("strips trailing publisher echo, website/instagram footers, and markdown source blocks", () => {
+    const sample = [
+      "Murat Boz, Adana Merkez Park'ta kapanış konserini verdi.",
+      "Festival programı ve etkinliklere ilişkin detaylı bilgilere, Türkiye Kültür Yolu Festivali resmi internet sitesi ( https://kulturyolufestivali.com/ ) ve Instagram hesabı @turkiye_kulturyolu üzerinden ulaşabilirsiniz.",
+      "Türkiye Kültür Yolu Festivali'nin 2026 yolculuğu Adana'da Murat Boz konseriyle sona erdi Küçük Saat | Adana Haberleri",
+      "**Kaynak:** Küçük Saat",
+    ].join("\n\n");
+
+    const cleaned = stripTrailingSourceAttribution(
+      sample,
+      "Türkiye Kültür Yolu Festivali'nin 2026 yolculuğu Adana'da Murat Boz konseriyle sona erdi",
+      "Küçük Saat | Adana Haberleri"
+    );
+
+    expect(cleaned).toBe("Murat Boz, Adana Merkez Park'ta kapanış konserini verdi.");
   });
 });
