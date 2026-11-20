@@ -79,12 +79,20 @@ function formatDate(iso: string | null) {
   });
 }
 
+type EventStatusLink = {
+  key: string;
+  label: string;
+  href: string;
+  active: boolean;
+};
+
 type Props = {
   events: AdminEventListItem[];
   filter?: string;
+  statusLinks?: EventStatusLink[];
 };
 
-export function EventsList({ events, filter }: Props) {
+export function EventsList({ events, filter, statusLinks }: Props) {
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -279,32 +287,53 @@ export function EventsList({ events, filter }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Search & Type Filter Toolbar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border bg-card p-3 shadow-xs">
-        <div className="flex flex-wrap items-center gap-1">
-          {["all", "tiyatro", "konser", "sergi", "festival", "duyuru"].map((type) => (
-            <button
-              key={type}
-              onClick={() => setSelectedType(type)}
-              className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
-                selectedType === type
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "bg-muted/60 text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {type === "all" ? "Tüm Türler" : TYPE_LABELS[type] || type}
-            </button>
-          ))}
-        </div>
+      {/* Unified Filter & Search Toolbar */}
+      <div className="space-y-3 rounded-2xl border bg-card p-3.5 shadow-xs">
+        {statusLinks && statusLinks.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 border-b border-border/60 pb-3">
+            {statusLinks.map((tab) => (
+              <Link
+                key={tab.key}
+                href={tab.href}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                  tab.active
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "bg-muted/60 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+              </Link>
+            ))}
+          </div>
+        )}
 
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Etkinlik veya şehir ara..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-8.5 pl-8 text-xs"
-          />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-1">
+            {["all", "tiyatro", "konser", "sergi", "festival", "duyuru"].map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setSelectedType(type)}
+                className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+                  selectedType === type
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "bg-muted/60 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {type === "all" ? "Tüm Türler" : TYPE_LABELS[type] || type}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Etkinlik veya şehir ara..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-9 pl-8 text-xs"
+            />
+          </div>
         </div>
       </div>
 

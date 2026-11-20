@@ -7,7 +7,7 @@ import {
 } from "@/lib/events/dedupe";
 import { fetchKtbRssItems } from "@/lib/events/sources/ktb-rss";
 import type { FeedSourceRow } from "@/lib/events/types";
-import { uniqueEventSlug } from "@/lib/events/slug";
+import { allocateUniqueEventSlug } from "@/lib/slug/unique-slug";
 import { uploadEventImagesFromUrls } from "@/lib/storage/upload-image-from-url";
 import { isNonEventTitle } from "@/lib/events/artist-matcher";
 import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
@@ -129,7 +129,9 @@ export async function syncCulturalEvents(): Promise<SyncEventsResult> {
             continue;
           }
 
-          const slug = uniqueEventSlug(normalized.title);
+          const slug = await allocateUniqueEventSlug(normalized.title, {
+            citySlug: normalized.city_slug,
+          });
           const media = await importEventCoverImage({
             sourceUrl: item.link,
             slug,

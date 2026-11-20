@@ -7,7 +7,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { slugify } from "@/lib/slugify";
 import { normalizeCitySlug } from "@/lib/cities/lookup";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
-import { cleanPublisherText, cleanNewsSlug } from "@/lib/ai/clean-publisher";
+import { cleanPublisherText } from "@/lib/ai/clean-publisher";
+import { allocateUniqueNewsSlug } from "@/lib/slug/unique-slug";
 import { polishMarkdown } from "@/lib/ai/editorial";
 
 export type NewsActionResult = {
@@ -52,18 +53,7 @@ export async function createNews(formData: FormData): Promise<NewsActionResult> 
   if (!cleanContent) {
     return { success: false, error: "Haber metni zorunludur." };
   }
-  const baseSlug = cleanNewsSlug(rawSlug || cleanTitle);
-  let slug = baseSlug.slice(0, 100);
-  let counter = 2;
-  while (true) {
-    const { data: existing } = await supabaseAdmin
-      .from("cultural_news")
-      .select("id")
-      .eq("slug", slug)
-      .maybeSingle();
-    if (!existing) break;
-    slug = `${baseSlug.slice(0, 90)}-${counter++}`;
-  }
+  const slug = await allocateUniqueNewsSlug(rawSlug || cleanTitle);
   const citySlug = normalizeCitySlug(citySlugRaw === "none" ? null : citySlugRaw);
 
   // Transfer cover image to Supabase Storage now that user confirmed/submitted
@@ -135,21 +125,10 @@ export async function updateNews(
   if (!cleanContent) {
     return { success: false, error: "Haber metni zorunludur." };
   }
-  const baseSlug = cleanNewsSlug(rawSlug || cleanTitle || originalSlug);
-  let slug = baseSlug.slice(0, 100);
-  if (slug !== originalSlug) {
-    let counter = 2;
-    while (true) {
-      const { data: existing } = await supabaseAdmin
-        .from("cultural_news")
-        .select("slug")
-        .eq("slug", slug)
-        .neq("slug", originalSlug)
-        .maybeSingle();
-      if (!existing) break;
-      slug = `${baseSlug.slice(0, 90)}-${counter++}`;
-    }
-  }
+  const slug = await allocateUniqueNewsSlug(
+    rawSlug || cleanTitle || originalSlug,
+    { existingSlug: originalSlug, preserveExisting: true }
+  );
   const citySlug = normalizeCitySlug(citySlugRaw === "none" ? null : citySlugRaw);
 
   // Transfer cover image to Supabase Storage upon update

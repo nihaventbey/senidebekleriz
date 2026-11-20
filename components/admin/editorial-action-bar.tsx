@@ -1,10 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Check, Eye, Loader2, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Eye,
+  FilePenLine,
+  Flame,
+  Loader2,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type EditorialActionBarProps = {
+  heading?: string;
   backHref: string;
   backLabel: string;
   publicHref?: string;
@@ -22,9 +31,11 @@ type EditorialActionBarProps = {
 };
 
 /**
- * Sticky top action bar shared by News and Event editorial forms.
+ * Sticky top action bar shared by News, Event, and Guide editorial forms.
+ * Positioned directly beneath the 56px (`h-14`) admin layout header.
  */
 export function EditorialActionBar({
+  heading,
   backHref,
   backLabel,
   publicHref,
@@ -35,70 +46,89 @@ export function EditorialActionBar({
   deletePending,
   hasDelete,
   statusAnnouncement,
-  draftLabel = "Taslak (Sitede Görünmez)",
+  draftLabel = "Taslak",
   onSaveDraft,
   onSavePublish,
   onDelete,
 }: EditorialActionBarProps) {
   return (
-    <div className="sticky top-3 z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card/90 px-4 py-3 shadow-sm backdrop-blur-md">
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="outline" size="sm" asChild className="gap-1.5 text-xs">
+    <div className="sticky top-14 z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card/95 px-3.5 py-2.5 shadow-sm backdrop-blur-md sm:px-4">
+      <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-2.5">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          asChild
+          className="h-9 gap-1.5 text-xs"
+        >
           <Link href={backHref}>
-            <ArrowLeft className="h-4 w-4" />
-            {backLabel}
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>{backLabel}</span>
           </Link>
         </Button>
 
+        {heading ? (
+          <h1 className="truncate text-sm font-bold tracking-tight text-foreground sm:text-base">
+            {heading}
+          </h1>
+        ) : null}
+
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
             isPublished
               ? "border border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
               : "border border-amber-500/30 bg-amber-500/15 text-amber-800 dark:text-amber-300"
           }`}
         >
           <span
-            className={`h-2 w-2 rounded-full ${
+            className={`h-1.5 w-1.5 rounded-full ${
               isPublished ? "bg-emerald-500" : "bg-amber-500"
             }`}
           />
-          {isPublished ? "Durum: Yayında" : `Durum: ${draftLabel}`}
+          {isPublished ? "Yayında" : draftLabel}
         </span>
 
-        {isFeatured && (
+        {isFeatured ? (
           <span className="inline-flex items-center gap-1 rounded-full border border-orange-500/30 bg-orange-500/10 px-2.5 py-1 text-[11px] font-semibold text-orange-700 dark:text-orange-300">
-            🔥 Vitrin
+            <Flame className="h-3 w-3" aria-hidden="true" />
+            Vitrin
           </span>
-        )}
+        ) : null}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {publicHref && isPublished && (
-          <Button type="button" variant="outline" size="sm" asChild className="gap-1.5 text-xs">
+        {publicHref && isPublished ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            asChild
+            className="h-9 gap-1.5 text-xs"
+          >
             <Link href={publicHref} target="_blank" rel="noopener noreferrer">
-              <Eye className="h-3.5 w-3.5" />
-              Sitede Gör
+              <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Sitede Gör</span>
             </Link>
           </Button>
-        )}
+        ) : null}
 
-        {hasDelete && onDelete && (
+        {hasDelete && onDelete ? (
           <Button
             type="button"
             variant="destructive"
             size="sm"
             disabled={deletePending || savePending}
             onClick={onDelete}
-            className="gap-1.5 text-xs"
+            className="h-9 gap-1.5 text-xs"
           >
             {deletePending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
             ) : (
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
             )}
-            Sil
+            <span className="hidden sm:inline">Sil</span>
           </Button>
-        )}
+        ) : null}
 
         <Button
           type="button"
@@ -106,13 +136,15 @@ export function EditorialActionBar({
           size="sm"
           disabled={savePending || deletePending}
           onClick={onSaveDraft}
-          className="gap-1.5 text-xs font-semibold"
+          className="h-9 gap-1.5 text-xs font-semibold"
           title="İçeriği sitede yayınlamadan taslak olarak kaydeder"
         >
           {savePending && !isPublished ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : null}
-          📝 Taslak Kaydet
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+          ) : (
+            <FilePenLine className="h-3.5 w-3.5" aria-hidden="true" />
+          )}
+          <span>Taslak Kaydet</span>
         </Button>
 
         <Button
@@ -120,17 +152,19 @@ export function EditorialActionBar({
           size="sm"
           disabled={savePending || deletePending}
           onClick={onSavePublish}
-          className="gap-1.5 bg-emerald-600 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
+          className="h-9 gap-1.5 bg-emerald-600 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
         >
           {savePending && isPublished ? (
             <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Kaydediliyor...
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              <span>Kaydediliyor...</span>
             </>
           ) : (
             <>
-              <Check className="h-3.5 w-3.5" />
-              {isPublished && isEdit ? "Güncelle (Yayında)" : "🚀 Kaydet ve Yayına Al"}
+              <Check className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>
+                {isPublished && isEdit ? "Güncelle" : "Kaydet ve Yayınla"}
+              </span>
             </>
           )}
         </Button>

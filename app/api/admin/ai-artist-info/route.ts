@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
       description: body.description,
       eventType: body.eventType,
       entityNameHint: entityName || null,
+      interactive: true,
     });
 
     if (!card) {

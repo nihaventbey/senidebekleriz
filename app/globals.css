@@ -279,4 +279,37 @@
     outline: 3px solid var(--ring);
     outline-offset: 3px;
   }
+
+  /* Native HTML <details> disclosure accordions for admin inspector & editorial forms */
+  details.admin-disclosure > summary {
+    list-style: none;
+  }
+  details.admin-disclosure > summary::-webkit-details-marker {
+    display: none;
+  }
+  details.admin-disclosure > summary .admin-disclosure-chevron {
+    rotate: 0deg;
+  }
+  details.admin-disclosure[open] > summary .admin-disclosure-chevron {
+    rotate: 90deg;
+  }
+  details.admin-disclosure::details-content {
+    interpolate-size: allow-keywords;
+    overflow: clip;
+    contain: layout;
+  }
+  details.admin-disclosure:not([open])::details-content {
+    block-size: 0;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    details.admin-disclosure > summary .admin-disclosure-chevron {
+      transition: rotate 0.2s ease-out;
+    }
+    details.admin-disclosure::details-content {
+      transition: block-size, content-visibility, display;
+      transition-duration: 0.25s;
+      transition-timing-function: ease-out;
+      transition-behavior: allow-discrete;
+    }
+  }
 }

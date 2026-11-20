@@ -20,6 +20,7 @@ import {
 import { normalizeCitySlug } from "@/lib/cities/lookup";
 import { detectTurkishCityInText } from "@/lib/discovery/classify-content";
 import { uniqueEventSlug } from "@/lib/events/slug";
+import { allocateUniqueEventSlug } from "@/lib/slug/unique-slug";
 import { cleanTicketUrl } from "@/lib/events/ticket-url";
 import { isNonEventTitle } from "@/lib/events/artist-matcher";
 import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
@@ -264,17 +265,18 @@ export async function extractEventsFromBulletin(input: {
     }
 
     const baseSlug = uniqueEventSlug(cleanItemTitle);
-    let slug = baseSlug;
-    let counter = 1;
-    while (true) {
-      const { data: exists } = await supabaseAdmin
-        .from("cultural_events")
-        .select("id")
-        .eq("slug", slug)
-        .maybeSingle();
-      if (!exists) break;
-      slug = `${baseSlug.slice(0, 85)}-${counter++}`;
-    }
+    const resolvedCity =
+      normalizeCitySlug(item.city_slug) ||
+      normalizeCitySlug(
+        detectTurkishCityInText(
+          `${cleanItemTitle} ${item.venue_name || ""} ${item.summary || ""}`
+        )
+      ) ||
+      normalizeCitySlug(defaultCitySlug);
+
+    const slug = await allocateUniqueEventSlug(cleanItemTitle, {
+      citySlug: resolvedCity,
+    });
 
     const safeEventType: EventType = sanitizeEventType(
       item.event_type,
@@ -303,14 +305,6 @@ export async function extractEventsFromBulletin(input: {
     }
 
     const cleanedTicket = cleanTicketUrl(item.ticket_url, input.url);
-    const resolvedCity =
-      normalizeCitySlug(item.city_slug) ||
-      normalizeCitySlug(
-        detectTurkishCityInText(
-          `${cleanItemTitle} ${item.venue_name || ""} ${item.summary || ""}`
-        )
-      ) ||
-      normalizeCitySlug(defaultCitySlug);
 
     const subSourceUrl = `${input.url}#sub-${baseSlug}`;
 

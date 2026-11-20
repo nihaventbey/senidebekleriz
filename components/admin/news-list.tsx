@@ -42,6 +42,7 @@ import { getCityName } from "@/lib/cities/lookup";
 import type { AdminNewsListItem } from "@/lib/data/admin-news";
 import { toast } from "@/lib/toast";
 import { NEWS_CATEGORY_LABELS, NEWS_CATEGORY_COLORS } from "@/components/news/news-card";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { UniversalUrlImportModal } from "@/components/admin/universal-url-import-modal";
 
 type Props = {
@@ -206,56 +207,54 @@ export function AdminNewsList({ newsList }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Kültür & Sanat Haberleri</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            Arkeoloji, restorasyon, müze ve festival haberlerinin yönetimi ve yayını.
-          </p>
-        </div>
+      <AdminPageHeader
+        title="Kültür & Sanat Haberleri"
+        description="Arkeoloji, restorasyon, müze ve festival haberlerinin yönetimi ve yayını."
+        actions={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsImportModalOpen(true)}
+              className="h-9 gap-1.5 text-xs font-semibold text-primary border-primary/30 hover:bg-primary/5 shadow-xs"
+            >
+              <Zap className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
+              <span>URL&apos;den Haber Çek</span>
+            </Button>
 
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setIsImportModalOpen(true)}
-            className="gap-1.5 text-xs font-semibold text-primary border-primary/30 hover:bg-primary/5 shadow-xs"
-          >
-            <Zap className="h-3.5 w-3.5 text-amber-500" />
-            URL&apos;den Haber Çek
-          </Button>
+            <Button asChild size="sm" className="h-9 gap-1.5 text-xs font-semibold shadow-xs">
+              <Link href="/yonetim/haberler/yeni">
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                <span>Yeni Haber Ekle</span>
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
-          <Button asChild size="sm" className="gap-1.5 text-xs font-semibold shadow-xs">
-            <Link href="/yonetim/haberler/yeni">
-              <Plus className="h-4 w-4" /> Yeni Haber Ekle
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      {/* Filter Tabs & Search */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border bg-card p-4 shadow-xs">
-        <div className="flex flex-wrap items-center gap-1">
+      {/* Unified Filter & Search Toolbar */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border bg-card p-3.5 shadow-xs">
+        <div className="flex flex-wrap items-center gap-1.5">
           {[
             { key: "all", label: `Tümü (${newsList.length})` },
             {
               key: "published",
-              label: `✅ Yayındakiler (${newsList.filter((n) => n.is_published).length})`,
+              label: `Yayında (${newsList.filter((n) => n.is_published).length})`,
             },
             {
               key: "draft",
-              label: `📝 Taslaklar (${newsList.filter((n) => !n.is_published).length})`,
+              label: `Taslak (${newsList.filter((n) => !n.is_published).length})`,
             },
             {
               key: "featured",
-              label: `🔥 Vitrin (${newsList.filter((n) => n.is_featured).length})`,
+              label: `Vitrin (${newsList.filter((n) => n.is_featured).length})`,
             },
           ].map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setStatusFilter(tab.key as any)}
+              type="button"
+              onClick={() => setStatusFilter(tab.key as "all" | "published" | "draft" | "featured")}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
                 statusFilter === tab.key
                   ? "bg-primary text-primary-foreground shadow-xs"
@@ -273,7 +272,7 @@ export function AdminNewsList({ newsList }: Props) {
             placeholder="Haber başlığı veya şehir ara..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-8.5 pl-8 text-xs"
+            className="h-9 pl-8 text-xs"
           />
         </div>
       </div>

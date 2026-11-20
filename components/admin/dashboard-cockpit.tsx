@@ -9,10 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Building2,
-  MapPinned,
-  FileText,
-  Tags,
-  Star,
   ArrowRight,
   Plus,
   BookOpen,
@@ -20,27 +16,19 @@ import {
   Newspaper,
   CalendarDays,
   Compass,
-  Wand2,
   ExternalLink,
   Pencil,
   Loader2,
   CheckCircle2,
-  Activity,
-  Image as ImageIcon,
-  Check,
   X,
-  Flame,
   Globe,
-  Quote,
-  Clock,
   Send,
   AlertCircle,
-  Zap,
-  Camera,
   Bot,
   Layers,
   ChevronDown,
 } from "lucide-react";
+import { DisclosureSection } from "@/components/admin/editorial/disclosure-section";
 import { DiscoverySyncButton } from "@/components/admin/discovery-sync-button";
 import { AdSenseReadiness } from "@/components/admin/adsense-readiness";
 import type { AdminDashboardStats, ContentReadinessStats } from "@/lib/data/admin-stats";
@@ -63,50 +51,12 @@ type CockpitProps = {
   pendingDiscoveries: AdminDiscoveryListItem[];
 };
 
-const DAILY_QUOTES = [
-  {
-    quote: "Seyahat et ki, sıhhat bulasın ve rızıklanasın.",
-    author: "Evliya Çelebi",
-    tag: "Seyahatname",
-  },
-  {
-    quote: "Kültür, bir milletin hafızasıdır; geçmişi bugüne, bugünü yarına bağlar.",
-    author: "Ahmet Hamdi Tanpınar",
-    tag: "Beş Şehir",
-  },
-  {
-    quote: "Gözlerini açtığında karşında Ege'yi göreceksin; burası mavi sürgünün cennetidir.",
-    author: "Halikarnas Balıkçısı",
-    tag: "Mavi Sürgün",
-  },
-  {
-    quote: "Bir insanı sevmekle başlar her şey; bir şehri tanımakla başlar yolculuk.",
-    author: "Sait Faik Abasıyanık",
-    tag: "Edebiyat",
-  },
-  {
-    quote: "Tarih, taşların ve sütunların sessizliğinde yaşayan en büyük şiirdir.",
-    author: "Yahya Kemal Beyatlı",
-    tag: "Aziz İstanbul",
-  },
-  {
-    quote: "Anadolu; binlerce yıllık medeniyetlerin birbiri üstüne dokuduğu zengin bir kilimdir.",
-    author: "Yaşar Kemal",
-    tag: "Kültür Mirası",
-  },
-  {
-    quote: "Yollar yürümek içindir, yeni yerler görmek ve insanı yeniden keşfetmek için.",
-    author: "Sabahattin Ali",
-    tag: "Yol Notları",
-  },
-];
-
 function getGreeting(): string {
   const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return "☀️ Günaydın";
-  if (hour >= 12 && hour < 18) return "🌤️ İyi Günler";
-  if (hour >= 18 && hour < 22) return "🌇 İyi Akşamlar";
-  return "🌙 İyi Geceler";
+  if (hour >= 5 && hour < 12) return "Günaydın";
+  if (hour >= 12 && hour < 18) return "İyi Günler";
+  if (hour >= 18 && hour < 22) return "İyi Akşamlar";
+  return "İyi Geceler";
 }
 
 function getTodayFormatted(): string {
@@ -171,12 +121,6 @@ export function DashboardCockpit({
       }
     });
   }
-
-  // Daily quote selection based on day of month
-  const todayQuote = useMemo(() => {
-    const day = new Date().getDate();
-    return DAILY_QUOTES[day % DAILY_QUOTES.length];
-  }, []);
 
   const greeting = useMemo(() => getGreeting(), []);
   const todayDateStr = useMemo(() => getTodayFormatted(), []);
@@ -290,37 +234,38 @@ export function DashboardCockpit({
 
           {/* Hızlı İşlem Butonları */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
-            {/* Yeni İçerik Ekleme */}
-            <div className="flex items-center gap-1.5 rounded-xl bg-muted/40 p-1 border border-border/50">
+            <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-muted/40 p-1 border border-border/50">
               <Button
                 asChild
                 size="sm"
-                className="h-8 px-3 text-xs font-semibold gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                className="h-8 px-3 text-xs font-semibold gap-1.5 shadow-xs"
               >
                 <Link href="/yonetim/haberler/yeni">
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>Haber</span>
                 </Link>
               </Button>
 
               <Button
                 asChild
+                variant="outline"
                 size="sm"
-                className="h-8 px-3 text-xs font-semibold gap-1.5 bg-purple-600 hover:bg-purple-700 text-white shadow-xs"
+                className="h-8 px-3 text-xs font-semibold gap-1.5 bg-background/80"
               >
                 <Link href="/yonetim/etkinlikler/yeni">
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
                   <span>Etkinlik</span>
                 </Link>
               </Button>
 
               <Button
                 asChild
+                variant="outline"
                 size="sm"
-                className="h-8 px-3 text-xs font-semibold gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+                className="h-8 px-3 text-xs font-semibold gap-1.5 bg-background/80"
               >
                 <Link href="/yonetim/yazilar/yeni">
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
                   <span>Rehber</span>
                 </Link>
               </Button>
@@ -334,13 +279,13 @@ export function DashboardCockpit({
                 size="sm"
                 disabled={isAutopilotRunning}
                 onClick={handleRunAutopilot}
-                className="h-8 px-2.5 text-xs font-semibold gap-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-background shadow-xs"
+                className="h-8 px-2.5 text-xs font-semibold gap-1.5 text-emerald-700 dark:text-emerald-400 hover:bg-background"
                 title="Keşif kuyruğundaki onaylı taslakları otomatik yayınla"
               >
                 {isAutopilotRunning ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                 ) : (
-                  <Bot className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <Bot className="h-3.5 w-3.5" aria-hidden="true" />
                 )}
                 <span>Oto-Pilot</span>
               </Button>
@@ -350,75 +295,89 @@ export function DashboardCockpit({
           </div>
         </div>
 
-        {/* 3 Adımlı Editoryal Akış Rehberi (Netleştirilmiş İş Akışı) */}
-        <div className="mt-4 pt-4 border-t border-border/60 grid gap-2.5 sm:grid-cols-3 text-xs">
-          <div className="flex items-start gap-2.5 rounded-2xl border border-border/60 bg-muted/20 p-3">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-black text-[11px]">
-              1
-            </span>
-            <div className="min-w-0">
-              <p className="font-bold text-foreground">Kaynakları Tara</p>
-              <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
-                &quot;Şimdi Tara &amp; Keşfet&quot; ile 81 ilin kültür bültenlerini Keşif Kuyruğuna çekin.
-              </p>
+        {/* Açılır 3 Adımlı Editoryal Akış Rehberi */}
+        <DisclosureSection
+          title="Editoryal İş Akışı Rehberi"
+          description="Kaynak tarama, taslağa dönüştürme ve yayınlama adımları"
+          badge="3 Adım"
+          defaultOpen={false}
+          className="mt-4 bg-muted/20 shadow-none"
+        >
+          <div className="grid gap-2.5 sm:grid-cols-3 text-xs">
+            <div className="flex items-start gap-2.5 rounded-xl border border-border/60 bg-background/80 p-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-[11px]">
+                1
+              </span>
+              <div className="min-w-0">
+                <p className="font-bold text-foreground">Kaynakları Tara</p>
+                <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                  &quot;Şimdi Tara &amp; Keşfet&quot; ile 81 ilin kültür bültenlerini Keşif Kuyruğuna çekin.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-start gap-2.5 rounded-2xl border border-border/60 bg-muted/20 p-3">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-600 text-white font-black text-[11px]">
-              2
-            </span>
-            <div className="min-w-0">
-              <p className="font-bold text-foreground">
-                Taslağa Dönüştür ({stats.pendingDiscoveries} bekleyen)
-              </p>
-              <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
-                Kuyruktaki maddeleri <strong>Haber</strong>, <strong>Etkinlik</strong> veya <strong>Bülten</strong> olarak açın.
-              </p>
+            <div className="flex items-start gap-2.5 rounded-xl border border-border/60 bg-background/80 p-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-600 text-white font-bold text-[11px]">
+                2
+              </span>
+              <div className="min-w-0">
+                <p className="font-bold text-foreground">
+                  Taslağa Dönüştür ({stats.pendingDiscoveries} bekleyen)
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                  Kuyruktaki maddeleri <strong>Haber</strong>, <strong>Etkinlik</strong> veya <strong>Bülten</strong> olarak açın.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-start gap-2.5 rounded-2xl border border-border/60 bg-muted/20 p-3">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white font-black text-[11px]">
-              3
-            </span>
-            <div className="min-w-0">
-              <p className="font-bold text-foreground">Kontrol Et &amp; Yayına Al</p>
-              <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
-                Düzenleme ekranında <strong>&quot;🚀 Kaydet ve Yayına Al&quot;</strong> butonuna basarak sitede yayınlayın.
-              </p>
+            <div className="flex items-start gap-2.5 rounded-xl border border-border/60 bg-background/80 p-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-[11px]">
+                3
+              </span>
+              <div className="min-w-0">
+                <p className="font-bold text-foreground">Kontrol Et &amp; Yayınla</p>
+                <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                  Düzenleme ekranında <strong>&quot;Kaydet ve Yayınla&quot;</strong> butonuna basarak sitede yayınlayın.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        </DisclosureSection>
 
         {/* Bağlantıdan Otomatik Taslak Oluşturucu */}
         <div className="mt-4 pt-4 border-t border-border/60 space-y-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground/90">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
               <span>Tekil Bağlantıdan (URL) İçerik Üret:</span>
             </div>
 
             <div className="flex flex-wrap items-center gap-1">
               {[
-                { id: "auto", label: "🪄 Otomatik Algıla" },
-                { id: "news", label: "📰 Haber Yap" },
-                { id: "event", label: "🎭 Etkinlik Yap" },
-                { id: "article", label: "🗺️ Rehber Yap" },
-              ].map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setQuickTargetType(opt.id as any)}
-                  className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all ${
-                    quickTargetType === opt.id
-                      ? "bg-primary text-primary-foreground shadow-2xs"
-                      : "bg-muted/60 text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+                { id: "auto", label: "Otomatik Algıla", Icon: Sparkles },
+                { id: "news", label: "Haber Yap", Icon: Newspaper },
+                { id: "event", label: "Etkinlik Yap", Icon: CalendarDays },
+                { id: "article", label: "Rehber Yap", Icon: BookOpen },
+              ].map((opt) => {
+                const OptIcon = opt.Icon;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() =>
+                      setQuickTargetType(opt.id as "auto" | "news" | "event" | "article")
+                    }
+                    className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                      quickTargetType === opt.id
+                        ? "bg-primary text-primary-foreground shadow-2xs"
+                        : "bg-muted/60 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <OptIcon className="h-3 w-3" aria-hidden="true" />
+                    <span>{opt.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

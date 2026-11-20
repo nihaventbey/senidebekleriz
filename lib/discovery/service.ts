@@ -19,7 +19,11 @@ import {
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { slugify } from "@/lib/slugify";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
-import { cleanPublisherText, cleanNewsSlug } from "@/lib/ai/clean-publisher";
+import { cleanPublisherText } from "@/lib/ai/clean-publisher";
+import {
+  allocateUniqueEventSlug,
+  allocateUniqueNewsSlug,
+} from "@/lib/slug/unique-slug";
 import { extractEventsFromBulletin } from "@/lib/ai/extract-multi-events";
 import { isNonEventTitle } from "@/lib/events/artist-matcher";
 import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
@@ -150,20 +154,11 @@ export async function importDiscoveryAsEvent(
     };
   }
 
-  const baseSlug = slugify(imported.title || item.title || "etkinlik") || "etkinlik";
-  let slug = baseSlug.slice(0, 100);
-  let counter = 1;
-  while (true) {
-    const { data: slugExists } = await supabaseAdmin
-      .from("cultural_events")
-      .select("id")
-      .eq("slug", slug)
-      .maybeSingle();
-    if (!slugExists) break;
-    slug = `${baseSlug.slice(0, 90)}-${counter++}`;
-  }
-
   const resolvedCity = normalizeCitySlug(imported.city_slug || item.city_slug);
+  const slug = await allocateUniqueEventSlug(
+    imported.title || item.title || "etkinlik",
+    { citySlug: resolvedCity }
+  );
 
   const safeTitle = cleanPublisherText(
     imported.title || item.title || "Kültür Etkinliği"
@@ -404,18 +399,7 @@ export async function importDiscoveryAsNews(
   }
 
   const cleanTitle = cleanPublisherText(draft.title || item.title || "Kültür Haberi");
-  const baseSlug = cleanNewsSlug(cleanTitle);
-  let slug = baseSlug.slice(0, 100);
-  let counter = 1;
-  while (true) {
-    const { data: slugExists } = await supabaseAdmin
-      .from("cultural_news")
-      .select("id")
-      .eq("slug", slug)
-      .maybeSingle();
-    if (!slugExists) break;
-    slug = `${baseSlug.slice(0, 90)}-${counter++}`;
-  }
+  const slug = await allocateUniqueNewsSlug(cleanTitle);
 
   const rawCover = draft.cover_image || coverImageHint || null;
   const storedCoverImage = await ensureStoredCoverImage(rawCover, "news", slug);

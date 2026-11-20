@@ -30,22 +30,13 @@ export default async function EditEventPage({ params }: Props) {
   const boundDelete = deleteEvent.bind(null, event.id);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Etkinliği Düzenle</h1>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-          Etkinlik başlığı, tarihi, mekânı, açıklaması ve kapak görselini güncelleyin.
-        </p>
-      </div>
-
-      <EventForm
-        action={boundUpdate}
-        deleteAction={boundDelete}
-        cities={cities.map((c) => ({ slug: c.slug, name: c.name }))}
-        currentSlug={event.slug}
-        defaultValues={event}
-        globalShowArtistInfoCards={artistCardSettings.showArtistInfoCards}
-      />
-    </div>
+    <EventForm
+      action={boundUpdate}
+      deleteAction={boundDelete}
+      cities={cities.map((c) => ({ slug: c.slug, name: c.name }))}
+      currentSlug={event.slug}
+      defaultValues={event}
+      globalShowArtistInfoCards={artistCardSettings.showArtistInfoCards}
+    />
   );
 }

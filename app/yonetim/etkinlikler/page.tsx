@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getAdminEvents, countPendingEvents } from "@/lib/data/admin-events";
 import { getArtistCardSettings } from "@/lib/data/site-settings";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { EventsList } from "@/components/admin/events-list";
-import { EventUrlImport } from "@/components/admin/event-url-import";
+import { EventImportModalButton } from "@/components/admin/event-import-modal-button";
 import { TicketingSyncButton } from "@/components/admin/ticketing-sync-button";
-import { Globe2, Plus, Settings2 } from "lucide-react";
+import { Globe2, Plus } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Etkinlikler",
@@ -42,84 +43,87 @@ export default async function AdminEventsPage({ searchParams }: Props) {
   const rejectedCount = countSource.filter((e) => e.status === "rejected").length;
   const expiredCount = countSource.filter((e) => e.status === "expired").length;
 
-  const filters = [
-    { key: undefined, label: `Tümü (${totalCount})` },
-    { key: "pending_review", label: `⏳ Onay Bekleyen (${pendingCount})` },
-    { key: "published", label: `✅ Yayında (${publishedCount})` },
-    { key: "rejected", label: `✕ Reddedilen (${rejectedCount})` },
+  const statusLinks = [
+    {
+      key: "all",
+      label: `Tümü (${totalCount})`,
+      href: "/yonetim/etkinlikler",
+      active: !status,
+    },
+    {
+      key: "pending_review",
+      label: `Onay Bekleyen (${pendingCount})`,
+      href: "/yonetim/etkinlikler?durum=pending_review",
+      active: status === "pending_review",
+    },
+    {
+      key: "published",
+      label: `Yayında (${publishedCount})`,
+      href: "/yonetim/etkinlikler?durum=published",
+      active: status === "published",
+    },
+    {
+      key: "rejected",
+      label: `Reddedilen (${rejectedCount})`,
+      href: "/yonetim/etkinlikler?durum=rejected",
+      active: status === "rejected",
+    },
     ...(expiredCount > 0
-      ? [{ key: "expired" as const, label: `⌛ Süresi Dolan (${expiredCount})` }]
+      ? [
+          {
+            key: "expired",
+            label: `Süresi Dolan (${expiredCount})`,
+            href: "/yonetim/etkinlikler?durum=expired",
+            active: status === "expired",
+          },
+        ]
       : []),
-  ] as const;
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Kültür Etkinlikleri</h1>
-          <p className="text-muted-foreground">
-            RSS ve URL kaynaklarından gelen etkinlikleri onaylayın.
-            {pendingCount > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {pendingCount} onay bekliyor
-              </Badge>
-            )}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <TicketingSyncButton />
-          <Button asChild>
-            <Link href="/yonetim/etkinlikler/yeni">
-              <Plus className="mr-2 h-4 w-4" />
-              Yeni Etkinlik
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/25 px-4 py-3 text-xs">
-        <div className="flex items-center gap-2 text-foreground">
-          <Globe2 className="h-4 w-4 text-primary" aria-hidden="true" />
-          <span>
-            Sanatçı &amp; Topluluk Bilgi Kartları:{" "}
-            <strong className={artistCardSettings.showArtistInfoCards ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}>
-              {artistCardSettings.showArtistInfoCards ? "Sitede Gösteriliyor" : "Site Genelinde Gizli"}
-            </strong>
-          </span>
-        </div>
-        <Link
-          href="/yonetim/gorunum#bilgi-kartlari"
-          className="inline-flex items-center gap-1.5 font-semibold text-primary hover:underline"
-        >
-          <Settings2 className="h-3.5 w-3.5" aria-hidden="true" />
-          Görünüm Ayarını Değiştir
-        </Link>
-      </div>
-
-      <EventUrlImport />
-
-      <div className="flex flex-wrap gap-2">
-        {filters.map((f) => (
-          <Button
-            key={f.label}
-            variant={status === f.key || (!status && !f.key) ? "default" : "outline"}
-            size="sm"
-            asChild
-          >
+      <AdminPageHeader
+        title="Kültür Etkinlikleri"
+        description="RSS, biletleme ve URL kaynaklarından gelen etkinlikleri yönetin."
+        badge={
+          pendingCount > 0 ? (
+            <Badge variant="secondary" className="text-xs font-semibold">
+              {pendingCount} onay bekliyor
+            </Badge>
+          ) : null
+        }
+        actions={
+          <>
             <Link
-              href={
-                f.key
-                  ? `/yonetim/etkinlikler?durum=${f.key}`
-                  : "/yonetim/etkinlikler"
-              }
+              href="/yonetim/gorunum#bilgi-kartlari"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border/70 bg-card px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+              title="Sanatçı ve topluluk bilgi kartı genel ayarını değiştir"
             >
-              {f.label}
+              <Globe2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+              <span>Bilgi Kartları:</span>
+              <strong
+                className={
+                  artistCardSettings.showArtistInfoCards
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-amber-600 dark:text-amber-400"
+                }
+              >
+                {artistCardSettings.showArtistInfoCards ? "Açık" : "Gizli"}
+              </strong>
             </Link>
-          </Button>
-        ))}
-      </div>
+            <TicketingSyncButton />
+            <EventImportModalButton />
+            <Button asChild size="sm" className="h-9 gap-1.5 text-xs font-semibold shadow-xs">
+              <Link href="/yonetim/etkinlikler/yeni">
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                <span>Yeni Etkinlik</span>
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
-      <EventsList events={events} filter={status} />
+      <EventsList events={events} filter={status} statusLinks={statusLinks} />
     </div>
   );
 }

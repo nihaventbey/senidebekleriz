@@ -29,7 +29,7 @@ type EditorialMarkdownEditorProps = {
   title: string;
   sourceName?: string;
   onCleanTitle?: (cleanedTitle: string) => void;
-  uploadFolder: "news" | "events";
+  uploadFolder: "news" | "events" | "articles";
   slugHint: string;
   targetMinChars: number;
   targetMaxChars: number;
@@ -213,139 +213,141 @@ export function EditorialMarkdownEditor({
   }
 
   return (
-    <div className="space-y-3 border-t border-border/50 pt-4">
+    <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <Label htmlFor={id} className="text-xs font-semibold">
             {label} {required ? <span aria-hidden="true">*</span> : null}
           </Label>
           <span className="text-[11px] text-muted-foreground">
-            ({metrics.charCount.toLocaleString("tr-TR")} karakter · {metrics.wordCount} kelime · ~{metrics.readingMinutes} dk okuma)
+            {metrics.charCount.toLocaleString("tr-TR")} kr · {metrics.wordCount} kelime · ~{metrics.readingMinutes} dk
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5">
-          {!preview && (
+        <Button
+          type="button"
+          variant={preview ? "default" : "outline"}
+          size="sm"
+          onClick={() => setPreview(!preview)}
+          className="h-8 gap-1.5 text-xs"
+        >
+          {preview ? (
             <>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={formattingPending || !value.trim()}
-                onClick={handleFormatHeadings}
-                className="h-7 gap-1 border border-primary/20 bg-primary/10 px-2.5 text-xs font-semibold text-primary hover:bg-primary/20"
-                title="Yapay zeka metni analiz edip bağlama uygun '## [Alt Başlık]' markdown başlıkları yerleştirir"
-              >
-                {formattingPending ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Sparkles className="h-3 w-3 text-amber-500" />
-                )}
-                <span>{formattingPending ? "Başlıklandırılıyor..." : "✨ Başlıklandır (AI)"}</span>
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={!value.trim() && !title.trim()}
-                onClick={handleCleanText}
-                className="h-7 gap-1 px-2.5 text-xs font-medium"
-                title="Metin sonundaki haber kaynağı tekrarlarını, şablon başlıkları ve yazım hatalarını temizler"
-              >
-                <Eraser className="h-3 w-3" />
-                <span>Metni Temizle</span>
-              </Button>
-
-              <div className="mx-0.5 hidden h-4 w-[1px] bg-border sm:block" />
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => insertMarkdown("\n\n## ", "\n\n", "Alt Başlık")}
-                className="h-7 px-2 text-xs font-bold"
-                title="H2 Markdown alt başlığı ekler (## Başlık)"
-              >
-                H2
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => insertMarkdown("\n\n### ", "\n\n", "Ara Başlık")}
-                className="h-7 px-2 text-xs font-bold"
-                title="H3 Markdown ara başlığı ekler (### Başlık)"
-              >
-                H3
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => insertMarkdown("**", "**", "kalın metin")}
-                className="h-7 px-2 text-xs font-bold"
-                title="Seçili metni kalın yapar (**metin**)"
-              >
-                B
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  insertMarkdown("\n\n> ", "\n\n", "Önemli açıklama veya sanatçı alıntısı...")
-                }
-                className="h-7 px-2 text-xs"
-                title="Alıntı kutusu ekler (> alıntı)"
-              >
-                &ldquo; &rdquo;
-              </Button>
-
-              <label
-                htmlFor={uploadInputId}
-                className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border border-input bg-background px-2.5 text-xs font-medium hover:bg-accent hover:text-accent-foreground focus-within:ring-2 focus-within:ring-ring"
-              >
-                {uploadingInlineImage ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Upload className="h-3.5 w-3.5" />
-                )}
-                <span className="hidden sm:inline">Metne Görsel Ekle</span>
-                <input
-                  id={uploadInputId}
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                  disabled={uploadingInlineImage}
-                  onChange={handleInlineImageUpload}
-                />
-              </label>
+              <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>Düzenle</span>
+            </>
+          ) : (
+            <>
+              <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>Önizleme</span>
             </>
           )}
-
-          <Button
-            type="button"
-            variant={preview ? "default" : "outline"}
-            size="sm"
-            onClick={() => setPreview(!preview)}
-            className="h-7 gap-1 text-xs"
-          >
-            {preview ? (
-              <>
-                <Pencil className="h-3 w-3" /> Düzenlemeye Dön
-              </>
-            ) : (
-              <>
-                <Eye className="h-3 w-3" /> Önizleme
-              </>
-            )}
-          </Button>
-        </div>
+        </Button>
       </div>
+
+      {!preview && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/60 bg-muted/25 px-2.5 py-1.5">
+          <div className="flex flex-wrap items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => insertMarkdown("\n\n## ", "\n\n", "Alt Başlık")}
+              className="h-7 px-2 text-xs font-bold"
+              title="H2 Markdown alt başlığı ekle (## Başlık)"
+            >
+              H2
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => insertMarkdown("\n\n### ", "\n\n", "Ara Başlık")}
+              className="h-7 px-2 text-xs font-bold"
+              title="H3 Markdown ara başlığı ekle (### Başlık)"
+            >
+              H3
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => insertMarkdown("**", "**", "kalın metin")}
+              className="h-7 px-2 text-xs font-bold"
+              title="Seçili metni kalın yap (**metin**)"
+            >
+              B
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                insertMarkdown("\n\n> ", "\n\n", "Önemli açıklama veya alıntı...")
+              }
+              className="h-7 px-2 text-xs font-medium"
+              title="Alıntı bloğu ekle (> alıntı)"
+            >
+              Alıntı
+            </Button>
+
+            <label
+              htmlFor={uploadInputId}
+              className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent hover:text-accent-foreground focus-within:ring-2 focus-within:ring-ring"
+            >
+              {uploadingInlineImage ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              ) : (
+                <Upload className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
+              <span>Görsel Ekle</span>
+              <input
+                id={uploadInputId}
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                disabled={uploadingInlineImage}
+                onChange={handleInlineImageUpload}
+              />
+            </label>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={formattingPending || !value.trim()}
+              onClick={handleFormatHeadings}
+              className="h-7 gap-1 border border-primary/20 bg-primary/10 px-2.5 text-xs font-semibold text-primary hover:bg-primary/20"
+              title="Yapay zeka metni analiz edip bağlama uygun '## Alt Başlık' başlıkları yerleştirir"
+            >
+              {formattingPending ? (
+                <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+              ) : (
+                <Sparkles className="h-3 w-3" aria-hidden="true" />
+              )}
+              <span>{formattingPending ? "Başlıklandırılıyor..." : "AI Başlıklandır"}</span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!value.trim() && !title.trim()}
+              onClick={handleCleanText}
+              className="h-7 gap-1 px-2.5 text-xs font-medium"
+              title="Kaynak kalıntılarını, şablon başlıkları ve yazım hatalarını temizler"
+            >
+              <Eraser className="h-3 w-3" aria-hidden="true" />
+              <span>Temizle</span>
+            </Button>
+          </div>
+        </div>
+      )}
 
       {preview ? (
         <div className="min-h-[340px] rounded-xl border border-border/60 bg-muted/20 p-5">
@@ -363,24 +365,50 @@ export function EditorialMarkdownEditor({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          rows={14}
+          rows={15}
           required={required}
           aria-invalid={invalid || undefined}
           aria-describedby={helperId}
-          className="w-full min-h-[14lh] max-h-[32lh] resize-y text-sm leading-relaxed"
+          className="w-full min-h-[15lh] max-h-[34lh] resize-y text-sm leading-relaxed"
         />
       )}
 
-      {/* Live SEO & Editorial Quality Bar */}
+      {/* Slim Live SEO & Editorial Status Bar */}
       <div
         id={helperId}
-        className="space-y-2 rounded-xl border border-border/60 bg-muted/25 p-3 text-[11px]"
+        className="space-y-1.5 rounded-xl border border-border/60 bg-muted/20 px-3 py-2.5 text-[11px]"
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="font-semibold text-foreground">
-            Google SEO &amp; Okuyucu Uzunluk Dengesi (Hedef:{" "}
-            {targetMinChars.toLocaleString("tr-TR")}–{targetMaxChars.toLocaleString("tr-TR")} kr)
-          </span>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground">
+            <span className="font-semibold text-foreground">
+              Hedef: {targetMinChars.toLocaleString("tr-TR")}–{targetMaxChars.toLocaleString("tr-TR")} kr
+            </span>
+            <span className="inline-flex items-center gap-1">
+              {metrics.hasLeadParagraph ? (
+                <CheckCircle2 className="h-3 w-3 text-emerald-500" aria-hidden="true" />
+              ) : (
+                <AlertTriangle className="h-3 w-3 text-amber-500" aria-hidden="true" />
+              )}
+              Giriş
+            </span>
+            <span className="inline-flex items-center gap-1">
+              {metrics.headingsCount >= 2 && !metrics.hasTemplateHeading ? (
+                <CheckCircle2 className="h-3 w-3 text-emerald-500" aria-hidden="true" />
+              ) : (
+                <AlertTriangle className="h-3 w-3 text-amber-500" aria-hidden="true" />
+              )}
+              {metrics.headingsCount} alt başlık{metrics.hasTemplateHeading ? " (şablon)" : ""}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              {!metrics.hasSourceLeak ? (
+                <CheckCircle2 className="h-3 w-3 text-emerald-500" aria-hidden="true" />
+              ) : (
+                <AlertTriangle className="h-3 w-3 text-amber-500" aria-hidden="true" />
+              )}
+              {metrics.hasSourceLeak ? "Kaynak kalıntısı var" : "Temiz"}
+            </span>
+          </div>
+
           <span
             className={`font-semibold ${
               metrics.lengthStatus === "ideal"
@@ -391,13 +419,13 @@ export function EditorialMarkdownEditor({
             }`}
           >
             {metrics.lengthStatus === "ideal" && "İdeal Uzunluk"}
-            {metrics.lengthStatus === "short" && "Kısa — Zenginleştirilebilir"}
-            {metrics.lengthStatus === "long" && "Uzun — Özetlenmesi Önerilir"}
-            {metrics.lengthStatus === "empty" && "İçerik Bekleniyor"}
+            {metrics.lengthStatus === "short" && "Kısa"}
+            {metrics.lengthStatus === "long" && "Uzun"}
+            {metrics.lengthStatus === "empty" && "Bekleniyor"}
           </span>
         </div>
 
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
           <div
             style={{ width: `${metrics.progressPercent}%` }}
             className={`h-full transition-all duration-300 ${
@@ -408,38 +436,6 @@ export function EditorialMarkdownEditor({
                 : "bg-amber-500"
             }`}
           />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5 text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
-            {metrics.hasLeadParagraph ? (
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-            ) : (
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-            )}
-            Giriş paragrafıyla başlangıç
-          </span>
-
-          <span className="inline-flex items-center gap-1">
-            {metrics.headingsCount >= 2 && !metrics.hasTemplateHeading ? (
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-            ) : (
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-            )}
-            {metrics.headingsCount} özgün alt başlık (##)
-            {metrics.hasTemplateHeading ? " — Şablon başlık var!" : ""}
-          </span>
-
-          <span className="inline-flex items-center gap-1">
-            {!metrics.hasSourceLeak ? (
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-            ) : (
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-            )}
-            {metrics.hasSourceLeak
-              ? "Metin sonunda kaynak/yayıncı kalıntısı algılandı"
-              : "Kaynak kuyruğu temiz"}
-          </span>
         </div>
       </div>
     </div>

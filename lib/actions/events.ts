@@ -19,6 +19,7 @@ import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
 import { parseArtistInfoCardFormValue } from "@/lib/events/artist-info-card";
 import { buildEventRawPayload } from "@/lib/events/event-payload";
 import { getAdminEventBySlug } from "@/lib/data/admin-events";
+import { allocateUniqueEventSlug } from "@/lib/slug/unique-slug";
 import { slugify } from "@/lib/slugify";
 import type { EventType } from "@/lib/events/types";
 
@@ -48,27 +49,6 @@ function revalidateEventPaths(slug?: string) {
     }
   } catch (err) {
     console.warn("revalidateEventPaths skipped:", err);
-  }
-}
-
-async function ensureUniqueEventSlug(
-  rawTitleOrSlug: string,
-  ignoreId?: string
-): Promise<string> {
-  const baseSlug = (slugify(rawTitleOrSlug) || "etkinlik").slice(0, 100);
-  let slug = baseSlug;
-  let counter = 1;
-  while (true) {
-    let query = supabaseAdmin
-      .from("cultural_events")
-      .select("id")
-      .eq("slug", slug);
-    if (ignoreId) {
-      query = query.neq("id", ignoreId);
-    }
-    const { data: exists } = await query.maybeSingle();
-    if (!exists) return slug;
-    slug = `${baseSlug.slice(0, 90)}-${counter++}`;
   }
 }
 
@@ -163,7 +143,10 @@ export async function createEvent(formData: FormData): Promise<EventActionResult
     formData.get("is_published") === "on" ||
     formData.get("is_published") === "true";
 
-  const uniqueSlug = await ensureUniqueEventSlug(columns.slug || columns.title);
+  const uniqueSlug = await allocateUniqueEventSlug(
+    columns.slug || columns.title,
+    { citySlug: columns.city_slug }
+  );
   const uniqueSourceUrl = await ensureUniqueSourceUrl(
     columns.source_url,
     uniqueSlug
@@ -220,10 +203,12 @@ export async function updateEvent(
     formData.get("is_published") === "on" ||
     formData.get("is_published") === "true";
 
-  const uniqueSlug = await ensureUniqueEventSlug(
-    columns.slug || slug,
-    existing?.id
-  );
+  const uniqueSlug = await allocateUniqueEventSlug(columns.slug || slug, {
+    citySlug: columns.city_slug,
+    ignoreId: existing?.id,
+    existingSlug: existing?.slug || slug,
+    preserveExisting: true,
+  });
   const uniqueSourceUrl = await ensureUniqueSourceUrl(
     columns.source_url,
     uniqueSlug,
@@ -416,8 +401,8 @@ export async function importEventFromUrlAction(rawUrl: string) {
 
     const imported = await importEventFromUrl(url);
     const title = (imported.title || "Kültür Sanat Etkinliği").trim();
-    const slug = await ensureUniqueEventSlug(title);
     const citySlug = normalizeCitySlug(imported.city_slug);
+    const slug = await allocateUniqueEventSlug(title, { citySlug });
 
     const safeEventType = sanitizeEventType(imported.event_type, title);
 

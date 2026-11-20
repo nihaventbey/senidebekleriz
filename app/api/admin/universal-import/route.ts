@@ -13,13 +13,16 @@ import {
 import { fetchUrlContent } from "@/lib/ai/fetch-url-content";
 import { isNonEventTitle } from "@/lib/events/artist-matcher";
 import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
-import { uniqueEventSlug } from "@/lib/events/slug";
 import { slugify } from "@/lib/slugify";
 import { getCityName, normalizeCitySlug } from "@/lib/cities/lookup";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
 import { formatSeoSummary } from "@/lib/utils";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { cleanPublisherText, cleanNewsSlug } from "@/lib/ai/clean-publisher";
+import { cleanPublisherText } from "@/lib/ai/clean-publisher";
+import {
+  allocateUniqueEventSlug,
+  allocateUniqueNewsSlug,
+} from "@/lib/slug/unique-slug";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -89,20 +92,11 @@ export async function POST(request: NextRequest) {
         fallbackText: snippet,
       });
 
-      const baseSlug = slugify(imported.title || title || "etkinlik") || "etkinlik";
-      let slug = baseSlug.slice(0, 100);
-      let counter = 1;
-      while (true) {
-        const { data: slugExists } = await supabaseAdmin
-          .from("cultural_events")
-          .select("id")
-          .eq("slug", slug)
-          .maybeSingle();
-        if (!slugExists) break;
-        slug = `${baseSlug.slice(0, 90)}-${counter++}`;
-      }
-
       const resolvedCity = normalizeCitySlug(imported.city_slug || detectedCitySlug);
+      const slug = await allocateUniqueEventSlug(
+        imported.title || title || "etkinlik",
+        { citySlug: resolvedCity }
+      );
       const safeTitle = cleanPublisherText(imported.title || title).replace(/!+$/g, "").trim();
       const safeEventType = sanitizeEventType(
         imported.event_type,
@@ -271,18 +265,7 @@ export async function POST(request: NextRequest) {
     });
 
     const cleanTitle = cleanPublisherText(draft.title || title || "Kültür Haberi");
-    const baseSlug = cleanNewsSlug(cleanTitle);
-    let slug = baseSlug.slice(0, 100);
-    let counter = 1;
-    while (true) {
-      const { data: slugExists } = await supabaseAdmin
-        .from("cultural_news")
-        .select("id")
-        .eq("slug", slug)
-        .maybeSingle();
-      if (!slugExists) break;
-      slug = `${baseSlug.slice(0, 90)}-${counter++}`;
-    }
+    const slug = await allocateUniqueNewsSlug(cleanTitle);
 
     const storedCoverImage = await ensureStoredCoverImage(draft.cover_image, "news", slug);
 

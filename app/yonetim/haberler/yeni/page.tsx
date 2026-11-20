@@ -18,19 +18,10 @@ export default async function NewNewsPage({ searchParams }: Props) {
   const cities = await getAllCities();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Yeni Kültür Haberi Ekle</h1>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-          Arkeoloji, müze, restorasyon veya kültür-sanat haberi oluşturun veya URL yapıştırarak AI ile üretin.
-        </p>
-      </div>
-
-      <NewsForm
-        action={createNews}
-        cities={cities.map((c) => ({ slug: c.slug, name: c.name }))}
-        initialSourceUrl={sourceUrl}
-      />
-    </div>
+    <NewsForm
+      action={createNews}
+      cities={cities.map((c) => ({ slug: c.slug, name: c.name }))}
+      initialSourceUrl={sourceUrl}
+    />
   );
 }

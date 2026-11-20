@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition, useEffect, useRef } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Sparkles, Check, RotateCw } from "lucide-react";
+import { SwitchControl } from "@/components/ui/switch-control";
+import { DisclosureSection } from "@/components/admin/editorial/disclosure-section";
+import { EditorialShell } from "@/components/admin/editorial/editorial-shell";
+import { Link2, Loader2, RotateCw, Sparkles } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { slugify } from "@/lib/slugify";
 import { cleanPublisherText } from "@/lib/ai/clean-publisher";
@@ -27,13 +29,13 @@ import type { NewsActionResult } from "@/lib/actions/news";
 type CityOption = { slug: string; name: string };
 
 const CATEGORY_OPTIONS = [
-  { value: "arkeoloji", label: "🏛️ Arkeoloji & Kazı" },
-  { value: "restorasyon", label: "🏰 Tarihi Miras & Restorasyon" },
-  { value: "muze_sergi", label: "🖼️ Müze & Sergi" },
-  { value: "sinema", label: "🎬 Sinema & Görsel Sanatlar" },
-  { value: "kultur_sanat", label: "🎨 Kültür & Sanat" },
-  { value: "festival_haberleri", label: "🎪 Festival Gündemi" },
-  { value: "genel", label: "📰 Genel Kültür" },
+  { value: "arkeoloji", label: "Arkeoloji & Kazı" },
+  { value: "restorasyon", label: "Tarihi Miras & Restorasyon" },
+  { value: "muze_sergi", label: "Müze & Sergi" },
+  { value: "sinema", label: "Sinema & Görsel Sanatlar" },
+  { value: "kultur_sanat", label: "Kültür & Sanat" },
+  { value: "festival_haberleri", label: "Festival Gündemi" },
+  { value: "genel", label: "Genel Kültür" },
 ];
 
 type NewsFormProps = {
@@ -143,7 +145,7 @@ export function NewsForm({
           ? ` (${charCount.toLocaleString("tr-TR")} kr · ${data.word_count} kelime)`
           : "";
         setStatusMessage(`Haber taslağı hazırlandı.${countMsg}`);
-        toast.success(`Haber taslağı ve kapak görseli hazırlandı! ✨${countMsg}`);
+        toast.success(`Haber taslağı ve kapak görseli hazırlandı!${countMsg}`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Taslak üretilemedi";
         setStatusMessage(msg);
@@ -165,8 +167,12 @@ export function NewsForm({
     const cleanContent = content.trim();
 
     if (formRef.current && !formRef.current.checkValidity()) {
-      formRef.current.reportValidity();
       const firstInvalid = formRef.current.querySelector<HTMLElement>(":invalid");
+      const enclosingDetails = firstInvalid?.closest("details");
+      if (enclosingDetails && !enclosingDetails.open) {
+        enclosingDetails.open = true;
+      }
+      formRef.current.reportValidity();
       firstInvalid?.focus();
       return;
     }
@@ -208,8 +214,8 @@ export function NewsForm({
         }
 
         const msg = publishState
-          ? "Haber yayına alındı! 🚀"
-          : "Haber taslak olarak kaydedildi! 📝";
+          ? "Haber yayına alındı"
+          : "Haber taslak olarak kaydedildi";
         setStatusMessage(msg);
         toast.success(msg);
         router.push("/yonetim/haberler");
@@ -265,379 +271,348 @@ export function NewsForm({
       ? "text-muted-foreground"
       : "text-amber-600 dark:text-amber-400";
 
+  const slugPreview = slug ? `/${slug.slice(0, 20)}${slug.length > 20 ? "…" : ""}` : "Otomatik";
+
   return (
-    <form
-      ref={formRef}
-      onSubmit={handleSubmit}
-      noValidate
-      className="max-w-5xl space-y-6"
-    >
-      <EditorialActionBar
-        backHref="/yonetim/haberler"
-        backLabel="Haberlere Dön"
-        publicHref={currentSlug ? `/haber/${currentSlug}` : undefined}
-        isPublished={isPublished}
-        isEdit={Boolean(currentSlug)}
-        isFeatured={isFeatured}
-        savePending={savePending}
-        deletePending={deletePending}
-        hasDelete={Boolean(deleteAction)}
-        statusAnnouncement={statusMessage}
-        onSaveDraft={() => saveWithStatus(false)}
-        onSavePublish={() => saveWithStatus(true)}
-        onDelete={handleDelete}
-      />
+    <form ref={formRef} onSubmit={handleSubmit} noValidate>
+      <EditorialShell
+        header={
+          <EditorialActionBar
+            heading={currentSlug ? "Haberi Düzenle" : "Yeni Kültür Haberi"}
+            backHref="/yonetim/haberler"
+            backLabel="Haberler"
+            publicHref={currentSlug ? `/haber/${currentSlug}` : undefined}
+            isPublished={isPublished}
+            isEdit={Boolean(currentSlug)}
+            isFeatured={isFeatured}
+            savePending={savePending}
+            deletePending={deletePending}
+            hasDelete={Boolean(deleteAction)}
+            statusAnnouncement={statusMessage}
+            onSaveDraft={() => saveWithStatus(false)}
+            onSavePublish={() => saveWithStatus(true)}
+            onDelete={handleDelete}
+          />
+        }
+        main={
+          <>
+            <DisclosureSection
+              title="AI ile Haber Üret"
+              description="URL veya konu girerek metin, 5N1K özeti ve WebP kapak görseli oluşturun."
+              icon={<Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />}
+              badge={aiPending ? "Üretiliyor..." : "URL / Konu"}
+              badgeTone={aiPending ? "primary" : "neutral"}
+              tone="accent"
+              defaultOpen={!currentSlug}
+            >
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="ai-source-url" className="text-xs font-medium">
+                    Kaynak Haber Bağlantısı (URL)
+                  </Label>
+                  <Input
+                    id="ai-source-url"
+                    type="url"
+                    value={aiSourceUrl}
+                    onChange={(e) => setAiSourceUrl(e.target.value)}
+                    placeholder="https://www.cumhuriyet.com.tr/... veya resmi bülten bağlantısı"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    className="h-9 bg-background text-xs"
+                  />
+                </div>
 
-      {/* Yapay Zeka ile Haber Üretim Kutusu */}
-      <section
-        aria-label="Yapay zeka haber üretim aracı"
-        className="space-y-4 rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-xs"
-      >
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-bold text-foreground">
-            Kaynak Bağlantıdan veya Konudan AI ile Haber Üret
-          </h2>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Haber sitesi, Kültür Bakanlığı, müze veya ajans bağlantısını yapıştırın. Yapay zeka sayfadaki içeriği okuyup kaynak kalıntısız haber metnini (2.600–4.200 kr), 5N1K özetini ve WebP kapak görselini otomatik hazırlar.
-        </p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ai-topic" className="text-xs font-medium">
+                      Haber Konusu (İsteğe Bağlı)
+                    </Label>
+                    <Input
+                      id="ai-topic"
+                      value={aiTopic}
+                      onChange={(e) => setAiTopic(e.target.value)}
+                      placeholder="Örn: Troya kazılarında yeni keşif"
+                      className="h-9 bg-background text-xs"
+                    />
+                  </div>
 
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="ai-source-url" className="text-xs font-medium">
-              Kaynak Haber Bağlantısı (URL)
-            </Label>
-            <Input
-              id="ai-source-url"
-              type="url"
-              value={aiSourceUrl}
-              onChange={(e) => setAiSourceUrl(e.target.value)}
-              placeholder="https://www.cumhuriyet.com.tr/... veya resmi bülten bağlantısı"
-              autoCorrect="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              className="h-9 bg-background text-xs"
-            />
-          </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ai-depth" className="text-xs font-medium">
+                      Uzunluk Hedefi
+                    </Label>
+                    <Select
+                      value={aiDepth}
+                      onValueChange={(val) => {
+                        if (val === "standard" || val === "deep" || val === "comprehensive") {
+                          setAiDepth(val);
+                        }
+                      }}
+                    >
+                      <SelectTrigger id="ai-depth" className="h-9 bg-background text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="standard" className="text-xs">
+                          Odaklı Haber (2.600–4.200 kr)
+                        </SelectItem>
+                        <SelectItem value="deep" className="text-xs">
+                          Geniş Haber (4.000–5.500 kr)
+                        </SelectItem>
+                        <SelectItem value="comprehensive" className="text-xs">
+                          Kapsamlı Dosya (5.500–7.500 kr)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="ai-topic" className="text-xs font-medium">
-                Haber Konusu (İsteğe Bağlı)
-              </Label>
-              <Input
-                id="ai-topic"
-                value={aiTopic}
-                onChange={(e) => setAiTopic(e.target.value)}
-                placeholder="Örn: Troya kazılarında yeni keşif"
-                className="h-9 bg-background text-xs"
+                  <div className="flex items-end">
+                    <Button
+                      type="button"
+                      onClick={() => generateWithAi()}
+                      disabled={aiPending || (!aiSourceUrl.trim() && !aiTopic.trim())}
+                      className="h-9 w-full gap-1.5 text-xs font-semibold"
+                    >
+                      {aiPending ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                          <span>Üretiliyor...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                          <span>Haberi Otomatik Yaz</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </DisclosureSection>
+
+            <section className="space-y-5 rounded-2xl border border-border/70 bg-card p-5 shadow-xs sm:p-6">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="title" className="text-xs font-semibold">
+                    Haber Başlığı <span aria-hidden="true">*</span>
+                  </Label>
+                  <span className={`text-[11px] font-medium ${titleCharTone}`}>
+                    {title.trim().length} / 55–90 kr
+                  </span>
+                </div>
+                <Input
+                  id="title"
+                  name="title"
+                  value={title}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  placeholder="Haber başlığını girin..."
+                  className="h-10 text-sm font-semibold"
+                  required
+                  aria-invalid={attemptedSubmit && !title.trim() ? true : undefined}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="summary" className="text-xs font-semibold">
+                    Haber Özeti (5N1K Spot Cümlesi)
+                  </Label>
+                  <span className={`text-[11px] font-medium ${summaryCharTone}`}>
+                    {summary.trim().length} / 220–340 kr
+                  </span>
+                </div>
+                <Textarea
+                  id="summary"
+                  name="summary"
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  placeholder="Haberin ana fikrini 5N1K çerçevesinde özetleyen 2-3 cümlelik spot metin..."
+                  rows={2}
+                  maxLength={400}
+                  className="w-full min-h-[3.5lh] max-h-[8lh] text-xs leading-relaxed"
+                />
+              </div>
+
+              <input type="hidden" name="content" value={content} />
+              <div className="border-t border-border/60 pt-4">
+                <EditorialMarkdownEditor
+                  id="content-editor"
+                  label="Haber Metni"
+                  value={content}
+                  onChange={setContent}
+                  title={title}
+                  sourceName={sourceName}
+                  onCleanTitle={setTitle}
+                  uploadFolder="news"
+                  slugHint={slug || title || "haber"}
+                  targetMinChars={2600}
+                  targetMaxChars={4200}
+                  required
+                  invalid={attemptedSubmit && !content.trim()}
+                  placeholder="Giriş paragrafı ile başlayın. Ardından 2-3 adet konuya özgü ## Alt Başlık ekleyin..."
+                />
+              </div>
+            </section>
+          </>
+        }
+        aside={
+          <>
+            <section className="space-y-4 rounded-2xl border border-border/70 bg-card p-4 shadow-xs sm:p-5">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Yayın &amp; Sınıflandırma
+              </h2>
+
+              <div className="space-y-2">
+                <Label htmlFor="category" className="text-xs font-semibold">
+                  Kategori <span aria-hidden="true">*</span>
+                </Label>
+                <input type="hidden" name="category" value={category} />
+                <Select value={category} onValueChange={(v) => v && setCategory(v)}>
+                  <SelectTrigger id="category" className="h-9 text-xs">
+                    <SelectValue placeholder="Kategori seçin">
+                      {CATEGORY_OPTIONS.find((c) => c.value === category)?.label || "Kategori"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORY_OPTIONS.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="city_slug" className="text-xs font-semibold">
+                  İlgili Şehir
+                </Label>
+                <input type="hidden" name="city_slug" value={citySlug} />
+                <Select value={citySlug} onValueChange={(v) => v && setCitySlug(v)}>
+                  <SelectTrigger id="city_slug" className="h-9 text-xs">
+                    <SelectValue placeholder="Şehir seçin">
+                      {citySlug === "none"
+                        ? "Türkiye Geneli"
+                        : cities.find((c) => c.slug === citySlug)?.name || "Şehir seçin"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    <SelectItem value="none">Türkiye Geneli</SelectItem>
+                    {cities.map((city) => (
+                      <SelectItem key={city.slug} value={city.slug}>
+                        {city.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <SwitchControl
+                id="news-is-featured"
+                label="Vitrin Slider'ında Göster"
+                description="Kapalıysa küçük görselli manşet listesinde yer alır."
+                checked={isFeatured}
+                onCheckedChange={setIsFeatured}
               />
-            </div>
+            </section>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="ai-depth" className="text-xs font-medium">
-                Haber Uzunluğu (SEO Hedefi)
-              </Label>
-              <Select
-                value={aiDepth}
-                onValueChange={(val) => {
-                  if (val === "standard" || val === "deep" || val === "comprehensive") {
-                    setAiDepth(val);
-                  }
-                }}
-              >
-                <SelectTrigger id="ai-depth" className="h-9 bg-background text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="standard" className="text-xs">
-                    ⚡ Odaklı Haber (2.600–4.200 kr)
-                  </SelectItem>
-                  <SelectItem value="deep" className="text-xs">
-                    📰 Geniş Haber (4.000–5.500 kr)
-                  </SelectItem>
-                  <SelectItem value="comprehensive" className="text-xs">
-                    📚 Kapsamlı Dosya (5.500–7.500 kr)
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-xs sm:p-5">
+              <CoverImageInput
+                compact
+                value={coverImage}
+                onChange={setCoverImage}
+                folder="news"
+                slugHint={slug || title || "haber"}
+                label="Kapak Görseli"
+                name="cover_image"
+                onOpenAiModal={() => setIsAiImageModalOpen(true)}
+              />
 
-            <div className="flex items-end">
-              <Button
-                type="button"
-                onClick={() => generateWithAi()}
-                disabled={aiPending || (!aiSourceUrl.trim() && !aiTopic.trim())}
-                className="h-9 w-full gap-1.5 text-xs font-semibold"
-              >
-                {aiPending ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Haber Yazılıyor...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-3.5 w-3.5 text-amber-300" /> Haberi Otomatik Yaz
-                  </>
+              <AiImageModal
+                isOpen={isAiImageModalOpen}
+                onClose={() => setIsAiImageModalOpen(false)}
+                onSelectImage={(url) => setCoverImage(url)}
+                initialTitle={title}
+                initialCity={cities.find((c) => c.slug === citySlug)?.name}
+                initialCategory={category}
+              />
+            </section>
+
+            <DisclosureSection
+              title="URL & Kaynak Bilgileri"
+              icon={<Link2 className="h-4 w-4 text-primary" aria-hidden="true" />}
+              badge={slugPreview}
+              defaultOpen={false}
+            >
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="slug" className="text-xs font-semibold">
+                    Kalıcı Bağlantı (Slug)
+                  </Label>
+                  <button
+                    type="button"
+                    onClick={() => setSlug(slugify(cleanPublisherText(title) || title))}
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+                    title="Başlıktan temiz URL kısa adı üret"
+                  >
+                    <RotateCw className="h-3 w-3" aria-hidden="true" />
+                    Yenile
+                  </button>
+                </div>
+                <Input
+                  id="slug"
+                  name="slug"
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  placeholder="haber-basligi"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  className="h-9 font-mono text-xs"
+                  aria-describedby={!currentSlug ? "news-slug-hint" : undefined}
+                />
+                {!currentSlug && (
+                  <p id="news-slug-hint" className="text-[11px] text-muted-foreground">
+                    Yeni haber kaydedilirken URL çakışmasını önlemek için sonuna otomatik 6 haneli benzersiz kod eklenir.
+                  </p>
                 )}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
+              </div>
 
-      {/* Temel Haber Bilgileri */}
-      <div className="space-y-5 rounded-2xl border border-border/60 bg-card p-6 shadow-xs">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="space-y-2 sm:col-span-2">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="title" className="text-xs font-semibold">
-                Haber Başlığı <span aria-hidden="true">*</span>
-              </Label>
-              <span className={`text-[11px] font-medium ${titleCharTone}`}>
-                {title.trim().length} / 55–90 kr
-              </span>
-            </div>
-            <Input
-              id="title"
-              name="title"
-              value={title}
-              onChange={(e) => handleTitleChange(e.target.value)}
-              placeholder="Haber başlığını girin..."
-              className="h-10 text-sm font-semibold"
-              required
-              aria-invalid={attemptedSubmit && !title.trim() ? true : undefined}
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="source_name" className="text-xs font-semibold">
+                  Kaynak Kurum / Yayın
+                </Label>
+                <Input
+                  id="source_name"
+                  name="source_name"
+                  value={sourceName}
+                  onChange={(e) => setSourceName(e.target.value)}
+                  placeholder="Örn: Cumhuriyet, AA, Kültür Bakanlığı"
+                  className="h-9 text-xs"
+                />
+              </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="slug" className="text-xs font-semibold">
-                Kalıcı Bağlantı (Slug) <span aria-hidden="true">*</span>
-              </Label>
-              <button
-                type="button"
-                onClick={() => setSlug(slugify(cleanPublisherText(title) || title))}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
-                title="Başlıktan temiz URL kısa adı üret"
-              >
-                <RotateCw className="h-3 w-3" /> Yenile
-              </button>
-            </div>
-            <Input
-              id="slug"
-              name="slug"
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              placeholder="haber-basligi"
-              autoCorrect="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              className="h-10 font-mono text-xs"
-              required
-              aria-invalid={attemptedSubmit && !slug.trim() ? true : undefined}
-            />
-          </div>
-        </div>
-
-        {/* Haber Özeti (Spot) */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <Label htmlFor="summary" className="text-xs font-semibold">
-              Haber Özeti (5N1K Spot Cümlesi)
-            </Label>
-            <span className={`text-[11px] font-medium ${summaryCharTone}`}>
-              {summary.trim().length} / 220–340 karakter
-            </span>
-          </div>
-          <Textarea
-            id="summary"
-            name="summary"
-            value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            placeholder="Haberin ana fikrini 5N1K çerçevesinde özetleyen 2-3 cümlelik spot metin..."
-            rows={2}
-            maxLength={400}
-            className="w-full min-h-[3.5lh] max-h-[8lh] text-xs leading-relaxed"
-          />
-        </div>
-
-        {/* Kategori, Şehir ve Kaynak Bilgileri */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-2">
-            <Label htmlFor="category" className="text-xs font-semibold">
-              Kategori <span aria-hidden="true">*</span>
-            </Label>
-            <input type="hidden" name="category" value={category} />
-            <Select value={category} onValueChange={(v) => v && setCategory(v)}>
-              <SelectTrigger id="category" className="h-9 text-xs">
-                <SelectValue placeholder="Kategori seçin">
-                  {CATEGORY_OPTIONS.find((c) => c.value === category)?.label || "Kategori"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORY_OPTIONS.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="city_slug" className="text-xs font-semibold">
-              İlgili Şehir
-            </Label>
-            <input type="hidden" name="city_slug" value={citySlug} />
-            <Select value={citySlug} onValueChange={(v) => v && setCitySlug(v)}>
-              <SelectTrigger id="city_slug" className="h-9 text-xs">
-                <SelectValue placeholder="Şehir seçin">
-                  {citySlug === "none"
-                    ? "Türkiye Geneli"
-                    : cities.find((c) => c.slug === citySlug)?.name || "Şehir seçin"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="max-h-64">
-                <SelectItem value="none">Türkiye Geneli</SelectItem>
-                {cities.map((city) => (
-                  <SelectItem key={city.slug} value={city.slug}>
-                    {city.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="source_name" className="text-xs font-semibold">
-              Kaynak Kurum / Yayın
-            </Label>
-            <Input
-              id="source_name"
-              name="source_name"
-              value={sourceName}
-              onChange={(e) => setSourceName(e.target.value)}
-              placeholder="Örn: Cumhuriyet, AA, Kültür Bakanlığı"
-              className="h-9 text-xs"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="source_url" className="text-xs font-semibold">
-              Kaynak Bağlantısı
-            </Label>
-            <Input
-              id="source_url"
-              name="source_url"
-              type="url"
-              value={sourceUrl}
-              onChange={(e) => setSourceUrl(e.target.value)}
-              placeholder="https://..."
-              autoCorrect="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              className="h-9 text-xs"
-            />
-          </div>
-        </div>
-
-        {/* Kapak Görseli */}
-        <div className="border-t border-border/50 pt-4">
-          <CoverImageInput
-            value={coverImage}
-            onChange={setCoverImage}
-            folder="news"
-            slugHint={slug || title || "haber"}
-            label="Kapak Görseli"
-            name="cover_image"
-            onOpenAiModal={() => setIsAiImageModalOpen(true)}
-          />
-
-          <AiImageModal
-            isOpen={isAiImageModalOpen}
-            onClose={() => setIsAiImageModalOpen(false)}
-            onSelectImage={(url) => setCoverImage(url)}
-            initialTitle={title}
-            initialCity={cities.find((c) => c.slug === citySlug)?.name}
-            initialCategory={category}
-          />
-        </div>
-
-        {/* Haber Metni Düzenleyici */}
-        <input type="hidden" name="content" value={content} />
-        <EditorialMarkdownEditor
-          id="content-editor"
-          label="Haber Metni"
-          value={content}
-          onChange={setContent}
-          title={title}
-          sourceName={sourceName}
-          onCleanTitle={setTitle}
-          uploadFolder="news"
-          slugHint={slug || title || "haber"}
-          targetMinChars={2600}
-          targetMaxChars={4200}
-          required
-          invalid={attemptedSubmit && !content.trim()}
-          placeholder="Giriş paragrafı ile başlayın. Ardından 2-3 adet konuya özgü ## Alt Başlık ekleyin..."
-        />
-
-        {/* Yayın Durumu ve Alt Kaydet Çubuğu */}
-        <div className="flex flex-col gap-4 border-t border-border/60 pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2.5">
-            <input
-              id="news-is-featured"
-              type="checkbox"
-              checked={isFeatured}
-              onChange={(e) => setIsFeatured(e.target.checked)}
-              className="h-4 w-4 rounded border-input accent-primary"
-            />
-            <label
-              htmlFor="news-is-featured"
-              className="cursor-pointer text-xs font-semibold text-foreground"
-            >
-              🔥 Vitrin Slider&apos;ında Göster (İşaretlenmezse küçük görselli Manşetlerde yer alır)
-            </label>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <Button type="button" variant="outline" size="sm" asChild className="text-xs">
-              <Link href="/yonetim/haberler">Vazgeç</Link>
-            </Button>
-            <Button
-              type="submit"
-              name="saveIntent"
-              value="draft"
-              variant="secondary"
-              size="sm"
-              disabled={savePending}
-              className="gap-1.5 text-xs font-semibold"
-            >
-              📝 Taslak Olarak Kaydet
-            </Button>
-            <Button
-              type="submit"
-              name="saveIntent"
-              value="publish"
-              size="sm"
-              disabled={savePending}
-              className="gap-1.5 bg-emerald-600 px-5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
-            >
-              {savePending ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Kaydediliyor...
-                </>
-              ) : (
-                <>
-                  <Check className="h-3.5 w-3.5" />
-                  {isPublished && currentSlug ? "Güncelle (Yayında)" : "🚀 Kaydet ve Yayına Al"}
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </div>
+              <div className="space-y-2">
+                <Label htmlFor="source_url" className="text-xs font-semibold">
+                  Kaynak Bağlantısı (URL)
+                </Label>
+                <Input
+                  id="source_url"
+                  name="source_url"
+                  type="url"
+                  value={sourceUrl}
+                  onChange={(e) => setSourceUrl(e.target.value)}
+                  placeholder="https://..."
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  className="h-9 text-xs"
+                />
+              </div>
+            </DisclosureSection>
+          </>
+        }
+      />
     </form>
   );
 }

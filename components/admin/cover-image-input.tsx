@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useId, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
+  ChevronRight,
   CloudUpload,
   CheckCircle2,
+  Image as ImageIcon,
   Loader2,
   Upload,
   Sparkles,
@@ -32,6 +34,7 @@ type CoverImageInputProps = {
   label?: string;
   name?: string;
   onOpenAiModal?: () => void;
+  compact?: boolean;
 };
 
 function checkIsStoredWebp(url: string): boolean {
@@ -58,7 +61,9 @@ export function CoverImageInput({
   label = "Kapak Görseli URL",
   name = "cover_image",
   onOpenAiModal,
+  compact = false,
 }: CoverImageInputProps) {
+  const fileInputId = useId();
   const [transferring, setTransferring] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [previewVersion, setPreviewVersion] = useState<number>(0);
@@ -205,6 +210,168 @@ export function CoverImageInput({
       ? `${trimmed}${trimmed.includes("?") ? "&" : "?"}v=${previewVersion}`
       : trimmed;
 
+  const focalStudio = trimmed ? (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-[11px] font-medium text-muted-foreground">
+          Kafa veya konuyu ortalamak için sürükleyin:
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setPreviewRatio("16/9")}
+            className={`rounded-md px-2 py-0.5 text-[10px] font-semibold transition-colors ${
+              previewRatio === "16/9"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Kart (16:9)
+          </button>
+          <button
+            type="button"
+            onClick={() => setPreviewRatio("21/9")}
+            className={`rounded-md px-2 py-0.5 text-[10px] font-semibold transition-colors ${
+              previewRatio === "21/9"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Hero (21:9)
+          </button>
+        </div>
+      </div>
+
+      <div className={compact ? "space-y-3" : "grid gap-4 md:grid-cols-12 items-center"}>
+        <div className={compact ? "" : "md:col-span-7"}>
+          <div
+            ref={previewContainerRef}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            style={{
+              aspectRatio: previewRatio === "21/9" ? "21 / 9" : "16 / 9",
+            }}
+            className={`group relative w-full overflow-hidden rounded-xl border border-border bg-black/40 select-none touch-none ${
+              isDragging ? "cursor-grabbing ring-2 ring-primary" : "cursor-grab"
+            }`}
+            title="Fotoğrafı basılı tutup sürükleyerek yukarı/aşağı veya sağa/sola kaydırabilirsiniz"
+          >
+            <img
+              src={previewSrc}
+              alt="Kapak görseli kadraj önizleme"
+              draggable={false}
+              style={{ objectPosition: parsed.objectPosition }}
+              className="h-full w-full object-cover pointer-events-none select-none"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+
+            <div className="pointer-events-none absolute inset-0 grid grid-cols-3 grid-rows-3 opacity-0 group-hover:opacity-60 transition-opacity">
+              <div className="border-r border-b border-white/25" />
+              <div className="border-r border-b border-white/25" />
+              <div className="border-b border-white/25" />
+              <div className="border-r border-b border-white/25" />
+              <div className="border-r border-b border-white/25" />
+              <div className="border-b border-white/25" />
+              <div className="border-r border-white/25" />
+              <div className="border-r border-white/25" />
+              <div />
+            </div>
+
+            <div
+              style={{ left: `${parsed.x}%`, top: `${parsed.y}%` }}
+              className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-primary/80 text-white shadow-md ring-2 ring-white/90 transition-transform"
+            >
+              <Crosshair className="h-3.5 w-3.5" />
+            </div>
+
+            <div className="pointer-events-none absolute bottom-2 left-2 rounded-md bg-black/70 backdrop-blur-xs px-2 py-0.5 text-[10px] font-medium text-white/90">
+              Sürükleyerek hizalayın
+            </div>
+          </div>
+        </div>
+
+        <div className={compact ? "space-y-3" : "md:col-span-5 space-y-3"}>
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="font-semibold text-foreground">
+                Dikey (Y):
+              </span>
+              <span className="font-mono text-muted-foreground">{parsed.y}%</span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={parsed.y}
+              onChange={(e) => updateFocalPoint(parsed.x, Number(e.target.value))}
+              className="w-full accent-primary h-1.5 cursor-pointer"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="font-semibold text-foreground">
+                Yatay (X):
+              </span>
+              <span className="font-mono text-muted-foreground">{parsed.x}%</span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={parsed.x}
+              onChange={(e) => updateFocalPoint(Number(e.target.value), parsed.y)}
+              className="w-full accent-primary h-1.5 cursor-pointer"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
+            {FOCAL_PRESETS.map((preset) => {
+              const active = parsed.x === preset.x && parsed.y === preset.y;
+              return (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => updateFocalPoint(preset.x, preset.y)}
+                  className={`rounded-lg border px-2 py-1 text-[10px] font-semibold transition-all ${
+                    active
+                      ? "border-primary bg-primary/15 text-primary shadow-2xs"
+                      : "border-border/70 bg-background text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
+            {parsed.hasCustomPosition && (
+              <button
+                type="button"
+                onClick={() => {
+                  onChange(
+                    formatCoverImageUrl(
+                      trimmed,
+                      DEFAULT_FOCAL_X,
+                      DEFAULT_FOCAL_Y,
+                      false
+                    )
+                  );
+                }}
+                className="inline-flex items-center gap-1 rounded-lg border border-border/70 bg-background px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-foreground"
+                title="Varsayılan portre kadrajına sıfırla"
+              >
+                <RotateCcw className="h-2.5 w-2.5" />
+                Sıfırla
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -215,11 +382,13 @@ export function CoverImageInput({
           {isStoredWebp && (
             <Badge
               variant="secondary"
-              className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-0 text-[10px] font-semibold gap-1 px-2 py-0.5 max-w-[260px] truncate"
+              className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-0 text-[10px] font-semibold gap-1 px-2 py-0.5 max-w-[200px] truncate"
               title={storedFileName || undefined}
             >
               <CheckCircle2 className="h-3 w-3 shrink-0" />
-              <span className="truncate">WebP ({storedFileName})</span>
+              <span className="truncate">
+                {compact ? "WebP" : `WebP (${storedFileName})`}
+              </span>
             </Badge>
           )}
         </div>
@@ -233,24 +402,28 @@ export function CoverImageInput({
               if (onOpenAiModal) onOpenAiModal();
               else setIsInternalAiModalOpen(true);
             }}
-            className="h-7 text-xs font-semibold gap-1 text-primary border-primary/30 hover:bg-primary/10"
-            title="Yapay zeka ile bu konuya uygun görsel üret (Flux)"
+            className="h-8 text-xs font-semibold gap-1 text-primary border-primary/30 hover:bg-primary/10"
+            title="Yapay zeka ile bu konuya uygun görsel üret"
           >
-            <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
             AI Görsel
           </Button>
 
-          <label className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border border-input bg-background px-2.5 text-xs font-medium hover:bg-accent hover:text-accent-foreground">
+          <label
+            htmlFor={fileInputId}
+            className="inline-flex h-8 cursor-pointer items-center gap-1 rounded-md border border-input bg-background px-2.5 text-xs font-medium hover:bg-accent hover:text-accent-foreground focus-within:ring-2 focus-within:ring-ring"
+          >
             {uploadingFile ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
             ) : (
-              <Upload className="h-3.5 w-3.5" />
+              <Upload className="h-3.5 w-3.5" aria-hidden="true" />
             )}
             <span>Dosya Seç</span>
             <input
+              id={fileInputId}
               type="file"
               accept="image/*"
-              className="hidden"
+              className="sr-only"
               disabled={uploadingFile}
               onChange={handleFileUpload}
             />
@@ -261,13 +434,38 @@ export function CoverImageInput({
       {/* Hidden input carries full value including #pos=X,Y for native FormData */}
       <input type="hidden" name={name} value={value} />
 
+      {compact && (
+        trimmed ? (
+          <div className="aspect-video w-full overflow-hidden rounded-xl border border-border/70 bg-muted/40">
+            <img
+              src={previewSrc}
+              alt="Kapak görseli önizleme"
+              style={{ objectPosition: parsed.objectPosition }}
+              className="h-full w-full object-cover"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border/80 bg-muted/20 px-4 py-5 text-center">
+            <ImageIcon className="h-5 w-5 text-muted-foreground/70" aria-hidden="true" />
+            <p className="text-[11px] text-muted-foreground">
+              Dosya seçin, AI ile görsel üretin veya görsel bağlantısı yapıştırın.
+            </p>
+          </div>
+        )
+      )}
+
       <div className="flex gap-2">
         <Input
           id={name}
           type="url"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="https://... (Dış bağlantı yapıştırıp 'Sunucuya Aktar'a tıklayın)"
+          placeholder="https://... (Görsel bağlantısı)"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
           className="h-9 text-xs flex-1"
         />
         <Button
@@ -277,25 +475,41 @@ export function CoverImageInput({
           disabled={!trimmed || transferring}
           onClick={handleTransferUrl}
           className="h-9 shrink-0 gap-1.5 text-xs font-semibold"
-          title="Görseli indirir, EXIF bilgilerini temizler, WebP formatına çevirip Supabase sunucusuna kaydeder"
+          title="Görseli indirir, EXIF bilgilerini temizler, WebP formatına çevirip sunucuya kaydeder"
         >
           {transferring ? (
             <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Aktarılıyor...
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              <span className={compact ? "hidden sm:inline" : ""}>Aktarılıyor...</span>
             </>
           ) : (
             <>
-              <CloudUpload className="h-3.5 w-3.5" />
-              Sunucuya Aktar (WebP)
+              <CloudUpload className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>{compact ? "WebP Aktar" : "Sunucuya Aktar (WebP)"}</span>
             </>
           )}
         </Button>
       </div>
 
       {trimmed && (
-        <div className="rounded-2xl border border-border/70 bg-muted/20 p-3.5 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+        compact ? (
+          <details className="admin-disclosure overflow-hidden rounded-xl border border-border/70 bg-muted/20">
+            <summary className="flex cursor-pointer select-none items-center justify-between gap-2 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/40">
+              <span className="flex items-center gap-1.5">
+                <ChevronRight className="admin-disclosure-chevron h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                <Move className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                <span>Kadraj &amp; Kafa Payı</span>
+              </span>
+              <span className="rounded-full border border-border/70 bg-background px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
+                X: {parsed.x}% · Y: {parsed.y}%
+              </span>
+            </summary>
+            <div className="border-t border-border/60 p-3">
+              {focalStudio}
+            </div>
+          </details>
+        ) : (
+          <div className="rounded-2xl border border-border/70 bg-muted/20 p-3.5 space-y-3">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
               <Move className="h-3.5 w-3.5 text-primary" />
               <span>Kadraj &amp; Kafa Payı Konumlandırma</span>
@@ -303,183 +517,9 @@ export function CoverImageInput({
                 X: {parsed.x}% · Y: {parsed.y}%
               </Badge>
             </div>
-
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setPreviewRatio("16/9")}
-                className={`rounded-md px-2 py-0.5 text-[10px] font-semibold transition-colors ${
-                  previewRatio === "16/9"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Kart (16:9)
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreviewRatio("21/9")}
-                className={`rounded-md px-2 py-0.5 text-[10px] font-semibold transition-colors ${
-                  previewRatio === "21/9"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Detay Hero (21:9)
-              </button>
-            </div>
+            {focalStudio}
           </div>
-
-          <div className="grid gap-4 md:grid-cols-12 items-center">
-            {/* Interactive Drag-to-Pan Frame */}
-            <div className="md:col-span-7">
-              <div
-                ref={previewContainerRef}
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerUp}
-                style={{
-                  aspectRatio: previewRatio === "21/9" ? "21 / 9" : "16 / 9",
-                }}
-                className={`group relative w-full overflow-hidden rounded-xl border border-border bg-black/40 select-none touch-none ${
-                  isDragging ? "cursor-grabbing ring-2 ring-primary" : "cursor-grab"
-                }`}
-                title="Fotoğrafı basılı tutup sürükleyerek yukarı/aşağı veya sağa/sola kaydırabilirsiniz"
-              >
-                <img
-                  src={previewSrc}
-                  alt="Kapak görseli kadraj önizleme"
-                  draggable={false}
-                  style={{ objectPosition: parsed.objectPosition }}
-                  className="h-full w-full object-cover pointer-events-none select-none"
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                />
-
-                {/* Rule of thirds guide grid */}
-                <div className="pointer-events-none absolute inset-0 grid grid-cols-3 grid-rows-3 opacity-0 group-hover:opacity-60 transition-opacity">
-                  <div className="border-r border-b border-white/25" />
-                  <div className="border-r border-b border-white/25" />
-                  <div className="border-b border-white/25" />
-                  <div className="border-r border-b border-white/25" />
-                  <div className="border-r border-b border-white/25" />
-                  <div className="border-b border-white/25" />
-                  <div className="border-r border-white/25" />
-                  <div className="border-r border-white/25" />
-                  <div />
-                </div>
-
-                {/* Focal point crosshair marker */}
-                <div
-                  style={{ left: `${parsed.x}%`, top: `${parsed.y}%` }}
-                  className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-primary/80 text-white shadow-md ring-2 ring-white/90 transition-transform"
-                >
-                  <Crosshair className="h-3.5 w-3.5" />
-                </div>
-
-                <div className="pointer-events-none absolute bottom-2 left-2 rounded-md bg-black/70 backdrop-blur-xs px-2 py-0.5 text-[10px] font-medium text-white/90">
-                  ✋ Fareyle sürükleyerek kaydırın
-                </div>
-              </div>
-            </div>
-
-            {/* Sliders & Quick Presets */}
-            <div className="md:col-span-5 space-y-3">
-              {/* Y Axis Slider (Primary for head clipping) */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-semibold text-foreground">
-                    Dikey Hizalama (Y — Üst/Alt):
-                  </span>
-                  <span className="font-mono text-muted-foreground">{parsed.y}%</span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={parsed.y}
-                  onChange={(e) => updateFocalPoint(parsed.x, Number(e.target.value))}
-                  className="w-full accent-primary h-1.5 cursor-pointer"
-                />
-                <div className="flex justify-between text-[10px] text-muted-foreground">
-                  <span>0% (En Üst / Kafa)</span>
-                  <span>50% (Orta)</span>
-                  <span>100% (En Alt)</span>
-                </div>
-              </div>
-
-              {/* X Axis Slider */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-semibold text-foreground">
-                    Yatay Hizalama (X — Sol/Sağ):
-                  </span>
-                  <span className="font-mono text-muted-foreground">{parsed.x}%</span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={parsed.x}
-                  onChange={(e) => updateFocalPoint(Number(e.target.value), parsed.y)}
-                  className="w-full accent-primary h-1.5 cursor-pointer"
-                />
-                <div className="flex justify-between text-[10px] text-muted-foreground">
-                  <span>0% (Sol)</span>
-                  <span>50% (Merkez)</span>
-                  <span>100% (Sağ)</span>
-                </div>
-              </div>
-
-              {/* Quick Preset Buttons */}
-              <div className="space-y-1 pt-1">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                  Hızlı Kadraj:
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {FOCAL_PRESETS.map((preset) => {
-                    const active = parsed.x === preset.x && parsed.y === preset.y;
-                    return (
-                      <button
-                        key={preset.label}
-                        type="button"
-                        onClick={() => updateFocalPoint(preset.x, preset.y)}
-                        className={`rounded-lg border px-2 py-1 text-[10px] font-semibold transition-all ${
-                          active
-                            ? "border-primary bg-primary/15 text-primary shadow-2xs"
-                            : "border-border/70 bg-background text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        {preset.label}
-                      </button>
-                    );
-                  })}
-                  {parsed.hasCustomPosition && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onChange(
-                          formatCoverImageUrl(
-                            trimmed,
-                            DEFAULT_FOCAL_X,
-                            DEFAULT_FOCAL_Y,
-                            false
-                          )
-                        );
-                      }}
-                      className="inline-flex items-center gap-1 rounded-lg border border-border/70 bg-background px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-foreground"
-                      title="Varsayılan portre kadrajına sıfırla"
-                    >
-                      <RotateCcw className="h-2.5 w-2.5" />
-                      Sıfırla
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        )
       )}
 
       {!onOpenAiModal && (

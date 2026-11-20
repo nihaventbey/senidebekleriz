@@ -4,7 +4,7 @@ import { getCityName, normalizeCitySlug } from "@/lib/cities/lookup";
 import { getArtistCardSettings } from "@/lib/data/site-settings";
 import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
 import { buildEventRawPayload } from "@/lib/events/event-payload";
-import { uniqueEventSlug } from "@/lib/events/slug";
+import { allocateUniqueEventSlug } from "@/lib/slug/unique-slug";
 import {
   fetchGlobalTicketingCandidates,
   type GlobalTicketingCandidate,
@@ -159,18 +159,7 @@ export async function syncGlobalTicketingEvents(options?: {
       const endsAt =
         sanitizeIsoDate(candidate.endsAt) || sanitizeIsoDate(normalized.ends_at);
 
-      const baseSlug = uniqueEventSlug(title);
-      let slug = baseSlug;
-      let counter = 1;
-      while (true) {
-        const { data: exists } = await supabaseAdmin
-          .from("cultural_events")
-          .select("id")
-          .eq("slug", slug)
-          .maybeSingle();
-        if (!exists) break;
-        slug = `${baseSlug.slice(0, 88)}-${counter++}`;
-      }
+      const slug = await allocateUniqueEventSlug(title, { citySlug });
 
       const storedSourceCover = candidate.imageUrl
         ? await ensureStoredCoverImage(candidate.imageUrl, "events", slug)

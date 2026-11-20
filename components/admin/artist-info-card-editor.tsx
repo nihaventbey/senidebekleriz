@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SwitchControl } from "@/components/ui/switch-control";
+import { DisclosureSection } from "@/components/admin/editorial/disclosure-section";
 import {
   normalizeArtistInfoCard,
   type ArtistInfoCard,
@@ -105,7 +106,7 @@ export function ArtistInfoCardEditor({
 
         onChange({
           ...normalized,
-          enabled: value ? value.enabled : true,
+          enabled: normalized.enabled && (value ? value.enabled : true),
         });
         setSearchHint(normalized.entityName);
         toast.success("Sanatçı / topluluk bilgi kartı hazırlandı! ✨");
@@ -124,16 +125,35 @@ export function ArtistInfoCardEditor({
     toast.success("Etkinlik bilgi kartı temizlendi");
   }
 
-  return (
-    <fieldset className="space-y-4 rounded-xl border border-border/70 bg-muted/20 p-5">
-      <legend className="flex items-center gap-2 px-1.5 text-sm font-bold text-foreground">
-        <Globe2 className="h-4 w-4 text-primary" aria-hidden="true" />
-        <span>Sanatçı, Orkestra veya Koreograf Bilgi Kartı</span>
-      </legend>
+  let badgeText = "Boş";
+  let badgeTone: "neutral" | "success" | "warning" | "primary" = "neutral";
+  if (hasAnyData) {
+    const labelName = card.entityName.trim() || "Dolu";
+    if (!globalShowArtistInfoCards) {
+      badgeText = `Genel Ayar Kapalı · ${labelName}`;
+      badgeTone = "warning";
+    } else if (card.enabled) {
+      badgeText = `Aktif · ${labelName}`;
+      badgeTone = "success";
+    } else {
+      badgeText = `Gizli · ${labelName}`;
+      badgeTone = "warning";
+    }
+  }
 
-      <p className="text-xs text-muted-foreground">
-        Etkinlik sayfasının altında gösterilecek doğrulanmış resmi web sitesi bağlantısı ve kısa tanıtım kartını düzenleyebilir, yapay zekâ ile araştırabilir veya gizleyebilirsiniz.
-      </p>
+  return (
+    <DisclosureSection
+      title="Sanatçı, Orkestra veya Koreograf Bilgi Kartı"
+      description="Resmi web sitesi ve sanatçı tanıtım kartını araştırın, düzenleyin veya gizleyin."
+      icon={<Globe2 className="h-4 w-4 text-primary" aria-hidden="true" />}
+      badge={badgeText}
+      badgeTone={badgeTone}
+      defaultOpen={false}
+    >
+      <fieldset className="m-0 space-y-4 border-0 p-0">
+        <legend className="sr-only">
+          Sanatçı, Orkestra veya Koreograf Bilgi Kartı Alanları
+        </legend>
 
       {!globalShowArtistInfoCards && (
         <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
@@ -333,6 +353,7 @@ export function ArtistInfoCardEditor({
           className="bg-background text-xs leading-relaxed"
         />
       </div>
-    </fieldset>
+      </fieldset>
+    </DisclosureSection>
   );
 }

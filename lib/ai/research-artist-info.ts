@@ -90,6 +90,178 @@ const TURKISH_TO_EN_ENSEMBLE_MAP: Array<[RegExp, string]> = [
   [/mariinsky\s+balesi/i, "Mariinsky Ballet"],
 ];
 
+const NOISE_TOKENS = new Set([
+  "the", "and", "ve", "of", "de", "du", "des", "der", "die", "das",
+  "in", "at", "for", "official", "resmi",
+]);
+
+const GENRE_OR_TYPE_TOKENS = new Set([
+  "orchestra", "orkestra", "orkestrasi", "symphony", "senfoni",
+  "philharmonic", "filarmoni", "ballet", "bale", "balesi", "company",
+  "theatre", "theater", "tiyatro", "tiyatrosu", "dans", "dance",
+  "group", "band", "grup", "koro", "choir", "ensemble", "topluluk",
+  "toplulugu", "devlet", "state", "national", "ulusal",
+]);
+
+const COUNTRY_TO_TLD: Record<string, string> = {
+  georgia: "ge",
+  gurcistan: "ge",
+  turkey: "tr",
+  turkiye: "tr",
+  russia: "ru",
+  rusya: "ru",
+  germany: "de",
+  almanya: "de",
+  austria: "at",
+  avusturya: "at",
+  france: "fr",
+  fransa: "fr",
+  uk: "uk",
+  ingiltere: "uk",
+  britain: "uk",
+  italy: "it",
+  italya: "it",
+  spain: "es",
+  ispanya: "es",
+  greece: "gr",
+  yunanistan: "gr",
+};
+
+function foldName(text: string): string {
+  return (text || "")
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/İ/g, "i")
+    .replace(/I/g, "ı")
+    .toLocaleLowerCase("tr-TR")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ı/g, "i")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function nameTokens(text: string): string[] {
+  return foldName(text)
+    .split(" ")
+    .filter((t) => t.length >= 2);
+}
+
+/**
+ * Checks whether a Wikidata/Wikipedia label really refers to the researched name.
+ * Prevents fuzzy-search hits such as "Imperial Russian Ballet" -> "Mariinsky Ballet",
+ * or "Vienna Symphony" -> "Vienna Boys Choir" / "Vienna Philharmonic".
+ */
+export function isEntityNameMatch(query: string, label: string): boolean {
+  const q = foldName(query);
+  const l = foldName(label);
+  if (!q || !l) return false;
+  if (q === l) return true;
+
+  // Substring match: e.g. "David Garrett" in "David Garrett Tour" or "The Imperial Russian Ballet Company" containing "Imperial Russian Ballet"
+  const [shorter, longer] = q.length <= l.length ? [q, l] : [l, q];
+  if (shorter.length >= 4) {
+    const escaped = shorter.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`(^|\\s)${escaped}(\\s|$)`);
+    if (regex.test(longer)) return true;
+  }
+
+  // Token-level comparison
+  const qTokens = nameTokens(query).filter((t) => !NOISE_TOKENS.has(t));
+  const lTokens = nameTokens(label).filter((t) => !NOISE_TOKENS.has(t));
+  if (qTokens.length === 0 || lTokens.length === 0) return false;
+
+  // Exact token set equality
+  if (
+    qTokens.length === lTokens.length &&
+    qTokens.every((t) => lTokens.includes(t))
+  ) {
+    return true;
+  }
+
+  // Compare core tokens by removing optional ensemble generic tokens
+  const qCore = qTokens.filter((t) => !GENRE_OR_TYPE_TOKENS.has(t));
+  const lCore = lTokens.filter((t) => !GENRE_OR_TYPE_TOKENS.has(t));
+
+  if (qCore.length > 0 && lCore.length > 0) {
+    const coreMatches =
+      qCore.length === lCore.length && qCore.every((t) => lCore.includes(t));
+    if (coreMatches) {
+      const qTypes = qTokens.filter((t) => GENRE_OR_TYPE_TOKENS.has(t));
+      const lTypes = lTokens.filter((t) => GENRE_OR_TYPE_TOKENS.has(t));
+      if (
+        qTypes.length === 0 ||
+        lTypes.length === 0 ||
+        qTypes.some((t) => lTypes.includes(t))
+      ) {
+        return true;
+      }
+      return false;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Wikipedia external links are noisy (bookstores, fan sites). Accept such a URL as the
+ * "official website" only if its host visibly relates to the entity name (or acronym).
+ */
+export function hostMatchesEntity(rawUrl: string, entityName: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return false;
+  }
+  const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+  if (!host) return false;
+
+  const hostParts = host.split(".");
+  const sld = hostParts.length >= 2 ? hostParts[hostParts.length - 2] : hostParts[0];
+  const tld = hostParts[hostParts.length - 1];
+  const compactHost = host.replace(/[^a-z0-9]/g, "");
+
+  const allTokens = nameTokens(entityName);
+  if (allTokens.length === 0) return false;
+
+  // 1. Check distinctive (non-genre) tokens: e.g. "garrett", "imperial", "gulsen"
+  const distinctive = allTokens.filter(
+    (t) => t.length >= 4 && !GENRE_OR_TYPE_TOKENS.has(t) && !NOISE_TOKENS.has(t)
+  );
+  if (distinctive.some((t) => compactHost.includes(t))) {
+    return true;
+  }
+
+  // 2. Acronym check (e.g. "rpo" for Royal Philharmonic Orchestra in rpo.co.uk)
+  const acronym = allTokens
+    .filter((t) => !NOISE_TOKENS.has(t))
+    .map((t) => t[0])
+    .join("");
+  if (acronym.length >= 3 && compactHost.includes(acronym)) {
+    return true;
+  }
+
+  // 3. Multi-token match: at least 2 tokens of the entity are present in the host
+  const matchedTokens = allTokens.filter(
+    (t) => t.length >= 3 && !NOISE_TOKENS.has(t) && compactHost.includes(t)
+  );
+  if (matchedTokens.length >= 2) {
+    return true;
+  }
+
+  // 4. National/Country TLD match with genre SLD:
+  // e.g. "ballet.ge" for "State Ballet of Georgia" where "ge" matches "georgia"
+  if (allTokens.includes(sld)) {
+    const countryToken = allTokens.find((t) => COUNTRY_TO_TLD[t] === tld);
+    if (countryToken) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function stripPromoterPrefix(title: string): string {
   return title
     .replace(
@@ -216,12 +388,17 @@ async function lookupWikidataEntity(
           id: string;
           label?: string;
           description?: string;
+          match?: { text?: string };
         }>;
       };
       const hits = sJson.search || [];
       if (hits.length === 0) continue;
 
       const selected = hits.find((h) => {
+        const nameOk =
+          isEntityNameMatch(query, h.label || "") ||
+          isEntityNameMatch(query, h.match?.text || "");
+        if (!nameOk) return false;
         const desc = h.description || "";
         if (!desc) return false;
         if (REJECTED_ENTITY_REGEX.test(desc)) return false;
@@ -432,8 +609,12 @@ function buildFallbackCard(params: {
   if (params.wiki) sourceParts.push("Wikipedia");
   else if (params.wikidata) sourceParts.push("Wikidata");
 
+  // Without AI translation an English-only summary must not go public unreviewed.
+  const englishOnly = Boolean(params.wiki && params.wiki.lang === "en");
+  const baseLabel = sourceParts.join(" ve ") || "Doğrulanmış açık kaynaklar";
+
   return normalizeArtistInfoCard({
-    enabled: true,
+    enabled: !englishOnly,
     entityName: params.entityName,
     entityType: "Sanatçı / Topluluk",
     origin: null,
@@ -441,7 +622,9 @@ function buildFallbackCard(params: {
     summary,
     websiteNote,
     highlights: [],
-    sourceLabel: sourceParts.join(" ve ") || "Doğrulanmış açık kaynaklar",
+    sourceLabel: englishOnly
+      ? `${baseLabel} (İngilizce kaynak, Türkçeleştirilmeli)`
+      : baseLabel,
     updatedAt: new Date().toISOString(),
   });
 }
@@ -457,6 +640,8 @@ export async function researchArtistInfoCard(input: {
   description?: string | null;
   eventType?: string | null;
   entityNameHint?: string | null;
+  /** Admin clicked "research" manually: allow a longer AI time budget. */
+  interactive?: boolean;
 }): Promise<ArtistInfoCard | null> {
   const candidates = extractResearchEntityCandidates(
     input.title,
@@ -483,13 +668,13 @@ export async function researchArtistInfoCard(input: {
     }
 
     const trWiki = await fetchWikipediaDetails("tr", candidate);
-    if (trWiki) {
+    if (trWiki && isEntityNameMatch(candidate, trWiki.title)) {
       wiki = trWiki;
       matchedName = trWiki.title || candidate;
       break;
     }
     const enWiki = await fetchWikipediaDetails("en", candidate);
-    if (enWiki) {
+    if (enWiki && isEntityNameMatch(candidate, enWiki.title)) {
       wiki = enWiki;
       matchedName = enWiki.title || candidate;
       break;
@@ -500,8 +685,11 @@ export async function researchArtistInfoCard(input: {
     return null;
   }
 
-  const officialWebsite =
-    wikidata?.officialWebsite || wiki?.externalWebsite || null;
+  const wikiSite =
+    wiki?.externalWebsite && hostMatchesEntity(wiki.externalWebsite, matchedName)
+      ? wiki.externalWebsite
+      : null;
+  const officialWebsite = wikidata?.officialWebsite || wikiSite || null;
 
   const websiteSnippet = officialWebsite
     ? await fetchOfficialWebsiteSnippet(officialWebsite)
@@ -519,8 +707,8 @@ export async function researchArtistInfoCard(input: {
 
   try {
     const promptLines = [
-      `Etkinlik Başlığı: ${input.title}`,
       `Araştırılan Sanatçı / Topluluk / Orkestra / Koreograf: ${matchedName}`,
+      `(Etkinlik başlığı yalnızca ayırt etmek içindir, içerik kaynağı değildir: ${input.title})`,
       wikidata?.description ? `Wikidata Tanımı: ${wikidata.description}` : null,
       wiki ? `Wikipedia Özeti (${wiki.lang.toUpperCase()}):\n${wiki.extract}` : null,
       officialWebsite ? `Doğrulanmış Resmi Web Sitesi: ${officialWebsite}` : null,
@@ -542,14 +730,17 @@ KESİN KURALLAR:
 3. origin: Sanatçı veya topluluğun köken ülkesi/şehri Türkçe olarak (örn: "Avusturya", "Gürcistan", "Türkiye", "Kanada"). Kaynakta yoksa null.
 4. summary: 2-3 cümle, en fazla 340 karakter, kurumsal ve akıcı Türkçe özet.
 5. website_note: YALNIZCA "Resmi Web Sitesinden Alınan Metin" bölümü varsa, o sitede öne çıkan sanatçı/topluluk yaklaşımı, güncel turne/repertuvar veya vizyonunu özetleyen 1-2 kısa Türkçe cümle yaz (en fazla 280 karakter). Eğer resmi site metni okunamadıysa KESİNLİKLE null döndür!
-6. highlights: 2 ila 4 adet kısa (max 110 karakter), somut madde (kuruluş yılı, sanat yönetmeni, öne çıkan repertuvar, turne vb.).`,
+6. highlights: 2 ila 4 adet kısa (max 110 karakter), somut madde (kuruluş yılı, sanat yönetmeni, öne çıkan repertuvar vb.).
+7. Etkinlik başlığı bilgi kaynağı DEĞİLDİR: başlıktaki eser/oyun adı, turne adı, yıl veya tarih bilgilerini sanatçı hakkında bilgi gibi yazma; kart yalnızca sanatçı/topluluğu tanıtmalıdır.
+8. Kaynak metinler İngilizce olabilir; tüm çıktıyı akıcı TÜRKÇE yaz, İngilizce cümle bırakma. entity_name'i verilen araştırılan ad ile aynı bırak.
+9. Araştırılan ad ile kaynak metindeki varlık farklı bir sanatçı/kurum gibi görünüyorsa kaynak metni kullanma, summary'yi kaynaktaki varlık adıyla yazma.`,
       userPrompt: promptLines,
       temperature: 0.25,
       thinking: "low",
       tier: "quality",
       responseSchema: ARTIST_CARD_SCHEMA,
-      timeoutMs: 12000,
-      deadlineMs: 25000,
+      timeoutMs: input.interactive ? 15000 : 12000,
+      deadlineMs: input.interactive ? 42000 : 25000,
     });
 
     const sourceParts: string[] = [];
