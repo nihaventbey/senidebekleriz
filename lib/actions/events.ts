@@ -16,6 +16,8 @@ import {
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
 import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
+import { parseArtistInfoCardFormValue } from "@/lib/events/artist-info-card";
+import { buildEventRawPayload } from "@/lib/events/event-payload";
 import { getAdminEventBySlug } from "@/lib/data/admin-events";
 import { slugify } from "@/lib/slugify";
 import type { EventType } from "@/lib/events/types";
@@ -109,31 +111,41 @@ function eventFromForm(formData: FormData) {
     ? rawEventType
     : sanitizeEventType(rawEventType || "duyuru", title);
 
+  const isFree =
+    formData.get("is_free") === "on" ||
+    formData.get("is_free") === "true";
+  const artistInfoCard = parseArtistInfoCardFormValue(
+    formData.get("artist_info_card")
+  );
+
+  // NOTE: `is_free` is a PostgreSQL GENERATED ALWAYS column derived from `raw_payload`,
+  // so it must NEVER be included in top-level INSERT/UPDATE columns.
   return {
-    title,
-    slug: slugify(rawSlug) || "etkinlik",
-    summary: cleanPublisherText((formData.get("summary") as string) || title) || title,
-    description,
-    event_type: eventType,
-    source_name: sourceName,
-    source_url: ((formData.get("source_url") as string) || "").trim() || null,
-    ticket_url: ((formData.get("ticket_url") as string) || "").trim() || null,
-    city_slug: citySlug && citySlug !== "none" ? normalizeCitySlug(citySlug) : null,
-    venue_name: ((formData.get("venue_name") as string) || "").trim() || null,
-    starts_at: startsAt,
-    ends_at: endsAt,
-    cover_image: ((formData.get("cover_image") as string) || "").trim() || null,
-    meta_title: ((formData.get("meta_title") as string) || "").trim() || null,
-    meta_description: ((formData.get("meta_description") as string) || "").trim() || null,
-    is_featured:
-      formData.get("is_featured") === "on" ||
-      formData.get("is_featured") === "true",
-    is_free:
-      formData.get("is_free") === "on" ||
-      formData.get("is_free") === "true",
-    sort_order: parseInt((formData.get("sort_order") as string) || "0", 10) || 0,
-    expires_at: expiresAt,
-    updated_at: new Date().toISOString(),
+    columns: {
+      title,
+      slug: slugify(rawSlug) || "etkinlik",
+      summary: cleanPublisherText((formData.get("summary") as string) || title) || title,
+      description,
+      event_type: eventType,
+      source_name: sourceName,
+      source_url: ((formData.get("source_url") as string) || "").trim() || null,
+      ticket_url: ((formData.get("ticket_url") as string) || "").trim() || null,
+      city_slug: citySlug && citySlug !== "none" ? normalizeCitySlug(citySlug) : null,
+      venue_name: ((formData.get("venue_name") as string) || "").trim() || null,
+      starts_at: startsAt,
+      ends_at: endsAt,
+      cover_image: ((formData.get("cover_image") as string) || "").trim() || null,
+      meta_title: ((formData.get("meta_title") as string) || "").trim() || null,
+      meta_description: ((formData.get("meta_description") as string) || "").trim() || null,
+      is_featured:
+        formData.get("is_featured") === "on" ||
+        formData.get("is_featured") === "true",
+      sort_order: parseInt((formData.get("sort_order") as string) || "0", 10) || 0,
+      expires_at: expiresAt,
+      updated_at: new Date().toISOString(),
+    },
+    isFree,
+    artistInfoCard,
   };
 }
 
@@ -144,38 +156,39 @@ export async function createEvent(formData: FormData): Promise<EventActionResult
     return { success: false, error: "Etkinlik başlığı zorunludur." };
   }
 
-  const data = eventFromForm(formData);
+  const { columns, isFree, artistInfoCard } = eventFromForm(formData);
   const publishNow =
     formData.get("publish_now") === "on" ||
     formData.get("publish_now") === "true" ||
     formData.get("is_published") === "on" ||
     formData.get("is_published") === "true";
 
-  const uniqueSlug = await ensureUniqueEventSlug(data.slug || data.title);
+  const uniqueSlug = await ensureUniqueEventSlug(columns.slug || columns.title);
   const uniqueSourceUrl = await ensureUniqueSourceUrl(
-    data.source_url,
+    columns.source_url,
     uniqueSlug
   );
 
   const storedCoverImage = await ensureStoredCoverImage(
-    data.cover_image,
+    columns.cover_image,
     "events",
     uniqueSlug
   );
 
   const finalCoverImage = await resolveArtistOrEventCover({
-    title: data.title,
-    summary: data.summary,
-    event_type: data.event_type,
+    title: columns.title,
+    summary: columns.summary,
+    event_type: columns.event_type,
     sourceCover: storedCoverImage,
     slug: uniqueSlug,
   });
 
   const { error } = await supabaseAdmin.from("cultural_events").insert({
-    ...data,
+    ...columns,
     slug: uniqueSlug,
     source_url: uniqueSourceUrl,
     cover_image: finalCoverImage,
+    raw_payload: buildEventRawPayload(null, { isFree, artistInfoCard }),
     status: publishNow ? "published" : "pending_review",
     published_at: publishNow ? new Date().toISOString() : null,
   });
@@ -201,24 +214,24 @@ export async function updateEvent(
     return { success: false, error: "Etkinlik başlığı zorunludur." };
   }
 
-  const data = eventFromForm(formData);
+  const { columns, isFree, artistInfoCard } = eventFromForm(formData);
   const existing = await getAdminEventBySlug(slug);
   const wantsPublished =
     formData.get("is_published") === "on" ||
     formData.get("is_published") === "true";
 
   const uniqueSlug = await ensureUniqueEventSlug(
-    data.slug || slug,
+    columns.slug || slug,
     existing?.id
   );
   const uniqueSourceUrl = await ensureUniqueSourceUrl(
-    data.source_url,
+    columns.source_url,
     uniqueSlug,
     existing?.id
   );
 
   const storedCoverImage = await ensureStoredCoverImage(
-    data.cover_image,
+    columns.cover_image,
     "events",
     uniqueSlug
   );
@@ -241,10 +254,14 @@ export async function updateEvent(
   const { error } = await supabaseAdmin
     .from("cultural_events")
     .update({
-      ...data,
+      ...columns,
       slug: uniqueSlug,
       source_url: uniqueSourceUrl,
       cover_image: storedCoverImage,
+      raw_payload: buildEventRawPayload(existing?.raw_payload, {
+        isFree,
+        artistInfoCard,
+      }),
       ...statusUpdate,
     })
     .eq("slug", slug);
@@ -461,7 +478,11 @@ export async function importEventFromUrlAction(rawUrl: string) {
           imported.summary ||
           title
         ).slice(0, 155),
-        raw_payload: { imported },
+        raw_payload: {
+          imported,
+          is_free: Boolean(imported.is_free),
+          price_type: imported.is_free ? "free" : "paid",
+        },
         updated_at: new Date().toISOString(),
       })
       .select("slug")

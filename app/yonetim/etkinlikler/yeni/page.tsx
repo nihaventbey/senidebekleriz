@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { getAllCities } from "@/lib/data/cities";
+import { getArtistCardSettings } from "@/lib/data/site-settings";
 import { EventForm } from "@/components/admin/event-form";
 import { createEvent } from "@/lib/actions/events";
 
@@ -15,7 +16,10 @@ type Props = {
 
 export default async function NewEventPage({ searchParams }: Props) {
   const { sourceUrl } = await searchParams;
-  const cities = await getAllCities();
+  const [cities, artistCardSettings] = await Promise.all([
+    getAllCities(),
+    getArtistCardSettings(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -31,6 +35,7 @@ export default async function NewEventPage({ searchParams }: Props) {
         cities={cities.map((c) => ({ slug: c.slug, name: c.name }))}
         initialSourceUrl={sourceUrl}
         defaultValues={sourceUrl ? { source_url: sourceUrl } : undefined}
+        globalShowArtistInfoCards={artistCardSettings.showArtistInfoCards}
       />
     </div>
   );

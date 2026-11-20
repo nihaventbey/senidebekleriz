@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAllCities } from "@/lib/data/cities";
 import { getAdminEventBySlug } from "@/lib/data/admin-events";
+import { getArtistCardSettings } from "@/lib/data/site-settings";
 import { EventForm } from "@/components/admin/event-form";
 import { updateEvent, deleteEvent } from "@/lib/actions/events";
 
@@ -17,9 +18,10 @@ type Props = {
 
 export default async function EditEventPage({ params }: Props) {
   const { slug } = await params;
-  const [event, cities] = await Promise.all([
+  const [event, cities, artistCardSettings] = await Promise.all([
     getAdminEventBySlug(slug),
     getAllCities(),
+    getArtistCardSettings(),
   ]);
 
   if (!event) notFound();
@@ -42,6 +44,7 @@ export default async function EditEventPage({ params }: Props) {
         cities={cities.map((c) => ({ slug: c.slug, name: c.name }))}
         currentSlug={event.slug}
         defaultValues={event}
+        globalShowArtistInfoCards={artistCardSettings.showArtistInfoCards}
       />
     </div>
   );

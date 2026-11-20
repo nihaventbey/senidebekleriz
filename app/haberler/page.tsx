@@ -5,6 +5,7 @@ import { getAllCities } from "@/lib/data/cities";
 import { NewsExplorer } from "@/components/news/news-explorer";
 import { BreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import { NewsListJsonLd } from "@/components/seo/news-jsonld";
+import { getSiteUrl } from "@/lib/agents/site";
 
 export const metadata: Metadata = {
   title: "Kültür & Sanat Haberleri",
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
     description:
       "Türkiye genelinde arkeoloji, tarih, restorasyon, müze ve kültür-sanat haberleri.",
     type: "website",
-    url: "https://www.senidebekleriz.com/haberler",
+    url: `${getSiteUrl()}/haberler`,
   },
 };
 

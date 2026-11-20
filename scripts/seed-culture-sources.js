@@ -117,6 +117,18 @@ const sources = [
     query_or_url: 'Türkiye Kültür Yolu Festivali konser sergi tiyatro',
     is_active: true,
   },
+  {
+    name: 'Dünyaca Ünlü Gruplar & Uluslararası Konserler (Biletix/Passo/Biletinial)',
+    source_type: 'google_news_rss',
+    query_or_url: '(Biletix OR Passo OR Biletinial OR Bubilet OR Mobilet) ("world tour" OR "ilk kez Türkiye" OR "dünyaca ünlü" OR "open air tour" OR "European Tour") (konser OR festival OR İstanbul OR Ankara OR İzmir)',
+    is_active: true,
+  },
+  {
+    name: 'Uluslararası Orkestralar, Filarmoni, Bale & Koreograflar',
+    source_type: 'google_news_rss',
+    query_or_url: '(Biletix OR Passo OR Biletinial OR İKSV OR "Zorlu PSM" OR "CSO Ada" OR "AKM") (orkestra OR filarmoni OR senfoni OR bale OR koreograf OR "State Ballet" OR "Symphony Orchestra") (konser OR gösteri OR biletleri)',
+    is_active: true,
+  },
 ];
 
 async function main() {

@@ -12,6 +12,7 @@ User-agent: *
 Allow: /
 Disallow: /yonetim
 Disallow: /yonetim/
+Disallow: /embed/
 Content-Signal: ai-train=no, search=yes, ai-input=no
 
 Sitemap: ${baseUrl}/sitemap.xml

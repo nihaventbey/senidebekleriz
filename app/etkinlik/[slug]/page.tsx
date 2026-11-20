@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { JsonLd } from "@/components/seo/json-ld";
 import { AdBanner } from "@/components/ads/ad-banner";
 import { getEventBySlug, getPublishedEventSlugs, isEventExpired } from "@/lib/data/events";
+import { getArtistCardSettings } from "@/lib/data/site-settings";
+import { hasArtistInfoCardContent } from "@/lib/events/artist-info-card";
+import { ArtistInfoCard } from "@/components/events/artist-info-card";
 import { buildBreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import { EventVenueMap } from "@/components/maps/event-venue-map";
 import { CulturalCoverPlaceholder } from "@/components/ui/cultural-cover-placeholder";
@@ -83,13 +86,21 @@ export default async function EventDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const event = await getEventBySlug(slug);
+  const [event, artistCardSettings] = await Promise.all([
+    getEventBySlug(slug),
+    getArtistCardSettings(),
+  ]);
 
   if (!event) notFound();
 
   const dateLabel = formatDate(event.startsAt);
   const ctaUrl = event.ticketUrl || event.sourceUrl;
   const cover = parseCoverImage(event.coverImage);
+  const showArtistCard = Boolean(
+    artistCardSettings.showArtistInfoCards &&
+      event.artistInfoCard?.enabled &&
+      hasArtistInfoCardContent(event.artistInfoCard)
+  );
 
   const eventJsonLd = [
     {
@@ -110,6 +121,14 @@ export default async function EventDetailPage({
             address: event.cityName || undefined,
           }
         : undefined,
+      performer:
+        showArtistCard && event.artistInfoCard
+          ? {
+              "@type": "PerformingGroup",
+              name: event.artistInfoCard.entityName,
+              sameAs: event.artistInfoCard.officialWebsite || undefined,
+            }
+          : undefined,
       url: ctaUrl || undefined,
     },
     buildBreadcrumbsJsonLd([
@@ -231,6 +250,10 @@ export default async function EventDetailPage({
             </a>
           </Button>
         </div>
+      )}
+
+      {showArtistCard && event.artistInfoCard && (
+        <ArtistInfoCard card={event.artistInfoCard} />
       )}
 
       {/* Interactive Event Venue & Directions Map (Only shown if venue is a real searchable address) */}

@@ -7,6 +7,7 @@ import { EventsExplorer } from "@/components/events/events-explorer";
 import { BreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import { EventsJsonLd } from "@/components/seo/events-jsonld";
 import { getCityName, isValidCitySlug } from "@/lib/cities/lookup";
+import { getSiteUrl } from "@/lib/agents/site";
 import { turkeyCities } from "@/data/turkey-cities";
 
 // 1 hour ISR caching with on-demand revalidation on publish
@@ -92,8 +93,10 @@ type Props = {
   params: Promise<{ kategori: string }>;
 };
 
+const CANONICAL_EVENT_CATEGORY_SLUGS = ["sergi", "tiyatro", "konser", "festival"] as const;
+
 export async function generateStaticParams() {
-  const categorySlugs = Object.keys(EVENT_CATEGORY_META).map((kategori) => ({
+  const categorySlugs = CANONICAL_EVENT_CATEGORY_SLUGS.map((kategori) => ({
     kategori,
   }));
   const citySlugs = turkeyCities.map((c) => ({
@@ -105,21 +108,23 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { kategori } = await params;
   const lower = kategori.toLowerCase();
+  const siteUrl = getSiteUrl();
 
   // 1. Check if category
   if (EVENT_CATEGORY_META[lower]) {
     const meta = EVENT_CATEGORY_META[lower];
+    const canonicalPath = `/etkinlikler/${meta.typeSlug}`;
     return {
       title: meta.title,
       description: meta.description,
       alternates: {
-        canonical: `/etkinlikler/${lower}`,
+        canonical: canonicalPath,
       },
       openGraph: {
         title: `${meta.title} | Seni de Bekleriz`,
         description: meta.description,
         type: "website",
-        url: `https://www.senidebekleriz.com/etkinlikler/${lower}`,
+        url: `${siteUrl}${canonicalPath}`,
       },
     };
   }
@@ -127,19 +132,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // 2. Check if city
   if (isValidCitySlug(lower)) {
     const cityName = getCityName(lower) || lower;
+    const cityEvents = await getPublishedEvents({ citySlug: lower, limit: 1 });
+    const hasEvents = cityEvents.length > 0;
     const title = `${cityName} Etkinlikleri & Kültür Ajandası`;
     const description = `${cityName} ilindeki güncel tiyatro, sergi, konser, festival ve kültür-sanat etkinlikleri takvimi.`;
+    const canonicalPath = hasEvents ? `/etkinlikler/${lower}` : `/sehir/${lower}`;
     return {
       title,
       description,
+      ...(hasEvents ? {} : { robots: { index: false, follow: true } }),
       alternates: {
-        canonical: `/etkinlikler/${lower}`,
+        canonical: canonicalPath,
       },
       openGraph: {
         title: `${title} | Seni de Bekleriz`,
         description,
         type: "website",
-        url: `https://www.senidebekleriz.com/etkinlikler/${lower}`,
+        url: `${siteUrl}${canonicalPath}`,
       },
     };
   }

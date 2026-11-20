@@ -25,7 +25,8 @@
     "db:migrate": "tsx --import ./scripts/load-env.ts scripts/apply-migrations.ts",
     "check:supabase": "tsx --import ./scripts/load-env.ts scripts/check-supabase.ts",
     "build:deploy": "node scripts/prepare-deploy.js",
-    "auth:grant-admin": "tsx --import ./scripts/load-env.ts scripts/grant-admin-role.ts"
+    "auth:grant-admin": "tsx --import ./scripts/load-env.ts scripts/grant-admin-role.ts",
+    "sync:global-events": "tsx --import ./scripts/load-env.ts scripts/sync-global-ticketing-events.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

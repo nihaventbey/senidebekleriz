@@ -19,6 +19,11 @@ import { CoverImageInput } from "@/components/admin/cover-image-input";
 import { AiImageModal } from "@/components/admin/ai-image-modal";
 import { EditorialActionBar } from "@/components/admin/editorial-action-bar";
 import { EditorialMarkdownEditor } from "@/components/admin/editorial-markdown-editor";
+import { ArtistInfoCardEditor } from "@/components/admin/artist-info-card-editor";
+import {
+  normalizeArtistInfoCard,
+  type ArtistInfoCard,
+} from "@/lib/events/artist-info-card";
 import { slugify } from "@/lib/slugify";
 import { toast } from "@/lib/toast";
 import { cleanPublisherText } from "@/lib/ai/clean-publisher";
@@ -35,6 +40,7 @@ type EventFormProps = {
   initialSourceUrl?: string;
   deleteAction?: () => Promise<void>;
   defaultValues?: Partial<CulturalEventRow>;
+  globalShowArtistInfoCards?: boolean;
 };
 
 const EVENT_TYPES: Array<{ value: EventType; label: string }> = [
@@ -112,6 +118,7 @@ export function EventForm({
   initialSourceUrl,
   deleteAction,
   defaultValues = {},
+  globalShowArtistInfoCards = true,
 }: EventFormProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -142,6 +149,9 @@ export function EventForm({
   );
   const [isFreeState, setIsFreeState] = useState<boolean>(
     Boolean(defaultValues.is_free || defaultValues.raw_payload?.is_free)
+  );
+  const [artistInfoCard, setArtistInfoCard] = useState<ArtistInfoCard | null>(() =>
+    normalizeArtistInfoCard(defaultValues.raw_payload?.artist_info_card)
   );
 
   const [aiSourceUrl, setAiSourceUrl] = useState(
@@ -210,6 +220,10 @@ export function EventForm({
         if (data.starts_at) setStartsAt(toIstanbulDatetimeLocal(data.starts_at));
         if (data.ends_at) setEndsAt(toIstanbulDatetimeLocal(data.ends_at));
         if (typeof data.is_free === "boolean") setIsFreeState(data.is_free);
+        if (data.artist_info_card) {
+          const parsedCard = normalizeArtistInfoCard(data.artist_info_card);
+          if (parsedCard) setArtistInfoCard(parsedCard);
+        }
         if (data.meta_title || data.meta_description) {
           setAiMetaSeed((prev) => ({
             title: data.meta_title || prev.title,
@@ -281,6 +295,11 @@ export function EventForm({
     formData.set("is_published", publishState ? "true" : "false");
     formData.set("is_featured", isFeaturedState ? "true" : "false");
     formData.set("is_free", isFreeState ? "true" : "false");
+    const normalizedCard = normalizeArtistInfoCard(artistInfoCard);
+    formData.set(
+      "artist_info_card",
+      normalizedCard ? JSON.stringify(normalizedCard) : ""
+    );
 
     startSaveTransition(async () => {
       try {
@@ -792,6 +811,17 @@ export function EventForm({
           targetMinChars={1400}
           targetMaxChars={2400}
           placeholder="Giriş paragrafı ile başlayın. Ardından etkinliğe özgü 2 adet ## Alt Başlık altında sanatçı, program ve katılım bilgilerini aktarın..."
+        />
+
+        {/* Sanatçı / Topluluk Bilgi Kartı (Düzenlenebilir & Gizlenebilir) */}
+        <ArtistInfoCardEditor
+          value={artistInfoCard}
+          onChange={setArtistInfoCard}
+          eventTitle={title}
+          eventSummary={summary}
+          eventDescription={description}
+          eventType={eventType}
+          globalShowArtistInfoCards={globalShowArtistInfoCards}
         />
 
         {/* SEO Meta */}

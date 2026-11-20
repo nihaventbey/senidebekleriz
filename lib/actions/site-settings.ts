@@ -14,6 +14,8 @@ import {
   saveBrandSettings,
   getBrandSettings,
   normalizeBrandSettings,
+  saveArtistCardSettings,
+  normalizeArtistCardSettings,
 } from "@/lib/data/site-settings";
 
 const ALLOWED_HERO_MIME_TYPES = new Set([
@@ -249,6 +251,42 @@ export async function updateHeroSettings(
     revalidatePath("/yonetim/gorunum");
 
     return { success: "Hero ayarları kaydedildi." };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Bilinmeyen hata oluştu.",
+    };
+  }
+}
+
+export async function updateArtistCardSettings(
+  formData: FormData
+): Promise<{ error?: string; success?: string }> {
+  await requireAdmin();
+  try {
+    const showVal = formData.get("showArtistInfoCards");
+    const enrichVal = formData.get("autoEnrichOnImport");
+
+    const settings = normalizeArtistCardSettings({
+      showArtistInfoCards: showVal === "on" || showVal === "true",
+      autoEnrichOnImport: enrichVal === "on" || enrichVal === "true",
+    });
+
+    const result = await saveArtistCardSettings(settings);
+    if (result.error) {
+      return { error: `Bilgi kartı ayarları kaydedilemedi: ${result.error}` };
+    }
+
+    updateTag("site-settings");
+    revalidatePath("/yonetim/gorunum");
+    revalidatePath("/yonetim/etkinlikler");
+    revalidatePath("/etkinlikler");
+    revalidatePath("/etkinlik/[slug]", "page");
+
+    return {
+      success: settings.showArtistInfoCards
+        ? "Sanatçı / topluluk bilgi kartları sitede görünür yapıldı."
+        : "Sanatçı / topluluk bilgi kartları site genelinde gizlendi.",
+    };
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "Bilinmeyen hata oluştu.",

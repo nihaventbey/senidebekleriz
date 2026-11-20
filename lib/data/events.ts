@@ -1,6 +1,10 @@
 import { cache } from "react";
 import { getCityName } from "@/lib/cities/lookup";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import {
+  normalizeArtistInfoCard,
+  type ArtistInfoCard,
+} from "@/lib/events/artist-info-card";
 import type { CulturalEventRow, EventType } from "@/lib/events/types";
 
 export type PublicEvent = {
@@ -24,10 +28,13 @@ export type PublicEvent = {
   isFeatured: boolean;
   isFree: boolean;
   publishedAt: string | null;
+  artistInfoCard?: ArtistInfoCard | null;
 };
 
 const EVENT_PUBLIC_FIELDS =
-  "id, title, slug, summary, description, event_type, status, source_name, source_url, ticket_url, city_slug, venue_name, starts_at, ends_at, cover_image, meta_title, meta_description, is_featured, is_free, sort_order, published_at, expires_at, created_at, updated_at";
+  "id, title, slug, summary, description, event_type, status, source_name, source_url, ticket_url, city_slug, venue_name, starts_at, ends_at, cover_image, meta_title, meta_description, is_featured, is_free, sort_order, published_at, expires_at, created_at, updated_at" as const;
+const EVENT_DETAIL_FIELDS =
+  "id, title, slug, summary, description, event_type, status, source_name, source_url, ticket_url, city_slug, venue_name, starts_at, ends_at, cover_image, meta_title, meta_description, is_featured, is_free, sort_order, published_at, expires_at, created_at, updated_at, raw_payload" as const;
 
 const TURKEY_OFFSET_MS = 3 * 60 * 60 * 1000;
 
@@ -70,6 +77,7 @@ function mapEvent(row: CulturalEventRow): PublicEvent {
     isFeatured: row.is_featured,
     isFree,
     publishedAt: row.published_at,
+    artistInfoCard: normalizeArtistInfoCard(row.raw_payload?.artist_info_card),
   };
 }
 
@@ -130,11 +138,11 @@ export function isEventExpired(event: {
   return false;
 }
 
-function publishedFilter() {
+function publishedFilter(includeRawPayload = false) {
   const now = new Date().toISOString();
   return supabaseAdmin
     .from("cultural_events")
-    .select(EVENT_PUBLIC_FIELDS)
+    .select(includeRawPayload ? EVENT_DETAIL_FIELDS : EVENT_PUBLIC_FIELDS)
     .eq("status", "published")
     .or(`expires_at.is.null,expires_at.gt.${now}`);
 }
@@ -151,7 +159,7 @@ export async function getFeaturedEvents(limit = 8): Promise<PublicEvent[]> {
     return [];
   }
 
-  const rows = (data || []) as CulturalEventRow[];
+  const rows = (data || []) as unknown as CulturalEventRow[];
   const mapped = rows.map(mapEvent);
 
   // Exclude expired events from featured home page
@@ -202,7 +210,7 @@ export async function getPublishedEvents(options?: {
     return [];
   }
 
-  const mapped = ((data || []) as CulturalEventRow[]).map(mapEvent);
+  const mapped = ((data || []) as unknown as CulturalEventRow[]).map(mapEvent);
   
   // Filter out past events unless explicitly requested
   let filtered = options?.includePast
@@ -245,11 +253,11 @@ export async function getPublishedEventSlugs(options?: { includePast?: boolean }
 
 export const getEventBySlug = cache(
   async (slug: string): Promise<PublicEvent | undefined> => {
-    const { data, error } = await publishedFilter()
+    const { data, error } = await publishedFilter(true)
       .eq("slug", slug)
       .maybeSingle();
 
     if (error || !data) return undefined;
-    return mapEvent(data as CulturalEventRow);
+    return mapEvent(data as unknown as CulturalEventRow);
   }
 );

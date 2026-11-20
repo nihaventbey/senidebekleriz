@@ -69,7 +69,7 @@ export function PremiumHeroSection({ heroSettings }: Props) {
               Popüler Rotalar:
             </span>
             {[
-              { label: "Göbeklitepe", href: "/mekan/gobeklitepe-sanliurfa" },
+              { label: "Göbeklitepe", href: "/sehir/sanliurfa" },
               { label: "Efes Antik Kenti", href: "/sehir/izmir" },
               { label: "Sümela Manastırı", href: "/sehir/trabzon" },
               { label: "Kapadokya", href: "/sehir/nevsehir" },
@@ -105,9 +105,9 @@ export function PremiumHeroSection({ heroSettings }: Props) {
             className="w-full sm:w-auto text-base px-8 h-14 rounded-2xl bg-background/80 hover:bg-muted border-border/80 font-medium"
             asChild
           >
-            <Link href="/kategoriler">
+            <Link href="/haberler">
               <Compass className="mr-2.5 h-5 w-5 text-amber-600" />
-              Kategorilere Göz At
+              Kültür Haberleri
             </Link>
           </Button>
         </div>

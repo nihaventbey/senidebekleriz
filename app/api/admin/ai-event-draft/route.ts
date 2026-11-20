@@ -11,9 +11,29 @@ import {
 import { slugify } from "@/lib/slugify";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
 import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
+import { researchArtistInfoCard } from "@/lib/ai/research-artist-info";
+import { getArtistCardSettings } from "@/lib/data/site-settings";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
+
+async function researchArtistCardWithGuard(input: {
+  title: string;
+  summary?: string | null;
+  eventType?: string | null;
+}) {
+  try {
+    const settings = await getArtistCardSettings();
+    if (!settings.autoEnrichOnImport) return null;
+
+    return await Promise.race([
+      researchArtistInfoCard(input),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 10_000)),
+    ]);
+  } catch {
+    return null;
+  }
+}
 
 export async function POST(req: NextRequest) {
   const user = await getAdminUser();
@@ -87,12 +107,19 @@ export async function POST(req: NextRequest) {
         // ignore
       }
 
+      const artistInfoCard = await researchArtistCardWithGuard({
+        title: imported.title || topic,
+        summary: imported.summary,
+        eventType: imported.event_type,
+      });
+
       return NextResponse.json({
         ...imported,
         city_slug: resolvedCity,
         cover_image: finalCover,
         source_url: sourceUrl,
         source_name: sourceName,
+        artist_info_card: artistInfoCard,
       });
     }
 
@@ -128,6 +155,12 @@ export async function POST(req: NextRequest) {
       finalCover = await ensureStoredCoverImage(fallbackImg, "events", slugHint);
     }
 
+    const artistInfoCard = await researchArtistCardWithGuard({
+      title: normalized.title || topic,
+      summary: normalized.summary,
+      eventType: normalized.event_type,
+    });
+
     return NextResponse.json({
       ...normalized,
       city_slug: resolvedCity,
@@ -135,6 +168,7 @@ export async function POST(req: NextRequest) {
       source_url: null,
       source_name: null,
       ticket_url: null,
+      artist_info_card: artistInfoCard,
     });
   } catch (err: any) {
     console.error("ai-event-draft error:", err);

@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 
 const PAGE_TITLES: Record<string, string> = {
   "/sehirler": "Şehirler",
-  "/kategoriler": "Kategoriler",
+  "/haberler": "Kültür Haberleri",
   "/etkinlikler": "Kültür Etkinlikleri",
   "/blog": "Gezi Rehberi",
 };

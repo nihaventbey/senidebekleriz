@@ -3,9 +3,11 @@ import { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getAdminEvents, countPendingEvents } from "@/lib/data/admin-events";
+import { getArtistCardSettings } from "@/lib/data/site-settings";
 import { EventsList } from "@/components/admin/events-list";
 import { EventUrlImport } from "@/components/admin/event-url-import";
-import { Plus } from "lucide-react";
+import { TicketingSyncButton } from "@/components/admin/ticketing-sync-button";
+import { Globe2, Plus, Settings2 } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Etkinlikler",
@@ -27,10 +29,11 @@ export default async function AdminEventsPage({ searchParams }: Props) {
       ? durum
       : undefined;
 
-  const [events, allEvents, pendingCount] = await Promise.all([
+  const [events, allEvents, pendingCount, artistCardSettings] = await Promise.all([
     getAdminEvents(status),
     status ? getAdminEvents(undefined) : Promise.resolve(null),
     countPendingEvents(),
+    getArtistCardSettings(),
   ]);
 
   const countSource = allEvents ?? events;
@@ -64,6 +67,7 @@ export default async function AdminEventsPage({ searchParams }: Props) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <TicketingSyncButton />
           <Button asChild>
             <Link href="/yonetim/etkinlikler/yeni">
               <Plus className="mr-2 h-4 w-4" />
@@ -71,6 +75,25 @@ export default async function AdminEventsPage({ searchParams }: Props) {
             </Link>
           </Button>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/25 px-4 py-3 text-xs">
+        <div className="flex items-center gap-2 text-foreground">
+          <Globe2 className="h-4 w-4 text-primary" aria-hidden="true" />
+          <span>
+            Sanatçı &amp; Topluluk Bilgi Kartları:{" "}
+            <strong className={artistCardSettings.showArtistInfoCards ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}>
+              {artistCardSettings.showArtistInfoCards ? "Sitede Gösteriliyor" : "Site Genelinde Gizli"}
+            </strong>
+          </span>
+        </div>
+        <Link
+          href="/yonetim/gorunum#bilgi-kartlari"
+          className="inline-flex items-center gap-1.5 font-semibold text-primary hover:underline"
+        >
+          <Settings2 className="h-3.5 w-3.5" aria-hidden="true" />
+          Görünüm Ayarını Değiştir
+        </Link>
       </div>
 
       <EventUrlImport />

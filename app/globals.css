@@ -238,4 +238,45 @@
   .markdown-compact img {
     @apply my-3 max-h-48 w-auto;
   }
+
+  /* Sanatçı / Topluluk Bilgi Kartı: kartın kendi genişliğine duyarlı container query */
+  .artist-info-card {
+    container-type: inline-size;
+  }
+  .artist-info-card-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+  .artist-info-card-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  @container (min-width: 34rem) {
+    .artist-info-card-header {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .artist-info-card-footer {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  /* Native HTML switch control + fallback for browsers without [switch] support */
+  input[type="checkbox"].native-switch {
+    accent-color: var(--primary);
+    margin: 0;
+    cursor: pointer;
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+  }
+  input[type="checkbox"].native-switch:focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 3px;
+  }
 }

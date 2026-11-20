@@ -80,7 +80,7 @@ export function WebMcpTools() {
         properties: {
           section: {
             type: "string",
-            enum: ["home", "cities", "categories", "events", "blog", "api-docs"],
+            enum: ["home", "cities", "news", "events", "blog", "api-docs"],
           },
         },
         required: ["section"],
@@ -89,7 +89,7 @@ export function WebMcpTools() {
         const paths: Record<string, string> = {
           home: "/",
           cities: "/sehirler",
-          categories: "/kategoriler",
+          news: "/haberler",
           events: "/etkinlikler",
           blog: "/blog",
           "api-docs": "/docs/api",

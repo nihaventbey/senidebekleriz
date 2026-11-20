@@ -10,6 +10,11 @@ import {
   normalizeBrandSettings,
   type BrandSettings,
 } from "@/lib/settings/branding";
+import {
+  DEFAULT_ARTIST_CARD_SETTINGS,
+  normalizeArtistCardSettings,
+  type ArtistCardSettings,
+} from "@/lib/settings/artist-cards";
 
 export {
   DEFAULT_HERO_SETTINGS,
@@ -25,9 +30,16 @@ export {
   type BrandSettings,
 } from "@/lib/settings/branding";
 
+export {
+  DEFAULT_ARTIST_CARD_SETTINGS,
+  normalizeArtistCardSettings,
+  type ArtistCardSettings,
+} from "@/lib/settings/artist-cards";
+
 const SETTINGS_BUCKET = "site-settings";
 const HERO_SETTINGS_PATH = "settings/hero.json";
 const BRAND_SETTINGS_PATH = "settings/branding.json";
+const ARTIST_CARD_SETTINGS_PATH = "settings/artist-cards.json";
 
 async function ensureSettingsBucket(): Promise<void> {
   const { data } = await supabaseAdmin.storage.getBucket(SETTINGS_BUCKET);
@@ -107,6 +119,48 @@ export async function saveBrandSettings(
   const { error } = await supabaseAdmin.storage
     .from(SETTINGS_BUCKET)
     .upload(BRAND_SETTINGS_PATH, Buffer.from(payload), {
+      contentType: "application/json",
+      cacheControl: "0",
+      upsert: true,
+    });
+
+  if (error) return { error: error.message };
+  return {};
+}
+
+export const getArtistCardSettings = unstable_cache(
+  async (): Promise<ArtistCardSettings> => {
+    try {
+      const { data, error } = await supabaseAdmin.storage
+        .from(SETTINGS_BUCKET)
+        .download(ARTIST_CARD_SETTINGS_PATH);
+
+      if (error || !data) return DEFAULT_ARTIST_CARD_SETTINGS;
+
+      const text = await data.text();
+      return normalizeArtistCardSettings(JSON.parse(text));
+    } catch {
+      return DEFAULT_ARTIST_CARD_SETTINGS;
+    }
+  },
+  ["site-settings-artist-cards"],
+  { revalidate: 3600, tags: ["site-settings"] }
+);
+
+export async function saveArtistCardSettings(
+  settings: ArtistCardSettings
+): Promise<{ error?: string }> {
+  const payload = JSON.stringify(
+    normalizeArtistCardSettings(settings),
+    null,
+    2
+  );
+
+  await ensureSettingsBucket();
+
+  const { error } = await supabaseAdmin.storage
+    .from(SETTINGS_BUCKET)
+    .upload(ARTIST_CARD_SETTINGS_PATH, Buffer.from(payload), {
       contentType: "application/json",
       cacheControl: "0",
       upsert: true,

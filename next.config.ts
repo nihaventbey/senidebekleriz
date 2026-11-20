@@ -74,6 +74,26 @@ const nextConfig: NextConfig = {
         destination: "/haberler",
         permanent: true,
       },
+      {
+        source: "/etkinlikler/sergiler",
+        destination: "/etkinlikler/sergi",
+        permanent: true,
+      },
+      {
+        source: "/etkinlikler/tiyatrolar",
+        destination: "/etkinlikler/tiyatro",
+        permanent: true,
+      },
+      {
+        source: "/etkinlikler/konserler",
+        destination: "/etkinlikler/konser",
+        permanent: true,
+      },
+      {
+        source: "/etkinlikler/festivaller",
+        destination: "/etkinlikler/festival",
+        permanent: true,
+      },
     ];
   },
 };

@@ -5,6 +5,7 @@ import { getAllCities } from "@/lib/data/cities";
 import { EventsExplorer } from "@/components/events/events-explorer";
 import { BreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import { EventsJsonLd } from "@/components/seo/events-jsonld";
+import { getSiteUrl } from "@/lib/agents/site";
 
 export const metadata: Metadata = {
   title: "Kültür & Sanat Etkinlikleri Takvimi",
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
     description:
       "Türkiye genelinde tiyatro, konser, sergi, opera, bale, festival ve kültür-sanat etkinlikleri takvimi.",
     type: "website",
-    url: "https://www.senidebekleriz.com/etkinlikler",
+    url: `${getSiteUrl()}/etkinlikler`,
   },
 };
 

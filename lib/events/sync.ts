@@ -155,7 +155,13 @@ export async function syncCulturalEvents(): Promise<SyncEventsResult> {
             starts_at: normalized.starts_at,
             ends_at: normalized.ends_at,
             cover_image: finalCoverImage,
-            raw_payload: { rss: item, normalized, images: media.imageUrls },
+            raw_payload: {
+              rss: item,
+              normalized,
+              images: media.imageUrls,
+              is_free: Boolean((normalized as { is_free?: boolean }).is_free),
+              price_type: (normalized as { is_free?: boolean }).is_free ? "free" : "paid",
+            },
           });
 
           if (inserted) {

@@ -1,8 +1,16 @@
+const CANONICAL_WWW_SITE_URL = "https://www.senidebekleriz.com";
+
 export function getSiteUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://senidebekleriz.com"
-  );
+  const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "");
+  if (!raw) return CANONICAL_WWW_SITE_URL;
+
+  // Vercel redirects apex senidebekleriz.com -> www.senidebekleriz.com (HTTP 308).
+  // Normalize apex host so canonicals, sitemap.xml, and robots.txt never point to a 308 redirect.
+  if (/^https?:\/\/senidebekleriz\.com$/i.test(raw)) {
+    return CANONICAL_WWW_SITE_URL;
+  }
+
+  return raw;
 }
 
 export function getSupabaseAuthIssuer(): string {
