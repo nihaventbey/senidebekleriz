@@ -435,8 +435,8 @@ export function assessNewsDraft(
   const wordCount = countWords(content);
   const { issues, copyRatio } = commonTextIssues(content, opts.sourceText);
 
-  if (title.length < 30 || title.length > 110) {
-    issues.push({ code: "title_length", severity: "minor", message: `Başlık ${title.length} karakter (hedef 60-90)` });
+  if (title.length < 35 || title.length > 72) {
+    issues.push({ code: "title_length", severity: "minor", message: `Başlık ${title.length} karakter (hedef 40-65)` });
   }
   if (AGENCY_IN_TITLE.test(title)) {
     issues.push({ code: "title_agency", severity: "critical", message: "Başlıkta ajans/yayın adı var" });
@@ -444,8 +444,10 @@ export function assessNewsDraft(
   if (/\?\s*$/.test(title) || /!\s*$/.test(title)) {
     issues.push({ code: "title_clickbait", severity: "minor", message: "Başlık soru/ünlem ile bitiyor" });
   }
-  if (summary.length < 120) {
-    issues.push({ code: "summary_short", severity: "minor", message: `Spot ${summary.length} karakter (hedef 240-340)` });
+  if (summary.length < 110) {
+    issues.push({ code: "summary_short", severity: "minor", message: `Spot ${summary.length} karakter (hedef 130-190)` });
+  } else if (summary.length > 210) {
+    issues.push({ code: "summary_long", severity: "minor", message: `Spot ${summary.length} karakter (hedef 130-190)` });
   }
   if (summary && !/[.…]$/.test(summary)) {
     issues.push({ code: "summary_punct", severity: "minor", message: "Spot nokta ile bitmiyor" });

@@ -5,12 +5,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+import { stripHtmlAndBoilerplate } from "@/lib/seo/metadata";
+
 /**
  * Formats and safely trims a summary/meta_description so it never cuts mid-word or mid-sentence.
  */
 export function formatSeoSummary(text?: string | null, targetMax = 220): string {
-  if (!text) return "";
-  const clean = text.replace(/\s+/g, " ").trim();
+  const clean = stripHtmlAndBoilerplate(text);
+  if (!clean) return "";
   if (clean.length <= targetMax) return clean;
 
   const sub = clean.slice(0, targetMax);

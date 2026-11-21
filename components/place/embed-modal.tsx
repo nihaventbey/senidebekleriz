@@ -14,7 +14,7 @@ export function EmbedPlaceButton({ placeName, slug }: EmbedModalProps) {
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
 
-  const embedCode = `<iframe src="https://senidebekleriz.com/embed/mekan/${slug}" width="100%" height="320" style="border:none;border-radius:16px;max-width:440px;" title="${placeName} — Seni de Bekleriz"></iframe>`;
+  const embedCode = `<iframe src="https://www.senidebekleriz.com/embed/mekan/${slug}" width="100%" height="320" style="border:none;border-radius:16px;max-width:440px;" title="${placeName} — Seni de Bekleriz"></iframe>`;
 
   function handleCopy() {
     if (navigator.clipboard) {

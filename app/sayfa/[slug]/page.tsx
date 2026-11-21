@@ -3,6 +3,10 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAllPageSlugs, getPageBySlug } from "@/lib/data/pages";
 import { BreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
+import {
+  buildPageMetadataTitle,
+  formatSeoDescription,
+} from "@/lib/seo/metadata";
 
 export const revalidate = 604800;
 
@@ -20,15 +24,21 @@ export async function generateMetadata({
   const page = await getPageBySlug(slug);
   if (!page) return {};
 
+  const seoTitle = buildPageMetadataTitle(page.meta_title || page.title);
+  const seoDescription = formatSeoDescription(
+    page.meta_description || page.title,
+    155
+  );
+
   return {
-    title: page.meta_title,
-    description: page.meta_description,
+    title: seoTitle,
+    description: seoDescription,
     alternates: {
       canonical: `/sayfa/${slug}`,
     },
     openGraph: {
-      title: page.meta_title || page.title,
-      description: page.meta_description,
+      title: seoTitle,
+      description: seoDescription,
       type: "article",
     },
   };

@@ -9,6 +9,13 @@ import {
 } from "@/lib/ai/editorial";
 import type { ExtractedJsonLdEvent } from "@/lib/ai/fetch-url-content";
 import { normalizeCitySlug } from "@/lib/cities/lookup";
+import {
+  formatSeoDescription,
+  formatSeoTitle,
+  SEO_LIMITS,
+  stripHtmlAndBoilerplate,
+  stripSiteBrandSuffix,
+} from "@/lib/seo/metadata";
 import { formatSeoSummary } from "@/lib/utils";
 import { detectTurkishCityInText } from "@/lib/discovery/classify-content";
 import type { EventType, NormalizedEventDraft, RawFeedItem } from "@/lib/events/types";
@@ -129,8 +136,16 @@ const CITY_SLUGS = turkeyCities.map((c) => c.slug).join(", ");
 const EVENT_RESPONSE_SCHEMA: Record<string, unknown> = {
   type: "object",
   properties: {
-    title: { type: "string" },
-    summary: { type: "string" },
+    title: {
+      type: "string",
+      description:
+        "20-60 karakter arası temiz etkinlik adı (sanatçı/topluluk + eser/etkinlik türü; haber cümlesi veya 'biletleri' eki yok)",
+    },
+    summary: {
+      type: "string",
+      description:
+        "105-155 karakter arası, 1-2 tam cümleyle ve noktayla biten Türkçe etkinlik özeti (HTML etiketi yok)",
+    },
     description: { type: "string" },
     event_type: {
       type: "string",
@@ -142,8 +157,16 @@ const EVENT_RESPONSE_SCHEMA: Record<string, unknown> = {
     ends_at: { type: ["string", "null"] },
     ticket_url: { type: ["string", "null"] },
     is_free: { type: "boolean" },
-    meta_title: { type: "string" },
-    meta_description: { type: "string" },
+    meta_title: {
+      type: "string",
+      description:
+        "35-55 karakter arası SEO başlığı; sonuna marka adı ('| Seni de Bekleriz') veya '| Etkinlik Takvimi' EKLEME",
+    },
+    meta_description: {
+      type: "string",
+      description:
+        "125-155 karakter arası, şehir/tarih/mekân bilgisi içeren tam cümle SEO açıklaması",
+    },
     is_cultural_event: { type: "boolean" },
     confidence: { type: "number" },
   },
@@ -193,15 +216,15 @@ Kurallar:
    - is_free: Etkinlik ücretsiz / halka açık ise true, biletli ise false.
 
 5. Kurumsal Metin ve SEO Alanları:
-   - title: Etkinliğin resmi, temiz adı ("Müjde", "Biletler Satışta", "| Biletix" gibi ekleri temizle).
-   - summary: 110 - 155 karakter arası, tam cümleyle ve noktayla biten kurumsal Türkçe özet (asla "..." ile yarım bırakma).
+   - title: 20 - 60 karakter arası resmi, temiz etkinlik adı (sanatçı/topluluk + eser veya etkinlik türü). "Müjde", "Biletler Satışta", "| Biletix", "biletleri" eklerini ve geçmiş zamanlı haber cümlelerini ("... sahne aldı") kullanma.
+   - summary: 105 - 155 karakter arası, tam cümleyle ve noktayla biten kurumsal Türkçe özet (HTML etiketi içermez, asla "..." ile yarım bırakma).
    - description: Kaynaktaki somut bilgilere dayanan, 200 - 340 kelime (1.400 - 2.400 karakter) uzunluğunda kurumsal Markdown etkinlik rehberi.
      * Giriş paragrafı ("summary" alanını kelimesi kelimesine kopyalama!)
      * Ardından içeriğe özgü 2 adet "## [Etkinliğe Özgü Alt Başlık]" altında sanatçı/eser/repertuvar içeriği ve sahne/katılım bilgisi (her başlık altında 1-2 doyurucu paragraf).
      * Kaynakta olmayan ulaşım/otobüs hattı veya uydurma bilgi EKLEME.
      * Şablon başlıklar ("## Detaylar", "## Program ve Katılım Bilgileri", "## Etkinlik ve Sahne Detayları") ve metin sonunda kaynak/yayıncı/bilet sitesi imzası ("Kaynak:", "Biletix | Resmi Biletix Sitesi") KESİNLİKLE kullanma.
-   - meta_title: SEO başlığı (max 60 karakter).
-   - meta_description: Arama motoru açıklaması (max 155 karakter).`;
+   - meta_title: 35 - 55 karakter arası SEO başlığı; şehir veya mekân ipucu içerebilir. Sonuna site veya takvim adı ("| Seni de Bekleriz", "| Etkinlik Takvimi") KESİNLİKLE EKLEME (şablon otomatik ekler).
+   - meta_description: 125 - 155 karakter arası, şehir, tarih ve mekân bilgisini içeren tam cümle arama motoru açıklaması.`;
 }
 
 const TR_MONTHS: Record<string, number> = {
@@ -454,7 +477,7 @@ export type FullNormalizedEvent = NormalizedEventDraft & {
 
 function cleanEventTitle(rawTitle: string): string {
   return (
-    cleanPublisherText(rawTitle)
+    stripSiteBrandSuffix(cleanPublisherText(stripHtmlAndBoilerplate(rawTitle)))
       .replace(
         /\s*\|\s*(Biletix|Resmi Biletix.*|Ticketmaster.*|Biletinial.*|Passo.*|Bubilet.*|Mobilet.*)$/i,
         ""
@@ -564,7 +587,13 @@ export function heuristicNormalizeEvent(input: {
     );
 
   const summary = formatSeoSummary(
-    nonTruncatedSentences[0] || rawBody || cleanTitle,
+    stripDatelineFromParagraph(
+      cleanPublisherText(
+        stripHtmlAndBoilerplate(
+          nonTruncatedSentences[0] || rawBody || cleanTitle
+        )
+      )
+    ),
     160
   );
 
@@ -605,8 +634,11 @@ export function heuristicNormalizeEvent(input: {
       cleanTicketUrl(jEvent?.ticketUrl, input.url) ||
       cleanTicketUrl(input.url, ""),
     is_free: isFree,
-    meta_title: `${cleanTitle} | Etkinlik Takvimi`.slice(0, 60),
-    meta_description: formatSeoSummary(summary || cleanTitle, 155),
+    meta_title: formatSeoTitle(cleanTitle, SEO_LIMITS.metaTitle.max),
+    meta_description: formatSeoDescription(
+      summary || cleanTitle,
+      SEO_LIMITS.metaDescription.max
+    ),
   };
 }
 
@@ -633,7 +665,7 @@ export async function normalizeFeedItem(
       responseSchema: EVENT_RESPONSE_SCHEMA,
     });
 
-    const cleanTitle = (parsed.title || item.title).trim();
+    const cleanTitle = cleanEventTitle(parsed.title || item.title);
     const combinedText = `${cleanTitle} ${item.title} ${item.description}`;
     const fallbackDates = extractTurkishDates(combinedText);
     const safeEventType = sanitizeEventType(
@@ -652,11 +684,17 @@ export async function normalizeFeedItem(
       rawStartsAt,
       rawEndsAt
     );
+    const cleanSummary = formatSeoSummary(
+      stripDatelineFromParagraph(
+        cleanPublisherText(stripHtmlAndBoilerplate(parsed.summary || item.title))
+      ),
+      160
+    );
 
     return {
       ...parsed,
       title: cleanTitle,
-      summary: formatSeoSummary(parsed.summary || item.title, 160),
+      summary: cleanSummary || cleanTitle,
       event_type: safeEventType,
       city_slug:
         normalizeCitySlug(parsed.city_slug) ||
@@ -664,6 +702,14 @@ export async function normalizeFeedItem(
       venue_name: parsed.venue_name || extractVenueFromText(combinedText),
       starts_at: resolvedDates.starts_at,
       ends_at: resolvedDates.ends_at,
+      meta_title: formatSeoTitle(
+        parsed.meta_title || cleanTitle,
+        SEO_LIMITS.metaTitle.max
+      ),
+      meta_description: formatSeoDescription(
+        parsed.meta_description || cleanSummary || cleanTitle,
+        SEO_LIMITS.metaDescription.max
+      ),
       is_cultural_event: parsed.is_cultural_event ?? true,
     };
   } catch (error) {
@@ -737,7 +783,9 @@ export async function normalizeUrlContent(input: {
 
     const cleanSummary = formatSeoSummary(
       stripDatelineFromParagraph(
-        cleanPublisherText(parsed.summary || input.pageTitle || cleanTitle)
+        cleanPublisherText(
+          stripHtmlAndBoilerplate(parsed.summary || input.pageTitle || cleanTitle)
+        )
       ),
       160
     );
@@ -778,13 +826,13 @@ export async function normalizeUrlContent(input: {
       ends_at: resolvedDates.ends_at,
       ticket_url: cleanedTicket,
       is_free: isFree,
-      meta_title: (parsed.meta_title || `${cleanTitle} | Etkinlik Takvimi`).slice(
-        0,
-        60
+      meta_title: formatSeoTitle(
+        parsed.meta_title || cleanTitle,
+        SEO_LIMITS.metaTitle.max
       ),
-      meta_description: formatSeoSummary(
+      meta_description: formatSeoDescription(
         parsed.meta_description || cleanSummary,
-        155
+        SEO_LIMITS.metaDescription.max
       ),
       is_cultural_event: parsed.is_cultural_event ?? true,
     };

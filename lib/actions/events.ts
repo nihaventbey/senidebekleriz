@@ -8,6 +8,10 @@ import { resolveFallbackCulturalImage } from "@/lib/ai/extract-page-images";
 import { sanitizeEventType, sanitizeIsoDate } from "@/lib/ai/normalize-event";
 import { polishMarkdown } from "@/lib/ai/editorial";
 import { cleanPublisherText } from "@/lib/ai/clean-publisher";
+import {
+  stripHtmlAndBoilerplate,
+  stripSiteBrandSuffix,
+} from "@/lib/seo/metadata";
 import { getCityName, normalizeCitySlug } from "@/lib/cities/lookup";
 import {
   isGoogleNewsArticleUrl,
@@ -98,13 +102,19 @@ function eventFromForm(formData: FormData) {
     formData.get("artist_info_card")
   );
 
+  const rawMetaTitle = ((formData.get("meta_title") as string) || "").trim();
+  const rawMetaDescription = ((formData.get("meta_description") as string) || "").trim();
+
   // NOTE: `is_free` is a PostgreSQL GENERATED ALWAYS column derived from `raw_payload`,
   // so it must NEVER be included in top-level INSERT/UPDATE columns.
   return {
     columns: {
       title,
       slug: slugify(rawSlug) || "etkinlik",
-      summary: cleanPublisherText((formData.get("summary") as string) || title) || title,
+      summary:
+        cleanPublisherText(
+          stripHtmlAndBoilerplate((formData.get("summary") as string) || title)
+        ) || title,
       description,
       event_type: eventType,
       source_name: sourceName,
@@ -115,8 +125,10 @@ function eventFromForm(formData: FormData) {
       starts_at: startsAt,
       ends_at: endsAt,
       cover_image: ((formData.get("cover_image") as string) || "").trim() || null,
-      meta_title: ((formData.get("meta_title") as string) || "").trim() || null,
-      meta_description: ((formData.get("meta_description") as string) || "").trim() || null,
+      meta_title: rawMetaTitle ? stripSiteBrandSuffix(rawMetaTitle) || null : null,
+      meta_description: rawMetaDescription
+        ? stripHtmlAndBoilerplate(rawMetaDescription) || null
+        : null,
       is_featured:
         formData.get("is_featured") === "on" ||
         formData.get("is_featured") === "true",

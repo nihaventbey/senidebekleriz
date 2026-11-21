@@ -10,7 +10,7 @@ import { DisclosureSection } from "@/components/admin/editorial/disclosure-secti
 import { toast } from "@/lib/toast";
 
 type MetaFieldsProps = {
-  type: "place" | "city" | "event";
+  type: "place" | "city" | "event" | "article" | "news";
   entityName: string;
   cityName?: string;
   description?: string;
@@ -76,7 +76,7 @@ export function MetaFields({
     >
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] text-muted-foreground">
-          Boş bırakılırsa başlık ve özetten otomatik üretilir.
+          Boş bırakılırsa otomatik üretilir. Site adı (&ldquo;| Seni de Bekleriz&rdquo;) otomatik eklenir.
         </p>
         <Button
           type="button"
@@ -101,7 +101,7 @@ export function MetaFields({
             Meta Başlık
           </Label>
           <span className="text-[11px] text-muted-foreground">
-            {metaTitle.length} / 60 kr
+            {metaTitle.length} / 55 kr
           </span>
         </div>
         <Input
@@ -109,7 +109,7 @@ export function MetaFields({
           name="meta_title"
           value={metaTitle}
           onChange={(e) => setMetaTitle(e.target.value)}
-          placeholder="Boş bırakılırsa otomatik üretilir"
+          placeholder="Boş bırakılırsa otomatik üretilir (marka adı hariç)"
           className="h-9 text-xs"
         />
       </div>
@@ -120,7 +120,7 @@ export function MetaFields({
             Meta Açıklama
           </Label>
           <span className="text-[11px] text-muted-foreground">
-            {metaDescription.length} / 160 kr
+            {metaDescription.length} / 155 kr
           </span>
         </div>
         <Textarea
@@ -129,7 +129,7 @@ export function MetaFields({
           rows={3}
           value={metaDescription}
           onChange={(e) => setMetaDescription(e.target.value)}
-          placeholder="150-160 karakter önerilir"
+          placeholder="125-155 karakter arası tam cümle önerilir"
           className="text-xs leading-relaxed"
         />
       </div>

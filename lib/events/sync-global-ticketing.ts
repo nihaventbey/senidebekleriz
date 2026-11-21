@@ -11,6 +11,12 @@ import {
 } from "@/lib/events/sources/ticketing-global";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import {
+  formatSeoDescription,
+  formatSeoTitle,
+  SEO_LIMITS,
+  stripHtmlAndBoilerplate,
+} from "@/lib/seo/metadata";
 import { formatSeoSummary } from "@/lib/utils";
 
 export type GlobalTicketingSyncResult = {
@@ -210,10 +216,15 @@ export async function syncGlobalTicketingEvents(options?: {
         }
       );
 
+      const cleanSummary = formatSeoSummary(
+        stripHtmlAndBoilerplate(normalized.summary || title),
+        160
+      );
+
       const { error } = await supabaseAdmin.from("cultural_events").insert({
         title,
         slug,
-        summary: formatSeoSummary(normalized.summary || title, 160),
+        summary: cleanSummary || title,
         description: normalized.description || candidate.descriptionText || null,
         event_type: safeEventType,
         status: canAutoPublish ? "published" : "pending_review",
@@ -226,12 +237,13 @@ export async function syncGlobalTicketingEvents(options?: {
         starts_at: startsAt,
         ends_at: endsAt,
         cover_image: finalCoverImage,
-        meta_title: (
-          normalized.meta_title || `${title} | Etkinlik Takvimi`
-        ).slice(0, 60),
-        meta_description: formatSeoSummary(
-          normalized.meta_description || normalized.summary || title,
-          155
+        meta_title: formatSeoTitle(
+          normalized.meta_title || title,
+          SEO_LIMITS.metaTitle.max
+        ),
+        meta_description: formatSeoDescription(
+          normalized.meta_description || cleanSummary || title,
+          SEO_LIMITS.metaDescription.max
         ),
         raw_payload: rawPayload,
         updated_at: new Date().toISOString(),

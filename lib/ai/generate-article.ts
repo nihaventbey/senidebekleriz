@@ -10,6 +10,12 @@ import { fetchUrlContent } from "@/lib/ai/fetch-url-content";
 import { filterImageCandidatesBySize } from "@/lib/ai/extract-page-images";
 import { slugify } from "@/lib/slugify";
 import { uploadArticleImagesFromUrls } from "@/lib/storage/upload-image-from-url";
+import {
+  formatSeoDescription,
+  formatSeoTitle,
+  SEO_LIMITS,
+  stripHtmlAndBoilerplate,
+} from "@/lib/seo/metadata";
 import { formatSeoSummary } from "@/lib/utils";
 
 export type ArticleDepth = "standard" | "deep" | "comprehensive";
@@ -25,6 +31,7 @@ type GenerateArticleInput = {
 
 export type GeneratedArticle = {
   title: string;
+  meta_title: string;
   excerpt: string;
   content: string;
   meta_description: string;
@@ -36,12 +43,29 @@ export type GeneratedArticle = {
 const ARTICLE_RESPONSE_SCHEMA: Record<string, unknown> = {
   type: "object",
   properties: {
-    title: { type: "string" },
-    excerpt: { type: "string" },
-    meta_description: { type: "string" },
+    title: {
+      type: "string",
+      description:
+        "35-65 karakter arası, kurumsal ve açıklayıcı Türkçe kültür/gezi rehberi başlığı",
+    },
+    meta_title: {
+      type: "string",
+      description:
+        "35-55 karakter arası SEO başlığı; sonuna marka adı ('| Seni de Bekleriz') EKLEME",
+    },
+    excerpt: {
+      type: "string",
+      description:
+        "115-160 karakter arası, tam cümle ve noktayla biten özet (HTML yok)",
+    },
+    meta_description: {
+      type: "string",
+      description:
+        "125-155 karakter arası, arama sonuçları için tam cümle SEO açıklaması",
+    },
     content: { type: "string" },
   },
-  required: ["title", "excerpt", "meta_description", "content"],
+  required: ["title", "meta_title", "excerpt", "meta_description", "content"],
 };
 
 function buildArticleSystemPrompt(depth: ArticleDepth = "deep"): string {
@@ -67,6 +91,11 @@ ${depthGuide[depth]}
 ${CORPORATE_STYLE_GUIDE}
 
 EK REHBER KURALLARI:
+- BAŞLIK VE SEO ALANLARI:
+  * title: 35 - 65 karakter arası kurumsal, açıklayıcı rehber başlığı.
+  * meta_title: 35 - 55 karakter arası SEO başlığı; sonuna "| Seni de Bekleriz" EKLEME (şablon otomatik ekler).
+  * excerpt: 115 - 160 karakter arası, tam cümleyle ve noktayla biten özet.
+  * meta_description: 125 - 155 karakter arası Google arama açıklaması.
 - Markdown formatında yaz (giriş paragrafından sonra ## konuya özgü alt başlıklar ve doyurucu paragraflar).
 - ŞABLON BAŞLIK YASAĞI: Asla "Tarihsel Köken ve Dönem Bilgileri", "Mimari ve Sanatsal Özellikler", "Detaylı Şehir Kültürü ve Gezi Tavsiyeleri", "Editör Notu", "Kaynakça", "Sonuç" gibi basmakalıp şablon alt başlıklar kullanma; her alt başlık anlatılan antik kente, müzeye veya şehre özel olsun.
 - Kaynak metni kelimesi kelimesine kopyalama; somut verileri koruyarak editoryal derinlikle yeniden yaz.`;
@@ -216,10 +245,11 @@ export async function generateArticleDraft(
     );
     parsed = {
       title: topic,
+      meta_title: formatSeoTitle(topic, SEO_LIMITS.metaTitle.max),
       excerpt: formatSeoSummary(cleanFallbackBody, 160),
-      meta_description: formatSeoSummary(
+      meta_description: formatSeoDescription(
         `${topic} hakkında kültür, tarih ve ziyaret bilgileri.`,
-        155
+        SEO_LIMITS.metaDescription.max
       ),
       content: [
         cleanFallbackBody,
@@ -231,7 +261,8 @@ export async function generateArticleDraft(
   }
 
   const media = await mediaPromise;
-  const cleanTitle = cleanPublisherText(parsed.title || topic);
+  const cleanTitle =
+    cleanPublisherText(stripHtmlAndBoilerplate(parsed.title || topic)) || topic;
   const polishedContent = polishMarkdown(parsed.content, cleanTitle);
 
   const contentWithMappedUrls = replaceSourceImageUrls(
@@ -247,18 +278,29 @@ export async function generateArticleDraft(
   );
 
   const wordCount = countWords(contentWithImages);
+  const cleanExcerpt = formatSeoSummary(
+    stripDatelineFromParagraph(
+      cleanPublisherText(stripHtmlAndBoilerplate(parsed.excerpt || cleanTitle))
+    ),
+    160
+  );
 
   return {
     title: cleanTitle,
-    excerpt: formatSeoSummary(
-      stripDatelineFromParagraph(cleanPublisherText(parsed.excerpt || cleanTitle)),
-      180
+    meta_title: formatSeoTitle(
+      parsed.meta_title || cleanTitle,
+      SEO_LIMITS.metaTitle.max
     ),
-    meta_description: formatSeoSummary(
+    excerpt: cleanExcerpt || cleanTitle,
+    meta_description: formatSeoDescription(
       stripDatelineFromParagraph(
-        cleanPublisherText(parsed.meta_description || parsed.excerpt || cleanTitle)
+        cleanPublisherText(
+          stripHtmlAndBoilerplate(
+            parsed.meta_description || cleanExcerpt || cleanTitle
+          )
+        )
       ),
-      155
+      SEO_LIMITS.metaDescription.max
     ),
     content: contentWithImages,
     cover_image: media.coverImage,

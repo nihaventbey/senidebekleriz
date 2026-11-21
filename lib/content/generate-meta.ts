@@ -1,14 +1,14 @@
 import { callGeminiJson } from "@/lib/ai/gemini-client";
+import { formatSeoDescription, formatSeoTitle, SEO_LIMITS } from "@/lib/seo/metadata";
 
 const SITE_NAME = "Seni de Bekleriz";
-const MAX_DESCRIPTION = 160;
 
 export type MetaFields = {
   meta_title: string;
   meta_description: string;
 };
 
-export type MetaEntityType = "place" | "city" | "event";
+export type MetaEntityType = "place" | "city" | "event" | "article" | "news";
 
 type MetaInput = {
   type: MetaEntityType;
@@ -18,12 +18,6 @@ type MetaInput = {
   categoryLabel?: string | null;
 };
 
-function truncate(text: string, max = MAX_DESCRIPTION): string {
-  const clean = text.replace(/\s+/g, " ").trim();
-  if (clean.length <= max) return clean;
-  return `${clean.slice(0, max - 1).trimEnd()}…`;
-}
-
 /** Deterministic template meta — no external calls, always safe. */
 export function buildTemplateMeta(input: MetaInput): MetaFields {
   const { type, name, cityName, categoryLabel } = input;
@@ -31,32 +25,38 @@ export function buildTemplateMeta(input: MetaInput): MetaFields {
   let title: string;
   if (type === "place") {
     const suffix = categoryLabel ? ` ${categoryLabel}` : "";
-    title = `${name}${cityName ? ` – ${cityName}` : ""}${suffix} | ${SITE_NAME}`;
+    title = `${name}${cityName ? ` – ${cityName}` : ""}${suffix}`;
   } else if (type === "city") {
-    title = `${name} Gezilecek Yerler ve Kültür Rehberi | ${SITE_NAME}`;
+    title = `${name} Kültür, Sanat ve Etkinlik Ajandası`;
+  } else if (type === "event") {
+    title = `${name}${cityName ? ` – ${cityName}` : ""}`;
   } else {
-    title = `${name}${cityName ? ` – ${cityName}` : ""} | ${SITE_NAME}`;
+    title = name;
   }
 
   let metaDescription: string;
   const trimmed = input.description?.trim();
   if (trimmed && trimmed.length >= 60) {
-    metaDescription = truncate(trimmed);
+    metaDescription = trimmed;
   } else if (type === "place") {
-    metaDescription = truncate(
-      `${name}, ${cityName || "Türkiye"} bölgesinde keşfedilmeyi bekleyen kültürel bir duraktır. Konum, ziyaret bilgileri ve daha fazlası ${SITE_NAME}'de.`
-    );
+    metaDescription = `${name}, ${cityName || "Türkiye"} bölgesinde keşfedilmeyi bekleyen kültürel bir duraktır. Konum, ziyaret bilgileri ve daha fazlası ${SITE_NAME}'de.`;
   } else if (type === "city") {
-    metaDescription = truncate(
-      `${name} ilindeki müzeler, tarihi yerler, sanat mekanları ve kültürel duraklar. ${name} gezi rehberi ${SITE_NAME}'de.`
-    );
+    metaDescription = `${name} ilindeki müzeler, tarihi yerler, sanat mekanları, güncel etkinlikler ve gezi rehberi ${SITE_NAME}'de.`;
+  } else if (type === "article") {
+    metaDescription = `${name} hakkında kültürel miras, tarih, mimari ve pratik ziyaret rehberi ${SITE_NAME}'de.`;
+  } else if (type === "news") {
+    metaDescription = `${name} — Türkiye kültür ve sanat gündeminden güncel gelişmeler ${SITE_NAME}'de.`;
   } else {
-    metaDescription = truncate(
-      `${name} etkinliği hakkında tarih, mekan ve bilet bilgileri. Kültür ve sanat gündemi ${SITE_NAME}'de.`
-    );
+    metaDescription = `${name} etkinliği hakkında tarih, mekân ve bilet bilgileri. Kültür ve sanat gündemi ${SITE_NAME}'de.`;
   }
 
-  return { meta_title: truncate(title, 70), meta_description: metaDescription };
+  return {
+    meta_title: formatSeoTitle(title, SEO_LIMITS.metaTitle.max),
+    meta_description: formatSeoDescription(
+      metaDescription,
+      SEO_LIMITS.metaDescription.max
+    ),
+  };
 }
 
 /**
@@ -74,16 +74,20 @@ export async function generateMeta(input: MetaInput): Promise<MetaFields> {
         ? "kültürel mekan"
         : input.type === "city"
           ? "şehir/il"
-          : "kültür etkinliği";
+          : input.type === "article"
+            ? "kültür ve gezi rehberi"
+            : input.type === "news"
+              ? "kültür ve sanat haberi"
+              : "kültür etkinliği";
 
     const result = await callGeminiJson<MetaFields>({
       systemPrompt: `Sen Türkiye odaklı kültür ve gezi sitesi ${SITE_NAME} için SEO editörüsün.
 Verilen ${typeLabel} için özgün Türkçe meta başlık ve açıklama üret.
 Kurallar:
-- meta_title en fazla 65 karakter, sonunda " | ${SITE_NAME}"
-- meta_description 150-160 karakter, davetkar ve bilgilendirici
-- Yeme-içme reklam tonu yok; sanat, tarih, müze, kültür odağı
-- Uydurma bilgi verme
+- meta_title: 35-55 karakter arası. Sonuna marka veya site adı ("| ${SITE_NAME}", "| Etkinlik Takvimi") KESİNLİKLE EKLEME (şablon otomatik ekler) ve kelimeyi ortasından kesme.
+- meta_description: 125-155 karakter arası, tam cümleyle biten davetkâr ve bilgilendirici açıklama.
+- Yeme-içme reklam tonu yok; sanat, tarih, müze, kültür odağı.
+- Uydurma bilgi verme.
 Yanıt yalnızca geçerli JSON: {"meta_title":"...","meta_description":"..."}`,
       userPrompt: [
         `Tür: ${typeLabel}`,
@@ -98,9 +102,13 @@ Yanıt yalnızca geçerli JSON: {"meta_title":"...","meta_description":"..."}`,
     });
 
     return {
-      meta_title: truncate(result.meta_title || template.meta_title, 70),
-      meta_description: truncate(
-        result.meta_description || template.meta_description
+      meta_title: formatSeoTitle(
+        result.meta_title || template.meta_title,
+        SEO_LIMITS.metaTitle.max
+      ),
+      meta_description: formatSeoDescription(
+        result.meta_description || template.meta_description,
+        SEO_LIMITS.metaDescription.max
       ),
     };
   } catch {

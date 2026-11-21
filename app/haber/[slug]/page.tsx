@@ -25,6 +25,10 @@ import { BreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import { NewsArticleJsonLd } from "@/components/seo/news-jsonld";
 import { getSiteUrl } from "@/lib/agents/site";
 import {
+  buildPageMetadataTitle,
+  formatSeoDescription,
+} from "@/lib/seo/metadata";
+import {
   NewsCard,
   NEWS_CATEGORY_LABELS,
   NEWS_CATEGORY_COLORS,
@@ -51,18 +55,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "Haber Bulunamadı" };
   }
 
-  const categoryLabel = NEWS_CATEGORY_LABELS[news.category] || "Kültür";
   const cover = parseCoverImage(news.coverImage);
+  const seoTitle = buildPageMetadataTitle(news.title);
+  const seoDescription = formatSeoDescription(news.summary, 155);
 
   return {
-    title: `${news.title} | ${categoryLabel}`,
-    description: news.summary,
+    title: seoTitle,
+    description: seoDescription,
     alternates: {
       canonical: `/haber/${news.slug}`,
     },
     openGraph: {
-      title: news.title,
-      description: news.summary,
+      title: seoTitle,
+      description: seoDescription,
       type: "article",
       publishedTime: news.publishedAt,
       modifiedTime: news.updatedAt,
@@ -73,8 +78,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title: news.title,
-      description: news.summary,
+      title: seoTitle,
+      description: seoDescription,
       images: cover.src ? [cover.src] : undefined,
     },
   };

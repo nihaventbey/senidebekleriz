@@ -258,14 +258,14 @@ export function NewsForm({
   }
 
   const titleCharTone =
-    title.trim().length >= 50 && title.trim().length <= 95
+    title.trim().length >= 40 && title.trim().length <= 68
       ? "text-emerald-600 dark:text-emerald-400"
       : title.trim().length === 0
       ? "text-muted-foreground"
       : "text-amber-600 dark:text-amber-400";
 
   const summaryCharTone =
-    summary.trim().length >= 200 && summary.trim().length <= 340
+    summary.trim().length >= 120 && summary.trim().length <= 195
       ? "text-emerald-600 dark:text-emerald-400"
       : summary.trim().length === 0
       ? "text-muted-foreground"
@@ -397,7 +397,7 @@ export function NewsForm({
                     Haber Başlığı <span aria-hidden="true">*</span>
                   </Label>
                   <span className={`text-[11px] font-medium ${titleCharTone}`}>
-                    {title.trim().length} / 55–90 kr
+                    {title.trim().length} / 40–65 kr
                   </span>
                 </div>
                 <Input
@@ -418,7 +418,7 @@ export function NewsForm({
                     Haber Özeti (5N1K Spot Cümlesi)
                   </Label>
                   <span className={`text-[11px] font-medium ${summaryCharTone}`}>
-                    {summary.trim().length} / 220–340 kr
+                    {summary.trim().length} / 130–190 kr
                   </span>
                 </div>
                 <Textarea
@@ -426,9 +426,9 @@ export function NewsForm({
                   name="summary"
                   value={summary}
                   onChange={(e) => setSummary(e.target.value)}
-                  placeholder="Haberin ana fikrini 5N1K çerçevesinde özetleyen 2-3 cümlelik spot metin..."
+                  placeholder="Haberin ana fikrini 5N1K çerçevesinde özetleyen 1-2 cümlelik spot metin..."
                   rows={2}
-                  maxLength={400}
+                  maxLength={240}
                   className="w-full min-h-[3.5lh] max-h-[8lh] text-xs leading-relaxed"
                 />
               </div>

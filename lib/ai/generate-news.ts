@@ -9,6 +9,11 @@ import {
 import { normalizeCitySlug } from "@/lib/cities/lookup";
 import { detectTurkishCityInText } from "@/lib/discovery/classify-content";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
+import {
+  formatSeoTitle,
+  SEO_LIMITS,
+  stripHtmlAndBoilerplate,
+} from "@/lib/seo/metadata";
 import { formatSeoSummary } from "@/lib/utils";
 import {
   cleanPublisherText,
@@ -71,12 +76,12 @@ const NEWS_RESPONSE_SCHEMA: Record<string, unknown> = {
     title: {
       type: "string",
       description:
-        "60-90 karakter arası, ajans adı ve soru/ünlem içermeyen kurumsal Türkçe haber başlığı",
+        "40-65 karakter arası, ajans adı ve soru/ünlem içermeyen, SEO uyumlu kurumsal Türkçe haber başlığı",
     },
     summary: {
       type: "string",
       description:
-        "220-340 karakter arası, 5N1K kuralına uygun, 2-3 tam cümleden oluşan, nokta ile biten haber spotu",
+        "130-190 karakter arası, 5N1K kuralına uygun, 1-2 tam cümleden oluşan, nokta ile biten kurumsal haber spotu",
     },
     content: {
       type: "string",
@@ -221,12 +226,13 @@ HABER MİMARİSİ VE ALAN KURALLARI
    - Kaynaktaki cümleleri kelimesi kelimesine kopyalama; tüm paragrafları bağımsız kültür yayını üslubuyla yeniden kurgula.
 
 2. BAŞLIK (title):
-   - 55 - 90 karakter arası, doğrudan, bilgilendirici, kurumsal ve SEO uyumlu Türkçe başlık.
+   - 40 - 65 karakter arası (ideal 45 - 62 karakter; Google arama sonuçlarında kesilmeyecek net uzunlukta), doğrudan, bilgilendirici, kurumsal Türkçe başlık.
+   - Doğru Türkçe büyük/küçük harf kuralı uygula (kısaltmalar her zaman büyük harf: BM, TDK, İKSV, AKM, UNESCO).
    - ASLA ajans/gazete adı ("AA", "İHA", "DHA", "ANKA", "TRT", "Küçük Saat", "NTV Haber", "Hürriyet"), ünlem işareti veya klik tuzağı soru cümlesi ("Açıldı mı?", "Şok gelişme!") içermez.
-   - Haberin somut kültürel değerini etken çatıyla verir (Örn: "Stratonikeia Antik Kenti'nde 1800 Yıllık Roma Mozaiği Gün Yüzüne Çıkarıldı").
+   - Haberin somut kültürel değerini etken çatıyla verir (Örn: "Stratonikeia'da 1800 Yıllık Roma Mozaiği Gün Yüzüne Çıktı").
 
 3. 5N1K HABER SPOTU (summary):
-   - 220 - 340 karakter arası, 5N1K kuralına uygun (Ne, Nerede, Kim, Ne Zaman, Nasıl/Niçin), 2-3 akıcı ve tam Türkçe cümleden oluşan, sonu mutlaka nokta ile biten haber spotu.
+   - 130 - 190 karakter arası, 5N1K kuralına uygun (Ne, Nerede, Kim, Ne Zaman, Nasıl/Niçin), 1-2 akıcı ve tam Türkçe cümleden oluşan, sonu mutlaka nokta ile biten haber spotu (HTML etiketi içermez).
    - Ajans dateline'ı ("ANTALYA, (DHA) -") veya kaynak adı içermez.
 
 4. HABER METNİ VE ALT BAŞLIKLAR (content):
@@ -245,9 +251,15 @@ function sanitizeGeneratedNewsFields(
   inputCityName?: string,
   detectedSiteName?: string
 ) {
-  const cleanTitle = cleanPublisherText(raw.title || fallbackTopic)
+  let cleanTitle = cleanPublisherText(
+    stripHtmlAndBoilerplate(raw.title || fallbackTopic)
+  )
     .replace(/!+$/g, "")
     .trim();
+  if (cleanTitle.length > SEO_LIMITS.newsTitle.hardMax) {
+    cleanTitle =
+      formatSeoTitle(cleanTitle, SEO_LIMITS.newsTitle.hardMax) || cleanTitle;
+  }
 
   const resolvedSourceName = raw.source_name?.trim() || detectedSiteName || null;
 
@@ -279,8 +291,10 @@ function sanitizeGeneratedNewsFields(
   }
 
   let cleanSummary = formatSeoSummary(
-    stripDatelineFromParagraph(cleanPublisherText(raw.summary || cleanTitle)),
-    340
+    stripDatelineFromParagraph(
+      cleanPublisherText(stripHtmlAndBoilerplate(raw.summary || cleanTitle))
+    ),
+    195
   );
   if (cleanSummary && !/[.!?]$/.test(cleanSummary)) {
     cleanSummary = cleanSummary.replace(/[…,;:\-–—]+$/, "").trim() + ".";
@@ -526,7 +540,15 @@ export async function generateNewsDraft(
       error instanceof Error ? error.message : error
     );
 
-    const cleanFallbackTitle = cleanPublisherText(topic).replace(/!+$/g, "").trim() || "Kültür ve Sanat Haberi";
+    let cleanFallbackTitle =
+      cleanPublisherText(stripHtmlAndBoilerplate(topic))
+        .replace(/!+$/g, "")
+        .trim() || "Kültür ve Sanat Haberi";
+    if (cleanFallbackTitle.length > SEO_LIMITS.newsTitle.hardMax) {
+      cleanFallbackTitle =
+        formatSeoTitle(cleanFallbackTitle, SEO_LIMITS.newsTitle.hardMax) ||
+        cleanFallbackTitle;
+    }
     const normTitleKey = cleanFallbackTitle
       .toLocaleLowerCase("tr-TR")
       .replace(/[^a-z0-9çğıöşü]/g, "");
@@ -604,12 +626,14 @@ export async function generateNewsDraft(
 
     const rawFallbackSummary = stripDatelineFromParagraph(
       cleanPublisherText(
-        leadSummary ||
-          input.fallbackText ||
-          `${cleanFallbackTitle} kapsamında öne çıkan kültür ve sanat gelişmeleri kamuoyuyla paylaşıldı.`
+        stripHtmlAndBoilerplate(
+          leadSummary ||
+            input.fallbackText ||
+            `${cleanFallbackTitle} kapsamında öne çıkan kültür ve sanat gelişmeleri kamuoyuyla paylaşıldı.`
+        )
       )
     );
-    const fallbackSummary = formatSeoSummary(rawFallbackSummary, 340);
+    const fallbackSummary = formatSeoSummary(rawFallbackSummary, 195);
 
     let bodyBlocks =
       formattedBlocks.length > 2 && formattedBlocks[0] === leadSummary

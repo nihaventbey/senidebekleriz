@@ -17,6 +17,11 @@ import { renderMarkdown } from "@/lib/markdown";
 import { polishMarkdown } from "@/lib/ai/editorial";
 import { parseCoverImage } from "@/lib/media/cover-position";
 import {
+  buildPageMetadataTitle,
+  formatSeoDescription,
+  stripHtmlAndBoilerplate,
+} from "@/lib/seo/metadata";
+import {
   ArrowLeft,
   Calendar,
   ExternalLink,
@@ -61,19 +66,23 @@ export async function generateMetadata({
   const event = await getEventBySlug(slug);
   if (!event) return {};
 
-  const title = event.metaTitle || event.title;
-  const description = event.metaDescription || event.summary;
+  const seoTitle = buildPageMetadataTitle(event.metaTitle || event.title);
+  const cleanSummary = stripHtmlAndBoilerplate(event.summary);
+  const seoDescription = formatSeoDescription(
+    event.metaDescription || cleanSummary,
+    155
+  );
   const cover = parseCoverImage(event.coverImage);
 
   return {
-    title,
-    description,
+    title: seoTitle,
+    description: seoDescription,
     alternates: {
       canonical: `/etkinlik/${slug}`,
     },
     openGraph: {
-      title,
-      description,
+      title: seoTitle,
+      description: seoDescription,
       type: "article",
       images: cover.src ? [{ url: cover.src, width: 1200 }] : [],
     },
@@ -96,6 +105,11 @@ export default async function EventDetailPage({
   const dateLabel = formatDate(event.startsAt);
   const ctaUrl = event.ticketUrl || event.sourceUrl;
   const cover = parseCoverImage(event.coverImage);
+  const cleanSummary = stripHtmlAndBoilerplate(event.summary);
+  const seoDescription = formatSeoDescription(
+    event.metaDescription || cleanSummary,
+    155
+  );
   const showArtistCard = Boolean(
     artistCardSettings.showArtistInfoCards &&
       event.artistInfoCard?.enabled &&
@@ -107,7 +121,7 @@ export default async function EventDetailPage({
       "@context": "https://schema.org",
       "@type": "Event",
       name: event.title,
-      description: event.metaDescription || event.summary,
+      description: seoDescription,
       image: cover.src || undefined,
       startDate: event.startsAt || undefined,
       endDate: event.endsAt || undefined,
@@ -216,7 +230,7 @@ export default async function EventDetailPage({
         )}
       </div>
 
-      <p className="mt-6 text-lg leading-relaxed">{event.summary}</p>
+      <p className="mt-6 text-lg leading-relaxed">{cleanSummary}</p>
 
       {event.description && (
         <div className="prose prose-neutral dark:prose-invert max-w-none mt-6">

@@ -133,7 +133,9 @@ export function ArticleForm({
           if (!defaultValues.slug) {
             setSlug(slugify(data.title));
           }
-          if (!metaTitle) setMetaTitle(data.title);
+          if (!metaTitle) setMetaTitle(data.meta_title || data.title);
+        } else if (data.meta_title && !metaTitle) {
+          setMetaTitle(data.meta_title);
         }
         if (data.excerpt) setExcerpt(data.excerpt);
         if (data.content) setContent(data.content);
@@ -251,6 +253,13 @@ export function ArticleForm({
       }
     });
   }
+
+  const titleCharTone =
+    title.trim().length >= 35 && title.trim().length <= 68
+      ? "text-emerald-600 dark:text-emerald-400"
+      : title.trim().length === 0
+      ? "text-muted-foreground"
+      : "text-amber-600 dark:text-amber-400";
 
   const slugPreview = slug ? `/${slug.slice(0, 18)}${slug.length > 18 ? "…" : ""}` : "Otomatik";
 
@@ -398,8 +407,8 @@ export function ArticleForm({
                   <Label htmlFor="title" className="text-xs font-semibold">
                     Rehber Başlığı <span aria-hidden="true">*</span>
                   </Label>
-                  <span className="text-[11px] text-muted-foreground">
-                    {title.trim().length} kr
+                  <span className={`text-[11px] font-medium ${titleCharTone}`}>
+                    {title.trim().length} / 35–65 kr
                   </span>
                 </div>
                 <Input
@@ -570,7 +579,7 @@ export function ArticleForm({
                     Meta Başlık
                   </Label>
                   <span className="text-[11px] text-muted-foreground">
-                    {metaTitle.length} / 60 kr
+                    {metaTitle.length} / 55 kr
                   </span>
                 </div>
                 <Input
@@ -578,9 +587,12 @@ export function ArticleForm({
                   name="meta_title"
                   value={metaTitle}
                   onChange={(e) => setMetaTitle(e.target.value)}
-                  placeholder="Boş bırakılırsa yazı başlığı kullanılır"
+                  placeholder="Boş bırakılırsa yazı başlığı kullanılır (marka adı hariç)"
                   className="h-9 text-xs"
                 />
+                <p className="text-[10px] text-muted-foreground">
+                  Site adı (&ldquo;| Seni de Bekleriz&rdquo;) otomatik eklenir.
+                </p>
               </div>
 
               <div className="space-y-1.5">
@@ -589,7 +601,7 @@ export function ArticleForm({
                     Meta Açıklama
                   </Label>
                   <span className="text-[11px] text-muted-foreground">
-                    {metaDescription.length} / 160 kr
+                    {metaDescription.length} / 155 kr
                   </span>
                 </div>
                 <Textarea
@@ -598,7 +610,7 @@ export function ArticleForm({
                   rows={3}
                   value={metaDescription}
                   onChange={(e) => setMetaDescription(e.target.value)}
-                  placeholder="150-160 karakter önerilir"
+                  placeholder="125-155 karakter arası tam cümle önerilir"
                   className="text-xs leading-relaxed"
                 />
               </div>

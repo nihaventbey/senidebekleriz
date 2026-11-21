@@ -33,6 +33,8 @@ export type NormalizedEventDraft = {
   ends_at: string | null;
   is_cultural_event: boolean;
   confidence: number;
+  meta_title?: string | null;
+  meta_description?: string | null;
 };
 
 export type FeedSourceRow = {

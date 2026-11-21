@@ -58,12 +58,12 @@ export function Footer({ brand }: FooterProps) {
                 </Link>
               </li>
               <li>
-                <Link href="/etkinlikler?tur=sergi" className="transition-colors hover:text-foreground">
+                <Link href="/etkinlikler/sergi" className="transition-colors hover:text-foreground">
                   Güncel Sergiler &amp; Müzeler
                 </Link>
               </li>
               <li>
-                <Link href="/etkinlikler?tur=tiyatro" className="transition-colors hover:text-foreground">
+                <Link href="/etkinlikler/tiyatro" className="transition-colors hover:text-foreground">
                   Tiyatro &amp; Sahne Sanatları
                 </Link>
               </li>

@@ -11,6 +11,11 @@ import { allocateUniqueEventSlug } from "@/lib/slug/unique-slug";
 import { uploadEventImagesFromUrls } from "@/lib/storage/upload-image-from-url";
 import { isNonEventTitle } from "@/lib/events/artist-matcher";
 import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
+import {
+  formatSeoDescription,
+  formatSeoTitle,
+  SEO_LIMITS,
+} from "@/lib/seo/metadata";
 
 async function getActiveFeedSources(): Promise<FeedSourceRow[]> {
   const { data, error } = await supabaseAdmin
@@ -38,6 +43,8 @@ async function insertPendingEvent(input: {
   starts_at: string | null;
   ends_at: string | null;
   cover_image?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
   raw_payload: Record<string, unknown>;
 }) {
   const { error } = await supabaseAdmin.from("cultural_events").insert({
@@ -157,6 +164,14 @@ export async function syncCulturalEvents(): Promise<SyncEventsResult> {
             starts_at: normalized.starts_at,
             ends_at: normalized.ends_at,
             cover_image: finalCoverImage,
+            meta_title: formatSeoTitle(
+              normalized.meta_title || normalized.title,
+              SEO_LIMITS.metaTitle.max
+            ),
+            meta_description: formatSeoDescription(
+              normalized.meta_description || normalized.summary || normalized.title,
+              SEO_LIMITS.metaDescription.max
+            ),
             raw_payload: {
               rss: item,
               normalized,

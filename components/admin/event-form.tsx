@@ -369,6 +369,13 @@ export function EventForm({
     setEndsAt(localEnd ? `${localEnd.slice(0, 10)}T19:00` : "");
   }
 
+  const titleCharTone =
+    title.trim().length >= 20 && title.trim().length <= 62
+      ? "text-emerald-600 dark:text-emerald-400"
+      : title.trim().length === 0
+      ? "text-muted-foreground"
+      : "text-amber-600 dark:text-amber-400";
+
   const summaryCharTone =
     summary.trim().length >= 90 && summary.trim().length <= 160
       ? "text-emerald-600 dark:text-emerald-400"
@@ -472,8 +479,8 @@ export function EventForm({
                   <Label htmlFor="title" className="text-xs font-semibold">
                     Etkinlik Başlığı <span aria-hidden="true">*</span>
                   </Label>
-                  <span className="text-[11px] text-muted-foreground">
-                    {title.trim().length} kr
+                  <span className={`text-[11px] font-medium ${titleCharTone}`}>
+                    {title.trim().length} / 25–60 kr
                   </span>
                 </div>
                 <Input

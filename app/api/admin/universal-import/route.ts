@@ -16,6 +16,12 @@ import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
 import { slugify } from "@/lib/slugify";
 import { getCityName, normalizeCitySlug } from "@/lib/cities/lookup";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
+import {
+  formatSeoDescription,
+  formatSeoTitle,
+  SEO_LIMITS,
+  stripHtmlAndBoilerplate,
+} from "@/lib/seo/metadata";
 import { formatSeoSummary } from "@/lib/utils";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { cleanPublisherText } from "@/lib/ai/clean-publisher";
@@ -132,12 +138,19 @@ export async function POST(request: NextRequest) {
         imported.ends_at
       );
 
+      const cleanSummary = formatSeoSummary(
+        cleanPublisherText(
+          stripHtmlAndBoilerplate(imported.summary || snippet || safeTitle)
+        ),
+        160
+      );
+
       const { data, error } = await supabaseAdmin
         .from("cultural_events")
         .insert({
           title: safeTitle,
           slug,
-          summary: formatSeoSummary(imported.summary || snippet || safeTitle),
+          summary: cleanSummary || safeTitle,
           description: imported.description || snippet || null,
           event_type: safeEventType,
           status: "pending_review",
@@ -149,10 +162,14 @@ export async function POST(request: NextRequest) {
           starts_at: resolvedDates.starts_at,
           ends_at: resolvedDates.ends_at,
           cover_image: finalCover,
-          meta_title: imported.meta_title ? String(imported.meta_title).slice(0, 60) : null,
-          meta_description: imported.meta_description
-            ? formatSeoSummary(String(imported.meta_description), 160)
-            : null,
+          meta_title: formatSeoTitle(
+            imported.meta_title || safeTitle,
+            SEO_LIMITS.metaTitle.max
+          ),
+          meta_description: formatSeoDescription(
+            imported.meta_description || cleanSummary || safeTitle,
+            SEO_LIMITS.metaDescription.max
+          ),
           raw_payload: {
             image_urls: imported.image_urls,
             source_url: sourceUrl,
@@ -222,6 +239,7 @@ export async function POST(request: NextRequest) {
           content: draft.content,
           cover_image: storedCoverImage,
           city_slug: normalizeCitySlug(detectedCitySlug),
+          meta_title: draft.meta_title,
           meta_description: draft.meta_description,
           is_published: false,
           updated_at: new Date().toISOString(),

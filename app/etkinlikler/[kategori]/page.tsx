@@ -136,7 +136,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const hasEvents = cityEvents.length > 0;
     const title = `${cityName} Etkinlikleri & Kültür Ajandası`;
     const description = `${cityName} ilindeki güncel tiyatro, sergi, konser, festival ve kültür-sanat etkinlikleri takvimi.`;
-    const canonicalPath = hasEvents ? `/etkinlikler/${lower}` : `/sehir/${lower}`;
+    const canonicalPath = `/etkinlikler/${lower}`;
     return {
       title,
       description,

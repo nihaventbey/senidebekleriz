@@ -27,6 +27,13 @@ import {
 import { extractEventsFromBulletin } from "@/lib/ai/extract-multi-events";
 import { isNonEventTitle } from "@/lib/events/artist-matcher";
 import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
+import {
+  formatSeoDescription,
+  formatSeoTitle,
+  SEO_LIMITS,
+  stripHtmlAndBoilerplate,
+} from "@/lib/seo/metadata";
+import { formatSeoSummary } from "@/lib/utils";
 
 function revalidateDiscoveryPaths() {
   try {
@@ -208,12 +215,19 @@ export async function importDiscoveryAsEvent(
     imported.ends_at
   );
 
+  const cleanSummary = formatSeoSummary(
+    cleanPublisherText(
+      stripHtmlAndBoilerplate(imported.summary || item.snippet || safeTitle)
+    ),
+    160
+  );
+
   const { data, error } = await supabaseAdmin
     .from("cultural_events")
     .insert({
       title: safeTitle,
       slug,
-      summary: (imported.summary || item.snippet || safeTitle).trim(),
+      summary: cleanSummary || safeTitle,
       description: imported.description || item.snippet || null,
       event_type: safeEventType,
       status: publish ? "published" : "pending_review",
@@ -226,13 +240,14 @@ export async function importDiscoveryAsEvent(
       starts_at: resolvedDates.starts_at,
       ends_at: resolvedDates.ends_at,
       cover_image: finalCoverImage,
-      meta_title: imported.meta_title ? String(imported.meta_title).slice(0, 60) : null,
-      meta_description: (
-        imported.meta_description ||
-        imported.summary ||
-        item.snippet ||
-        safeTitle
-      ).slice(0, 155),
+      meta_title: formatSeoTitle(
+        imported.meta_title || safeTitle,
+        SEO_LIMITS.metaTitle.max
+      ),
+      meta_description: formatSeoDescription(
+        imported.meta_description || cleanSummary || safeTitle,
+        SEO_LIMITS.metaDescription.max
+      ),
       raw_payload: {
         discovery_id: item.id,
         image_urls: imported.image_urls,
@@ -314,6 +329,7 @@ export async function importDiscoveryAsArticle(
       content: draft.content,
       cover_image: storedCoverImage,
       city_slug: normalizeCitySlug(item.city_slug),
+      meta_title: draft.meta_title,
       meta_description: draft.meta_description,
       is_published: publish,
       published_at: publish ? new Date().toISOString() : null,

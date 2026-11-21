@@ -7,20 +7,34 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { BreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 
-export const metadata: Metadata = {
-  title: "Gezi Rehberi ve Yazılar",
-  description:
-    "Türkiye şehirleri için özgün gezi rehberleri, rota önerileri ve kültür yazıları.",
-  alternates: {
-    canonical: "/blog",
-  },
-  openGraph: {
-    title: "Gezi Rehberi ve Yazılar | Seni de Bekleriz",
-    description:
-      "Türkiye şehirleri için özgün gezi rehberleri, rota önerileri ve kültür yazıları.",
-    type: "website",
-  },
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page || "1", 10) || 1);
+  const title =
+    page > 1
+      ? `Gezi Rehberi ve Yazılar — Sayfa ${page}`
+      : "Gezi Rehberi ve Yazılar";
+  const description =
+    "Türkiye şehirleri için özgün gezi rehberleri, rota önerileri ve kültür yazıları.";
+  const canonical = page > 1 ? `/blog?page=${page}` : "/blog";
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      title: `${title} | Seni de Bekleriz`,
+      description,
+      type: "website",
+    },
+  };
+}
 
 export const revalidate = 86400;
 

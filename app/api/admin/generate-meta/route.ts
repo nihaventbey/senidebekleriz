@@ -5,7 +5,7 @@ import { generateMeta, type MetaEntityType } from "@/lib/content/generate-meta";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const VALID_TYPES: MetaEntityType[] = ["place", "city", "event"];
+const VALID_TYPES: MetaEntityType[] = ["place", "city", "event", "article", "news"];
 
 export async function POST(request: NextRequest) {
   const user = await getAdminUser();

@@ -20,14 +20,17 @@ import { getCityGuidePage } from "@/lib/data/pages";
 import { getCityArticle } from "@/lib/data/articles";
 import { getPublishedEvents } from "@/lib/data/events";
 import { getPublishedNews } from "@/lib/data/news";
-import { renderMarkdown } from "@/lib/markdown";
-import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buildBreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
 import { CityQuickNav } from "@/components/cities/city-quick-nav";
 import { CityCultureSection } from "@/components/cities/city-culture-section";
 import { turkeyCities } from "@/data/turkey-cities";
 import { parseCoverImage } from "@/lib/media/cover-position";
+import {
+  buildPageMetadataTitle,
+  formatSeoDescription,
+} from "@/lib/seo/metadata";
+import { formatSeoSummary } from "@/lib/utils";
 
 // 24 hours ISR caching with on-demand revalidation on news/events import
 export const revalidate = 86400;
@@ -46,23 +49,26 @@ export async function generateMetadata({
   const city = await getCityBySlug(slug);
   if (!city) return {};
 
-  const title = city.metaTitle || `${city.name} Kültür, Sanat ve Etkinlik Ajandası`;
-  const description =
+  const seoTitle = buildPageMetadataTitle(
+    city.metaTitle || `${city.name} Kültür, Sanat ve Etkinlik Ajandası`
+  );
+  const seoDescription = formatSeoDescription(
     city.metaDescription ||
-    (city.description
-      ? city.description.slice(0, 160)
-      : `${city.name} güncel konser, tiyatro, sergi etkinlikleri, kültür haberleri ve şehir gezi rehberi.`);
+      city.description ||
+      `${city.name} güncel konser, tiyatro, sergi etkinlikleri, kültür haberleri ve şehir gezi rehberi.`,
+    155
+  );
 
   return {
-    title,
-    description,
+    title: seoTitle,
+    description: seoDescription,
     robots: { index: true, follow: true },
     alternates: {
       canonical: `/sehir/${slug}`,
     },
     openGraph: {
-      title,
-      description,
+      title: seoTitle,
+      description: seoDescription,
       type: "website",
       images: city.coverImage ? [{ url: city.coverImage, width: 1200 }] : [],
     },
@@ -187,7 +193,7 @@ export default async function CityPage({
               {city.name}
             </h1>
             <p className="mt-4 text-base font-normal leading-relaxed text-white/90 sm:text-lg md:text-xl">
-              {cultureData?.tagline || city.description?.slice(0, 160)}
+              {cultureData?.tagline || formatSeoSummary(city.description, 160)}
             </p>
           </div>
         </div>
@@ -413,29 +419,64 @@ export default async function CityPage({
           />
         )}
 
-        {/* 4. GEZİ REHBERİ MAKALESİ (Varsa 44 derinlemesine dosyadan biri) */}
-        {cityArticle && (
-          <section
-            id="rehber"
-            className="scroll-mt-24 rounded-2xl border bg-card p-6 shadow-sm md:p-8 space-y-6"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-bold tracking-tight md:text-2xl">
-                  {city.name} Gezi Rehberi &amp; Kültür Dosyası
-                </h2>
+        {/* 4. GEZİ REHBERİ ÖNİZLEME KARTI (/blog/[slug] ile birebir kopya önlenir) */}
+        {cityArticle && (() => {
+          const articleCover = parseCoverImage(cityArticle.coverImage);
+          const articlePreview = formatSeoSummary(
+            cityArticle.excerpt || cityArticle.metaDescription || cityArticle.content,
+            240
+          );
+          return (
+            <section
+              id="rehber"
+              className="scroll-mt-24 rounded-2xl border bg-card p-6 shadow-sm md:p-8"
+            >
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+                {articleCover.src && (
+                  <Link
+                    href={`/blog/${cityArticle.slug}`}
+                    className="relative aspect-[16/10] w-full shrink-0 overflow-hidden rounded-xl bg-muted sm:w-56"
+                  >
+                    <img
+                      src={articleCover.src}
+                      alt={cityArticle.title}
+                      style={{ objectPosition: articleCover.objectPosition }}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </Link>
+                )}
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
+                    <BookOpen className="h-4 w-4" />
+                    <span>{city.name} Kültür &amp; Gezi Dosyası</span>
+                  </div>
+                  <h2 className="text-xl font-bold tracking-tight md:text-2xl">
+                    <Link
+                      href={`/blog/${cityArticle.slug}`}
+                      className="transition-colors hover:text-primary"
+                    >
+                      {cityArticle.title}
+                    </Link>
+                  </h2>
+                  {articlePreview && (
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                      {articlePreview}
+                    </p>
+                  )}
+                  <div className="pt-1">
+                    <Button asChild variant="default" size="sm" className="text-xs font-semibold">
+                      <Link href={`/blog/${cityArticle.slug}`}>
+                        <span>Rehberin Tamamını Oku</span>
+                        <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <Button asChild variant="outline" size="sm" className="text-xs font-semibold shrink-0">
-                <Link href={`/blog/${cityArticle.slug}`}>
-                  <span>Rehberi Tam Ekran Oku</span>
-                  <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                </Link>
-              </Button>
-            </div>
-            <MarkdownContent html={renderMarkdown(cityArticle.content)} />
-          </section>
-        )}
+            </section>
+          );
+        })()}
 
         {/* Sayfa Sonu Yönlendirmeleri */}
         <div className="mt-12 pt-6 border-t border-border/60 flex items-center justify-between">

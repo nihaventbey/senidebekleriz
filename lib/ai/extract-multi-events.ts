@@ -26,6 +26,12 @@ import { isNonEventTitle } from "@/lib/events/artist-matcher";
 import { resolveArtistOrEventCover } from "@/lib/events/artist-image-resolver";
 import { ensureStoredCoverImage } from "@/lib/storage/upload-image-from-url";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import {
+  formatSeoDescription,
+  formatSeoTitle,
+  SEO_LIMITS,
+  stripHtmlAndBoilerplate,
+} from "@/lib/seo/metadata";
 import { formatSeoSummary } from "@/lib/utils";
 import type { EventType } from "@/lib/events/types";
 
@@ -54,8 +60,16 @@ const MULTI_EVENT_SCHEMA: Record<string, unknown> = {
       items: {
         type: "object",
         properties: {
-          title: { type: "string" },
-          summary: { type: "string" },
+          title: {
+            type: "string",
+            description:
+              "20-60 karakter arası temiz etkinlik adı; 'biletleri' veya yayıncı eki olmadan",
+          },
+          summary: {
+            type: "string",
+            description:
+              "105-155 karakter arası, 1-2 tam cümle ve noktayla biten Türkçe özet",
+          },
           description: { type: "string" },
           event_type: {
             type: "string",
@@ -67,8 +81,16 @@ const MULTI_EVENT_SCHEMA: Record<string, unknown> = {
           ends_at: { type: ["string", "null"] },
           ticket_url: { type: ["string", "null"] },
           is_free: { type: "boolean" },
-          meta_title: { type: "string" },
-          meta_description: { type: "string" },
+          meta_title: {
+            type: "string",
+            description:
+              "35-55 karakter arası SEO başlığı; sonuna marka adı ('| Seni de Bekleriz') veya '| Etkinlik Takvimi' EKLEME",
+          },
+          meta_description: {
+            type: "string",
+            description:
+              "125-155 karakter arası şehir/tarih/mekân bilgili tam cümle SEO açıklaması",
+          },
         },
         required: [
           "title",
@@ -107,11 +129,12 @@ Kurallar:
    - ÇOK ÖNEMLİ (SERGİLER): Sergiler 1 günde bitmez. Kapanış tarihi hiç verilmemişse açılış tarihinden en az 45 gün sonrasını ends_at yap.
 5. venue_name: Etkinliğin gerçekleştiği sahne, kültür merkezi, müze veya konser mekanının tam adı (Örn: "Harbiye Cemil Topuzlu Açıkhava Tiyatrosu", "AKM Türk Telekom Opera Salonu", "CSO Ada Ankara").
 6. ticket_url: YALNIZCA o spesifik etkinliğin bilet satış linki (Biletix, Passo, Biletinial, Bubilet, Mobilet vb.) varsa yaz; yoksa null yap.
-7. summary: Etkinlik için 1-2 cümlelik (max 160 karakter), nokta ile biten kurumsal Türkçe özet.
-8. description: Etkinliğin içeriğini, sanatçılarını, programını ve mekan bilgisini kaynaktaki somut verilerle anlatan 2-3 paragraflık kurumsal Markdown açıklama (summary cümlesini birebir tekrarlama).
-9. meta_title: SEO başlığı (max 60 karakter).
-10. meta_description: SEO açıklaması (max 155 karakter).
-11. is_free: Etkinlik ücretsiz, halka açık, katılım serbest ise true; ücretli bilet satışı varsa false.`;
+7. title: 20 - 60 karakter arası net, temiz etkinlik adı.
+8. summary: Etkinlik için 105 - 155 karakter arası, tam cümle ve noktayla biten kurumsal Türkçe özet (HTML etiketi yok).
+9. description: Etkinliğin içeriğini, sanatçılarını, programını ve mekan bilgisini kaynaktaki somut verilerle anlatan 2-3 paragraflık kurumsal Markdown açıklama (summary cümlesini birebir tekrarlama).
+10. meta_title: 35 - 55 karakter arası SEO başlığı. Sonuna marka adı ("| Seni de Bekleriz", "| Etkinlik Takvimi") EKLEME (şablon otomatik ekler).
+11. meta_description: 125 - 155 karakter arası tam cümle SEO açıklaması.
+12. is_free: Etkinlik ücretsiz, halka açık, katılım serbest ise true; ücretli bilet satışı varsa false.`;
 }
 
 export async function extractEventsFromBulletin(input: {
@@ -208,7 +231,11 @@ export async function extractEventsFromBulletin(input: {
       {
         title: fallbackTitle,
         summary: formatSeoSummary(
-          stripDatelineFromParagraph(input.fallbackText || pageText || fallbackTitle),
+          stripDatelineFromParagraph(
+            stripHtmlAndBoilerplate(
+              input.fallbackText || pageText || fallbackTitle
+            )
+          ),
           160
         ),
         description: polishMarkdown(pageText.slice(0, 2500), fallbackTitle),
@@ -220,10 +247,10 @@ export async function extractEventsFromBulletin(input: {
         is_free: /\b(ücretsiz|ücretsizdir|halka açık|katılım serbest)\b/i.test(
           combinedFallback
         ),
-        meta_title: `${fallbackTitle} | Etkinlik Takvimi`.slice(0, 60),
-        meta_description: formatSeoSummary(
+        meta_title: formatSeoTitle(fallbackTitle, SEO_LIMITS.metaTitle.max),
+        meta_description: formatSeoDescription(
           input.fallbackText || pageText || fallbackTitle,
-          155
+          SEO_LIMITS.metaDescription.max
         ),
       },
     ];
@@ -335,7 +362,11 @@ export async function extractEventsFromBulletin(input: {
     );
 
     const cleanSummary = formatSeoSummary(
-      stripDatelineFromParagraph(cleanPublisherText(item.summary || cleanItemTitle)),
+      stripDatelineFromParagraph(
+        cleanPublisherText(
+          stripHtmlAndBoilerplate(item.summary || cleanItemTitle)
+        )
+      ),
       160
     );
     const cleanDescription = polishMarkdown(
@@ -363,12 +394,13 @@ export async function extractEventsFromBulletin(input: {
         starts_at: resolvedDates.starts_at,
         ends_at: resolvedDates.ends_at,
         cover_image: storedCover,
-        meta_title: (
-          item.meta_title || `${cleanItemTitle} | Etkinlik Takvimi`
-        ).slice(0, 60),
-        meta_description: formatSeoSummary(
+        meta_title: formatSeoTitle(
+          item.meta_title || cleanItemTitle,
+          SEO_LIMITS.metaTitle.max
+        ),
+        meta_description: formatSeoDescription(
           item.meta_description || cleanSummary || cleanItemTitle,
-          155
+          SEO_LIMITS.metaDescription.max
         ),
         raw_payload: {
           extracted_from_bulletin: true,

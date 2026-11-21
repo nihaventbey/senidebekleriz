@@ -15,6 +15,10 @@ import { parseCoverImage } from "@/lib/media/cover-position";
 import { ReadingProgressBar } from "@/components/blog/reading-progress-bar";
 import { getSiteUrl } from "@/lib/agents/site";
 import { buildBreadcrumbsJsonLd } from "@/components/seo/breadcrumbs-jsonld";
+import {
+  buildPageMetadataTitle,
+  formatSeoDescription,
+} from "@/lib/seo/metadata";
 
 export const revalidate = 604800;
 
@@ -32,16 +36,21 @@ export async function generateMetadata({
   const article = await getArticleBySlug(slug);
   if (!article) return {};
   const cover = parseCoverImage(article.coverImage);
+  const seoTitle = buildPageMetadataTitle(article.metaTitle || article.title);
+  const seoDescription = formatSeoDescription(
+    article.metaDescription || article.excerpt,
+    155
+  );
 
   return {
-    title: article.metaTitle,
-    description: article.metaDescription,
+    title: seoTitle,
+    description: seoDescription,
     alternates: {
       canonical: `/blog/${slug}`,
     },
     openGraph: {
-      title: article.metaTitle,
-      description: article.metaDescription,
+      title: seoTitle,
+      description: seoDescription,
       type: "article",
       images: cover.src ? [{ url: cover.src }] : [],
     },
